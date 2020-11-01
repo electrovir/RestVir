@@ -1,0 +1,34 @@
+{
+    "name": "rest-vir",
+    "version": "0.0.1",
+    "description": "The heroic rest server",
+    "main": "dist/index.js",
+    "scripts": {
+        "prepublishOnly": "rm -rf node_modules; npm install && npm run test",
+        "test": "rm -rf dist; tsc",
+        "format": "prettier --ignore-path .gitignore --write './{,!(js-output)/**/}*.+(ts|json|html|css)'"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/electrovir/rest-vir.git"
+    },
+    "keywords": [
+        "rest",
+        "server",
+        "api",
+        "backend",
+        "express",
+        "vir"
+    ],
+    "author": "electrovir (github.com/electrovir)",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/electrovir/rest-vir/issues"
+    },
+    "homepage": "https://github.com/electrovir/rest-vir#readme",
+    "devDependencies": {
+        "@types/node": "^14.14.6",
+        "prettier": "^2.1.2",
+        "typescript": "^4.0.5"
+    }
+}
