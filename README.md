@@ -1,2 +1,2 @@
-# server-vir
-The hero server
+# RestVir
+The hero rest server
