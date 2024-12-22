@@ -1,0 +1,61 @@
+{
+    "name": "@rest-vir/define-service",
+    "version": "0.0.2",
+    "description": "Declarative and type safe service definition.",
+    "keywords": [
+        "rest",
+        "service",
+        "vir"
+    ],
+    "homepage": "https://github.com/electrovir/rest-vir",
+    "bugs": {
+        "url": "https://github.com/electrovir/rest-vir/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/electrovir/rest-vir.git"
+    },
+    "license": "(MIT or CC0 1.0)",
+    "author": {
+        "name": "electrovir",
+        "url": "https://github.com/electrovir"
+    },
+    "type": "module",
+    "main": "src/index.ts",
+    "module": "src/index.ts",
+    "types": "src/index.ts",
+    "scripts": {
+        "build": "virmator frontend build",
+        "compile": "virmator compile",
+        "docs": "virmator docs",
+        "start": "virmator frontend",
+        "test": "virmator test web",
+        "test:coverage": "npm run test coverage",
+        "test:docs": "virmator docs check",
+        "test:update": "npm test update"
+    },
+    "dependencies": {
+        "@augment-vir/assert": "^31.2.1",
+        "@augment-vir/common": "^31.2.1",
+        "object-shape-tester": "^4.0.0",
+        "type-fest": "^4.31.0",
+        "url-vir": "^2.0.1"
+    },
+    "devDependencies": {
+        "@augment-vir/test": "^31.2.1",
+        "@web/dev-server-esbuild": "^1.0.3",
+        "@web/test-runner": "^0.19.0",
+        "@web/test-runner-commands": "^0.9.0",
+        "@web/test-runner-playwright": "^0.11.0",
+        "@web/test-runner-visual-regression": "^0.10.0",
+        "istanbul-smart-text-reporter": "^1.1.5",
+        "markdown-code-example-inserter": "^3.0.3",
+        "typedoc": "^0.27.6"
+    },
+    "engines": {
+        "node": ">=22"
+    },
+    "publishConfig": {
+        "access": "public"
+    }
+}
