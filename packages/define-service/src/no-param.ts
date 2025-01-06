@@ -2,6 +2,8 @@
  * Runtime value for {@link NoParam}.
  *
  * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export const NoParam = Symbol('no type parameter');
 /**
@@ -9,5 +11,7 @@ export const NoParam = Symbol('no type parameter');
  * yet.
  *
  * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export type NoParam = typeof NoParam;

@@ -6,6 +6,8 @@ import type {IsEqual} from 'type-fest';
  * be used as an input to the endpoint fetch function.
  *
  * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export type MinimalService<ServiceName extends string = string> = {
     serviceName: IsEqual<ServiceName, ''> extends true ? never : ServiceName;

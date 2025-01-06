@@ -21,6 +21,7 @@
     ],
     "scripts": {
         "compile": "virmator compile",
+        "docs": "npm run exec --workspace @rest-vir/scripts src/scripts/run-typedoc.script.ts",
         "format": "virmator format",
         "lint": "virmator lint fix",
         "publish": "virmator publish npm run test:all",

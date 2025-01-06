@@ -29,6 +29,8 @@ import {ServiceDefinitionError} from './service-definition.error.js';
  * Base Endpoint request/response shape type.
  *
  * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export type EndpointDataShapeBase = JsonCompatibleValue;
 
@@ -37,6 +39,8 @@ export type EndpointDataShapeBase = JsonCompatibleValue;
  * {@link EndpointInit}.
  *
  * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export type RequiredAuth<AllowedAuth extends ReadonlyArray<any> | undefined | NoParam> =
     IsEqual<AllowedAuth, undefined> extends true
@@ -48,7 +52,9 @@ export type RequiredAuth<AllowedAuth extends ReadonlyArray<any> | undefined | No
 /**
  * The type for setting up an individual endpoint, used in `defineService`.
  *
- * @category Endpoint
+ * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export type EndpointInit<
     AllowedAuth extends ReadonlyArray<any> | undefined = any,
@@ -99,6 +105,8 @@ export type EndpointInit<
  * Used to validate {@link EndpointInit} inside of `defineService`.
  *
  * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export const endpointInitShape = defineShape({
     requiredAuth: or(undefined, [unknownShape()]),
@@ -119,6 +127,8 @@ export const endpointInitShape = defineShape({
  * Adds final properties to {@link EndpointInit} so it becomes {@link Endpoint}.
  *
  * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export type WithFinalEndpointProps<T, EndpointPath extends EndpointPathBase> = (T extends AnyObject
     ? Overwrite<
@@ -158,7 +168,9 @@ export type WithFinalEndpointProps<T, EndpointPath extends EndpointPathBase> = (
 /**
  * A fully defined endpoint instance. This is generated from `defineService`.
  *
- * @category Endpoint
+ * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export type Endpoint<
     AllowedAuth extends ReadonlyArray<any> | undefined = any,
@@ -177,6 +189,8 @@ export type Endpoint<
  * Extracts response and request data from an endpoint definition.
  *
  * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export type BaseEndpointForExecutorData = Pick<Endpoint, 'requestDataShape' | 'responseDataShape'>;
 
@@ -184,6 +198,8 @@ export type BaseEndpointForExecutorData = Pick<Endpoint, 'requestDataShape' | 'r
  * Extracts response and request data from an endpoint definition into different properties.
  *
  * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export type EndpointExecutorData<Endpoint extends BaseEndpointForExecutorData> = {
     request: ShapeToRuntimeType<Endpoint['requestDataShape'], false, true>;
@@ -194,6 +210,8 @@ export type EndpointExecutorData<Endpoint extends BaseEndpointForExecutorData> =
  * Attaches request and response type-only getters to an endpoint definition.
  *
  * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export function attachEndpointShapeTypeGetters<const T extends AnyObject>(
     endpoint: T,
@@ -218,6 +236,8 @@ export function attachEndpointShapeTypeGetters<const T extends AnyObject>(
  * Asserts that the given finalized {@link Endpoint} instance is valid.
  *
  * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export function assertValidEndpoint<
     /**

@@ -1,0 +1,26 @@
+{
+    "name": "@rest-vir/scripts",
+    "version": "0.0.0",
+    "private": true,
+    "homepage": "https://github.com/electrovir/rest-vir",
+    "bugs": {
+        "url": "https://github.com/electrovir/rest-vir/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/electrovir/rest-vir.git"
+    },
+    "license": "(MIT or CC0 1.0)",
+    "author": {
+        "name": "electrovir",
+        "url": "https://github.com/electrovir"
+    },
+    "type": "module",
+    "scripts": {
+        "compile": "virmator compile",
+        "exec": "tsx"
+    },
+    "engines": {
+        "node": ">=22"
+    }
+}

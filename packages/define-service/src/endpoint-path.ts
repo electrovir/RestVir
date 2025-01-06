@@ -1,7 +1,9 @@
 /**
  * Extracts all path parameters from an endpoint path.
  *
- * @category Endpoint
+ * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export type PathParams<EndpointPath extends string> = string extends EndpointPath
     ? Record<string, string>
@@ -18,5 +20,7 @@ export type PathParams<EndpointPath extends string> = string extends EndpointPat
  * because of that. However, that makes the type requirements way too strict and hard to deal with.
  *
  * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export type EndpointPathBase = `/${string}`;

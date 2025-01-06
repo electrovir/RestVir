@@ -6,6 +6,8 @@ import {ServiceDefinitionError} from './service-definition.error.js';
  * Base type used for the right side of "extends" in type parameters for AuthRoleEnum tuples.
  *
  * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export type BaseEndpointRequiredAuth<AllowedAuthEntries> =
     | undefined
@@ -15,7 +17,9 @@ export type BaseEndpointRequiredAuth<AllowedAuthEntries> =
  * Asserts that the given required endpoint aut is valid.
  *
  * @category Internal
+ * @category Package : @rest-vir/define-service
  * @throws {@link ServiceDefinitionError} : if there is an issue
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export function assertValidEndpointAuth<
     /**

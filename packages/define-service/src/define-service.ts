@@ -24,6 +24,8 @@ import {ServiceDefinitionError} from './service-definition.error.js';
  * A string used for type errors triggered when an endpoint path is defined without a leading slash.
  *
  * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export type EndpointMustStartWithSlashTypeError = 'ERROR: endpoint must start with a slash';
 
@@ -32,6 +34,8 @@ export type EndpointMustStartWithSlashTypeError = 'ERROR: endpoint must start wi
  * definitions.
  *
  * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export type BaseServiceEndpointsInit<AllowedAuth extends ReadonlyArray<any> | undefined> = Record<
     EndpointPathBase,
@@ -41,7 +45,9 @@ export type BaseServiceEndpointsInit<AllowedAuth extends ReadonlyArray<any> | un
 /**
  * Init for a service. This is used as an input to {@link defineService}.
  *
- * @category Service
+ * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export type ServiceInit<
     ServiceName extends string,
@@ -64,7 +70,9 @@ export type ServiceInit<
 /**
  * A fully defined service (without executable endpoint implementations).
  *
- * @category Service
+ * @category Define Service
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export type ServiceDefinition<
     ServiceName extends string = string,
@@ -89,7 +97,9 @@ export type ServiceDefinition<
  * The main entry point to the whole `@rest-vir/define-service` package. This function accepts a
  * {@link ServiceInit} object and returns a fully defined {@link ServiceDefinition}.
  *
- * @category Service
+ * @category Define Service
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export function defineService<
     const ServiceName extends string,
@@ -156,7 +166,9 @@ function finalizeServiceDefinition<
  * Asserts that the given input is a valid {@link ServiceDefinition} instance.
  *
  * @category Internal
+ * @category Package : @rest-vir/define-service
  * @throws {@link ServiceDefinitionError} : if there is an issue
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export function assertValidServiceDefinition(
     serviceDefinition: ServiceDefinition,
