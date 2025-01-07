@@ -36,6 +36,43 @@ describe(implementService.name, () => {
             },
         );
     });
+    it('requires extractAuth if the definition requires it', () => {
+        implementService(
+            defineService({
+                endpoints: {
+                    '/test': {
+                        methods: {
+                            GET: true,
+                        },
+                        requestDataShape: undefined,
+                        responseDataShape: undefined,
+                        requiredAuth: ['a'],
+                    },
+                },
+                requiredOrigin: AnyOrigin,
+                serviceName: 'test',
+                serviceOrigin: '',
+                allowedAuth: [
+                    'a',
+                    'b',
+                ],
+            }),
+            {
+                '/test'() {
+                    return {
+                        statusCode: HttpStatus.Ok,
+                        responseData: undefined,
+                    };
+                },
+            },
+            // @ts-expect-error: missing `extractAuth`
+            {
+                context() {
+                    return 'hi';
+                },
+            },
+        );
+    });
     it('blocks non-function endpoint implementations', () => {
         assert.throws(() =>
             implementService(

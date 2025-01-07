@@ -19,7 +19,7 @@ import {
 } from '@rest-vir/define-service';
 import {Request} from 'express';
 
-export type EndpointImplementationOutput<ResponseDataType> =
+export type EndpointImplementationOutput<ResponseDataType = unknown> =
     | {
           statusCode: HttpStatusByCategory<ErrorHttpStatusCategories>;
           /**
@@ -46,7 +46,7 @@ export type EndpointImplementationParams<
     SpecificEndpoint extends Endpoint | NoParam = NoParam,
 > = {
     context: Context;
-    currentAuth: Exclude<SpecificEndpoint, NoParam> extends never
+    auth: Exclude<SpecificEndpoint, NoParam> extends never
         ? unknown
         : ArrayElement<Exclude<SpecificEndpoint, NoParam>['requiredAuth']>;
     method: Exclude<SpecificEndpoint, NoParam> extends never

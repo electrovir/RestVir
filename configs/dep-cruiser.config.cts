@@ -9,6 +9,12 @@ const baseConfig = defineConfig({
                 'src/index.ts',
             ],
         },
+        /** For some reason dep-cruiser thinks these deps are unresolvable (they're not). */
+        'not-to-unresolvable': {
+            to: [
+                'typedoc',
+            ],
+        },
     },
     omitRules: [
         // enter rule names here to omit

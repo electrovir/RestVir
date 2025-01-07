@@ -46,6 +46,53 @@ describe(defineService.name, () => {
 
         assert.tsType<ArrayElement<typeof myService.allowedAuth>>().equals<MyMockAuth>();
     });
+    it('required endpoint auth must be a subset of the service allowed auth', () => {
+        const myService = defineService({
+            allowedAuth: [
+                'a',
+                'b',
+                'c',
+            ],
+            endpoints: {
+                '/path': {
+                    requestDataShape: undefined,
+                    requiredAuth: [
+                        // @ts-expect-error: not a subset of the allowed auth
+                        'q',
+                    ],
+                    requiredOrigin: undefined,
+                    responseDataShape: undefined,
+                    methods: {
+                        [HttpMethod.Get]: true,
+                    },
+                },
+            },
+            serviceName: 'my-service',
+            serviceOrigin: 'some origin',
+            requiredOrigin: AnyOrigin,
+        });
+
+        assert.tsType<ArrayElement<typeof myService.allowedAuth>>().equals<'a' | 'b' | 'c'>();
+    });
+    it('does not require allowed auth', () => {
+        const myService = defineService({
+            endpoints: {
+                '/path': {
+                    requestDataShape: undefined,
+                    requiredOrigin: undefined,
+                    responseDataShape: undefined,
+                    methods: {
+                        [HttpMethod.Get]: true,
+                    },
+                },
+            },
+            serviceName: 'my-service',
+            serviceOrigin: 'some origin',
+            requiredOrigin: AnyOrigin,
+        });
+
+        assert.tsType<typeof myService.allowedAuth>().equals<undefined>();
+    });
     it('preserves methods', () => {
         const myService = defineService({
             allowedAuth: getObjectTypedValues(MyMockAuth),

@@ -45,8 +45,8 @@ export type EndpointDataShapeBase = JsonCompatibleValue;
 export type RequiredAuth<AllowedAuth extends ReadonlyArray<any> | undefined | NoParam> =
     IsEqual<AllowedAuth, undefined> extends true
         ? undefined
-        : AllowedAuth extends Array<infer Element>
-          ? AtLeastTuple<Element, 1> | undefined
+        : AllowedAuth extends ReadonlyArray<infer AuthElement>
+          ? AtLeastTuple<AuthElement, 1> | undefined
           : any;
 
 /**

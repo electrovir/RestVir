@@ -48,7 +48,7 @@ export type ServiceInit<
     AllowedAuth extends ReadonlyArray<any> | undefined,
     EndpointsInit extends BaseServiceEndpointsInit<NoInfer<AllowedAuth>> | NoParam,
 > = MinimalService<ServiceName> & {
-    allowedAuth: AllowedAuth;
+    allowedAuth?: AllowedAuth;
     requiredOrigin: NonNullable<OriginRequirement>;
     endpoints: IsEqual<EndpointsInit, NoParam> extends true
         ? Record<EndpointPathBase, EndpointInit>
@@ -99,8 +99,8 @@ export type ServiceDefinition<
  */
 export function defineService<
     const ServiceName extends string,
-    const AllowedAuth extends ReadonlyArray<any> | undefined,
     const EndpointsInit extends BaseServiceEndpointsInit<AllowedAuth>,
+    const AllowedAuth extends ReadonlyArray<any> | undefined = undefined,
 >(
     serviceInit: ServiceInit<ServiceName, AllowedAuth, EndpointsInit>,
 ): ServiceDefinition<ServiceName, AllowedAuth, EndpointsInit> {
@@ -146,7 +146,7 @@ function finalizeServiceDefinition<
     });
 
     return {
-        allowedAuth: serviceInit.allowedAuth,
+        allowedAuth: serviceInit.allowedAuth as AllowedAuth,
         serviceName: serviceInit.serviceName,
         serviceOrigin: serviceInit.serviceOrigin,
         init: serviceInit,

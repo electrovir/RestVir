@@ -90,6 +90,22 @@ export type FetchEndpointOutput<EndpointToFetch extends Endpoint | NoParam> = Re
     response: Readonly<Response>;
 }>;
 
+export function getAllowedEndpointMethods(endpoint: Readonly<Pick<Endpoint, 'methods'>>) {
+    return filterMap(
+        getObjectTypedEntries(endpoint.methods),
+        ([
+            methodName,
+        ]) => methodName,
+        (
+            methodName,
+            [
+                ,
+                allowed,
+            ],
+        ) => allowed,
+    );
+}
+
 function filterToValidMethod(
     endpoint: Readonly<
         SelectFrom<
@@ -113,19 +129,7 @@ function filterToValidMethod(
         );
     }
 
-    const allowedMethods = filterMap(
-        getObjectTypedEntries(endpoint.methods),
-        ([
-            methodName,
-        ]) => methodName,
-        (
-            methodName,
-            [
-                ,
-                allowed,
-            ],
-        ) => allowed,
-    );
+    const allowedMethods = getAllowedEndpointMethods(endpoint);
 
     if (check.isLengthExactly(allowedMethods, 1)) {
         return allowedMethods[0];

@@ -17,14 +17,14 @@ import type {EndpointImplementationParams, EndpointImplementations} from './impl
 export type ContextInit<Context> =
     | Context
     | ((
-          params: Readonly<Omit<EndpointImplementationParams, 'context' | 'currentAuth'>>,
+          params: Readonly<Omit<EndpointImplementationParams, 'context' | 'auth'>>,
       ) => MaybePromise<Context>);
 
 export type ExtractAuth<Context, AllowedAuth extends ReadonlyArray<any> | undefined> =
     Exclude<AllowedAuth, undefined> extends never
         ? undefined
         : (
-              params: Readonly<Omit<EndpointImplementationParams<Context>, 'currentAuth'>>,
+              params: Readonly<Omit<EndpointImplementationParams<Context>, 'auth'>>,
           ) => MaybePromise<
               (AllowedAuth extends any[] ? ArrayElement<AllowedAuth> : undefined) | undefined
           >;

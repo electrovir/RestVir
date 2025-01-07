@@ -9,7 +9,7 @@ export type MockServiceContext = {
     date: number;
 };
 
-const mockServiceImplementation = implementService(
+export const mockServiceImplementation = implementService(
     mockService,
     {
         '/empty'() {
