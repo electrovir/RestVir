@@ -1,5 +1,5 @@
 import {getEnumValues} from '@augment-vir/common';
-import {defineService} from '../define-service.js';
+import {AnyOrigin, defineService} from '../index.js';
 
 export enum MyAuth {
     Admin = 'admin',
@@ -15,12 +15,13 @@ export const myService = defineService({
      * sent to this origin.
      */
     serviceOrigin: 'https://example.com',
+    requiredOrigin: AnyOrigin,
     endpoints: {
         '/my-endpoint': {
             requestDataShape: undefined,
             responseDataShape: undefined,
             requiredAuth: [MyAuth.Admin],
-            requiredClientOrigin: undefined,
+            requiredOrigin: undefined,
             methods: {
                 GET: true,
             },
@@ -39,7 +40,7 @@ export const myService = defineService({
             methods: {
                 GET: true,
             },
-            requiredClientOrigin: 'https://my-website.com',
+            requiredOrigin: 'https://my-website.com',
         },
     },
 });

@@ -1,16 +1,16 @@
 import {assert} from '@augment-vir/assert';
 import {describe, it, itCases} from '@augment-vir/test';
-import {mockService} from './define-service.mock.js';
-import {Endpoint} from './endpoint.js';
+import {type Endpoint} from '../endpoint/endpoint.js';
+import {mockService} from '../service/define-service.mock.js';
+import {HttpMethod} from '../util/http-method.js';
+import {createMockFetchResponse} from '../util/mock-fetch-response.js';
+import {type NoParam} from '../util/no-param.js';
 import {
     buildEndpointUrl,
     fetchEndpoint,
-    FetchEndpointParameters,
-    GenericFetchEndpointParams,
+    type FetchEndpointParameters,
+    type GenericFetchEndpointParams,
 } from './fetch-endpoint.js';
-import {HttpMethod} from './http-method.js';
-import {createMockResponse} from './mock-response.js';
-import type {NoParam} from './no-param.js';
 
 type FetchOptions = NonNullable<GenericFetchEndpointParams['options']>;
 
@@ -124,7 +124,7 @@ describe('FetchEndpointParameters', () => {
                     },
                     fetch() {
                         return Promise.resolve(
-                            createMockResponse({
+                            createMockFetchResponse({
                                 result: 1,
                                 requestData: {
                                     somethingHere: 'hi',
@@ -166,7 +166,7 @@ describe('FetchEndpointParameters', () => {
                 url = givenUrl;
                 requestInit = givenRequestInit;
                 return Promise.resolve(
-                    createMockResponse(endpoint.responseDataShape?.defaultValue),
+                    createMockFetchResponse(endpoint.responseDataShape?.defaultValue),
                 );
             },
         });

@@ -1,23 +1,19 @@
 import {assert, check} from '@augment-vir/assert';
-import {
-    getObjectTypedEntries,
-    mapObjectValues,
-    stringify,
-    type AnyObject,
-} from '@augment-vir/common';
+import {AnyObject, getObjectTypedEntries, mapObjectValues, stringify} from '@augment-vir/common';
 import {assertValidShape, defineShape} from 'object-shape-tester';
-import type {IsEqual} from 'type-fest';
-import {EndpointPathBase} from './endpoint-path.js';
+import {type IsEqual} from 'type-fest';
+import {type EndpointPathBase} from '../endpoint/endpoint-path.js';
 import {
-    Endpoint,
-    EndpointInit,
-    WithFinalEndpointProps,
+    type Endpoint,
+    type EndpointInit,
+    type WithFinalEndpointProps,
     assertValidEndpoint,
     attachEndpointShapeTypeGetters,
     endpointInitShape,
-} from './endpoint.js';
+} from '../endpoint/endpoint.js';
+import {type NoParam} from '../util/no-param.js';
+import {type OriginRequirement} from '../util/origin.js';
 import {MinimalService} from './minimal-service.js';
-import type {NoParam} from './no-param.js';
 import {ServiceDefinitionError} from './service-definition.error.js';
 
 /**
@@ -37,10 +33,8 @@ export type EndpointMustStartWithSlashTypeError = 'ERROR: endpoint must start wi
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export type BaseServiceEndpointsInit<AllowedAuth extends ReadonlyArray<any> | undefined> = Record<
-    EndpointPathBase,
-    EndpointInit<AllowedAuth>
->;
+export type BaseServiceEndpointsInit<AllowedAuth extends ReadonlyArray<any> | undefined = any> =
+    Record<EndpointPathBase, EndpointInit<AllowedAuth>>;
 
 /**
  * Init for a service. This is used as an input to {@link defineService}.
@@ -55,6 +49,7 @@ export type ServiceInit<
     EndpointsInit extends BaseServiceEndpointsInit<NoInfer<AllowedAuth>> | NoParam,
 > = MinimalService<ServiceName> & {
     allowedAuth: AllowedAuth;
+    requiredOrigin: NonNullable<OriginRequirement>;
     endpoints: IsEqual<EndpointsInit, NoParam> extends true
         ? Record<EndpointPathBase, EndpointInit>
         : {
@@ -80,6 +75,7 @@ export type ServiceDefinition<
     EndpointsInit extends BaseServiceEndpointsInit<NoInfer<AllowedAuth>> | NoParam = NoParam,
 > = MinimalService<ServiceName> & {
     allowedAuth: AllowedAuth;
+    requiredOrigin: NonNullable<OriginRequirement>;
     /** Include the initial init object so a service can be composed. */
     init: ServiceInit<ServiceName, AllowedAuth, EndpointsInit>;
     endpoints: EndpointsInit extends NoParam
@@ -140,6 +136,7 @@ function finalizeServiceDefinition<
             service: {
                 serviceName: serviceInit.serviceName,
                 serviceOrigin: serviceInit.serviceOrigin,
+                requiredOrigin: serviceInit.requiredOrigin,
             } satisfies MinimalService<ServiceName>,
         };
 
@@ -153,6 +150,7 @@ function finalizeServiceDefinition<
         serviceName: serviceInit.serviceName,
         serviceOrigin: serviceInit.serviceOrigin,
         init: serviceInit,
+        requiredOrigin: serviceInit.requiredOrigin,
         /** As cast needed again to narrow the type (for the return value) after broadening it. */
         endpoints: endpoints as AnyObject as ServiceDefinition<
             ServiceName,
@@ -184,6 +182,7 @@ export function assertValidServiceDefinition(
     if (serviceDefinition.allowedAuth) {
         assert.isLengthAtLeast(serviceDefinition.allowedAuth, 1);
     }
+    assert.isDefined(serviceDefinition.requiredOrigin);
 
     getObjectTypedEntries(serviceDefinition.endpoints).forEach(
         ([

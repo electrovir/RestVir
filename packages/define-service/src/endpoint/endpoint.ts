@@ -4,7 +4,6 @@ import {
     AtLeastTuple,
     extractErrorMessage,
     JsonCompatibleValue,
-    MaybePromise,
     Overwrite,
 } from '@augment-vir/common';
 import {
@@ -18,12 +17,13 @@ import {
     type ShapeToRuntimeType,
 } from 'object-shape-tester';
 import {IsEqual, type RequireAtLeastOne} from 'type-fest';
+import {type MinimalService} from '../service/minimal-service.js';
+import {ServiceDefinitionError} from '../service/service-definition.error.js';
+import {HttpMethod} from '../util/http-method.js';
+import {type NoParam} from '../util/no-param.js';
+import {type OriginRequirement} from '../util/origin.js';
 import {assertValidEndpointAuth} from './endpoint-auth.js';
 import {type EndpointPathBase} from './endpoint-path.js';
-import {HttpMethod} from './http-method.js';
-import {type MinimalService} from './minimal-service.js';
-import {type NoParam} from './no-param.js';
-import {ServiceDefinitionError} from './service-definition.error.js';
 
 /**
  * Base Endpoint request/response shape type.
@@ -63,12 +63,21 @@ export type EndpointInit<
     >,
     RequestDataShape extends EndpointDataShapeBase | NoParam = EndpointDataShapeBase | NoParam,
     ResponseDataShape extends EndpointDataShapeBase | NoParam = EndpointDataShapeBase | NoParam,
-> = {
-    /**
-     * Set to `undefined` to allow any auth. Otherwise set this to a subset of the service
-     * definition's allowed auth.
-     */
-    requiredAuth: RequiredAuth<NoInfer<AllowedAuth>>;
+> = (AllowedAuth extends undefined
+    ? {
+          /**
+           * Set to `undefined` to allow any auth. Otherwise set this to a subset of the service
+           * definition's allowed auth.
+           */
+          requiredAuth?: RequiredAuth<NoInfer<AllowedAuth>>;
+      }
+    : {
+          /**
+           * Set to `undefined` to allow any auth. Otherwise set this to a subset of the service
+           * definition's allowed auth.
+           */
+          requiredAuth: RequiredAuth<NoInfer<AllowedAuth>>;
+      }) & {
     /**
      * Shape definition for request data. Set to `undefined` for no request data.
      *
@@ -89,16 +98,14 @@ export type EndpointInit<
      */
     methods: AllowedMethods;
     /**
-     * Set to `undefined` to allow any and all origins. Set to a string or RegExp or any array of
-     * either to match any incoming origins against them. This may also be a function that is given
-     * the request's origin.
+     * Set a required client origin for this endpoint.
+     *
+     * - If this is omitted, the service's origin requirement is used instead.
+     * - If this is explicitly set to `undefined`, this endpoint allows any origins (regardless of the
+     *   service's origin requirement).
+     * - Any other set value overrides the service's origin requirement (if it has any).
      */
-    requiredClientOrigin:
-        | undefined
-        | string
-        | RegExp
-        | (RegExp | string)[]
-        | ((origin: string | undefined) => MaybePromise<boolean>);
+    requiredOrigin?: OriginRequirement;
 };
 
 /**
@@ -113,7 +120,7 @@ export const endpointInitShape = defineShape({
     requestDataShape: unknownShape(),
     responseDataShape: unknownShape(),
     /** Possible required origin shapes. */
-    requiredClientOrigin: or(undefined, '', classShape(RegExp), () => {}, [
+    requiredOrigin: or(undefined, '', classShape(RegExp), () => {}, [
         or('', classShape(RegExp)),
     ]),
     methods: indexedKeys({
@@ -266,8 +273,10 @@ export function assertValidEndpoint<
             endpointPath: endpoint.endpointPath,
             serviceName,
         });
-        assert.startsWith(endpoint.endpointPath, '/', 'Endpoint path does not start with /');
-        assert.endsWithout(endpoint.endpointPath, '/', 'Endpoint path cannot end with /');
+        if (endpoint.endpointPath !== '/') {
+            assert.startsWith(endpoint.endpointPath, '/', 'Endpoint path does not start with /');
+            assert.endsWithout(endpoint.endpointPath, '/', 'Endpoint path cannot end with /');
+        }
         if (!Object.values(endpoint.methods).some((value) => value)) {
             throw new Error('Endpoint has no allowed HTTP methods.');
         }

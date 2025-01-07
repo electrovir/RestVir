@@ -8,12 +8,12 @@ import {
     type SelectFrom,
 } from '@augment-vir/common';
 import {assertValidShape} from 'object-shape-tester';
-import type {IsEqual, IsNever} from 'type-fest';
+import {type IsEqual, type IsNever} from 'type-fest';
 import {buildUrl} from 'url-vir';
-import {type PathParams} from './endpoint-path.js';
-import {EndpointExecutorData, type Endpoint} from './endpoint.js';
-import type {HttpMethod} from './http-method.js';
-import type {NoParam} from './no-param.js';
+import type {PathParams} from '../endpoint/endpoint-path.js';
+import {EndpointExecutorData, type Endpoint} from '../endpoint/endpoint.js';
+import {type HttpMethod} from '../util/http-method.js';
+import type {NoParam} from '../util/no-param.js';
 
 export type GenericFetchEndpointParams = {
     pathParams?: Record<string, string> | undefined;

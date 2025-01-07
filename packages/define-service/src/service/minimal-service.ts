@@ -1,7 +1,8 @@
 import type {IsEqual} from 'type-fest';
+import type {OriginRequirement} from '../util/origin.js';
 
 /**
- * This is a minimal service definition with only sufficient data to send fetch requests to that
+ * This is a minimal service definition with only data to send and handle fetch requests to that
  * service. Each endpoint definition gets a copy of this embedded into it so the endpoint alone can
  * be used as an input to the endpoint fetch function.
  *
@@ -18,4 +19,6 @@ export type MinimalService<ServiceName extends string = string> = {
      * @see https://developer.mozilla.org/en-US/docs/Web/API/Location for help on which part of the URL is the origin (if necessary).
      */
     serviceOrigin: string;
+    /** The service's origin requirement for all request clients. */
+    requiredOrigin: NonNullable<OriginRequirement>;
 };

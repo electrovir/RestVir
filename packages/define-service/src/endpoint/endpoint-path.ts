@@ -23,4 +23,4 @@ export type PathParams<EndpointPath extends string> = string extends EndpointPat
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export type EndpointPathBase = `/${string}`;
+export type EndpointPathBase = `/${string}` | '/';

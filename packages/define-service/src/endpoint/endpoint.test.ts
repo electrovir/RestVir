@@ -1,74 +1,80 @@
 import {describe, it, itCases} from '@augment-vir/test';
-import {MyAuth, mockService} from './define-service.mock.js';
-import {Endpoint, EndpointInit, assertValidEndpoint} from './endpoint.js';
-import {HttpMethod} from './http-method.js';
-import {ServiceDefinitionError} from './service-definition.error.js';
+import {mockService, MyMockAuth} from '../service/define-service.mock.js';
+import {ServiceDefinitionError} from '../service/service-definition.error.js';
+import {HttpMethod} from '../util/http-method.js';
+import {assertValidEndpoint, Endpoint, EndpointInit} from './endpoint.js';
+
+describe('Endpoint', () => {
+    it('can be assigned to from any endpoint', () => {
+        const myEndpoint: Endpoint = mockService.endpoints['/empty'];
+    });
+});
 
 describe('EndpointInit', () => {
     it('allows defined input shape', () => {
         const testAssignment: EndpointInit<
-            MyAuth[],
+            MyMockAuth[],
             {[HttpMethod.Get]: true},
             {inputTest: string},
             undefined
         > = {
-            requiredAuth: [MyAuth.Admin],
+            requiredAuth: [MyMockAuth.Admin],
             requestDataShape: {inputTest: 'a'},
             responseDataShape: undefined,
-            requiredClientOrigin: '',
+            requiredOrigin: '',
             methods: {[HttpMethod.Get]: true},
         };
     });
     it('allows defined output shape', () => {
         const testAssignment: EndpointInit<
-            MyAuth[],
+            MyMockAuth[],
             {[HttpMethod.Get]: true},
             undefined,
             {outputTest: string; anotherProp: number}
         > = {
-            requiredAuth: [MyAuth.Admin],
+            requiredAuth: [MyMockAuth.Admin],
             requestDataShape: undefined,
             responseDataShape: {outputTest: 'b', anotherProp: 4},
-            requiredClientOrigin: '',
+            requiredOrigin: '',
             methods: {[HttpMethod.Get]: true},
         };
     });
     it('allows both I/O shapes', () => {
         const testAssignment: EndpointInit<
-            MyAuth[],
+            MyMockAuth[],
             {[HttpMethod.Get]: true},
             {inputTest: string},
             {outputTest: string; anotherProp: number}
         > = {
-            requiredAuth: [MyAuth.Admin],
+            requiredAuth: [MyMockAuth.Admin],
             requestDataShape: {inputTest: 'a'},
             responseDataShape: {outputTest: 'b', anotherProp: 4},
-            requiredClientOrigin: '',
+            requiredOrigin: '',
             methods: {[HttpMethod.Get]: true},
         };
     });
     it('allows undefined I/O shapes', () => {
         const testAssignment: EndpointInit<
-            MyAuth[],
+            MyMockAuth[],
             {[HttpMethod.Get]: true},
             undefined,
             undefined
         > = {
-            requiredAuth: [MyAuth.Admin],
+            requiredAuth: [MyMockAuth.Admin],
             requestDataShape: undefined,
             responseDataShape: undefined,
-            requiredClientOrigin: '',
+            requiredOrigin: '',
             methods: {[HttpMethod.Get]: true},
         };
     });
     it('allows assignment to default type params', () => {
-        const genericAssignment: Endpoint = mockService.endpoints['/test'];
+        const genericAssignment: EndpointInit = mockService.init.endpoints['/test'];
     });
 });
 
 describe(assertValidEndpoint.name, () => {
     const exampleEndpoint = {
-        requiredAuth: [MyAuth.Admin],
+        requiredAuth: [MyMockAuth.Admin],
         endpointPath: '/hello',
         methods: {
             [HttpMethod.Get]: true,
@@ -78,9 +84,9 @@ describe(assertValidEndpoint.name, () => {
     const exampleServiceStuff = {
         serviceName: 'test-service',
         allowedAuth: [
-            MyAuth.Admin,
-            MyAuth.Manager,
-            MyAuth.User,
+            MyMockAuth.Admin,
+            MyMockAuth.Manager,
+            MyMockAuth.User,
         ],
     } as const;
 

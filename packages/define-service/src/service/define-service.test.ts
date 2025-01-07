@@ -2,13 +2,14 @@ import {assert} from '@augment-vir/assert';
 import {getObjectTypedKeys, getObjectTypedValues, type ArrayElement} from '@augment-vir/common';
 import {describe, it, itCases} from '@augment-vir/test';
 import {ShapeMismatchError} from 'object-shape-tester';
+import {HttpMethod} from '../util/http-method.js';
+import {AnyOrigin} from '../util/origin.js';
 import {
     assertValidServiceDefinition,
     defineService,
     type ServiceDefinition,
 } from './define-service.js';
-import {mockService, MyAuth} from './define-service.mock.js';
-import {HttpMethod} from './http-method.js';
+import {mockService, MyMockAuth} from './define-service.mock.js';
 import {ServiceDefinitionError} from './service-definition.error.js';
 
 describe(defineService.name, () => {
@@ -24,14 +25,14 @@ describe(defineService.name, () => {
 
     it('preserves allowed auth input', () => {
         const myService = defineService({
-            allowedAuth: getObjectTypedValues(MyAuth),
+            allowedAuth: getObjectTypedValues(MyMockAuth),
             endpoints: {
                 '/path': {
                     requestDataShape: undefined,
                     requiredAuth: [
-                        MyAuth.Admin,
+                        MyMockAuth.Admin,
                     ],
-                    requiredClientOrigin: undefined,
+                    requiredOrigin: undefined,
                     responseDataShape: undefined,
                     methods: {
                         [HttpMethod.Get]: true,
@@ -40,20 +41,21 @@ describe(defineService.name, () => {
             },
             serviceName: 'my-service',
             serviceOrigin: 'some origin',
+            requiredOrigin: AnyOrigin,
         });
 
-        assert.tsType<ArrayElement<typeof myService.allowedAuth>>().equals<MyAuth>();
+        assert.tsType<ArrayElement<typeof myService.allowedAuth>>().equals<MyMockAuth>();
     });
     it('preserves methods', () => {
         const myService = defineService({
-            allowedAuth: getObjectTypedValues(MyAuth),
+            allowedAuth: getObjectTypedValues(MyMockAuth),
             endpoints: {
                 '/path': {
                     requestDataShape: undefined,
                     requiredAuth: [
-                        MyAuth.Admin,
+                        MyMockAuth.Admin,
                     ],
-                    requiredClientOrigin: undefined,
+                    requiredOrigin: undefined,
                     responseDataShape: undefined,
                     methods: {
                         GET: true,
@@ -62,6 +64,7 @@ describe(defineService.name, () => {
             },
             serviceName: 'my-service',
             serviceOrigin: 'some origin',
+            requiredOrigin: AnyOrigin,
         });
 
         assert.tsType<(typeof myService.endpoints)['/path']['methods']>().equals<
@@ -77,7 +80,7 @@ describe(defineService.name, () => {
                 '/path': {
                     requestDataShape: undefined,
                     requiredAuth: undefined,
-                    requiredClientOrigin: undefined,
+                    requiredOrigin: undefined,
                     responseDataShape: undefined,
                     methods: {
                         [HttpMethod.Get]: true,
@@ -86,7 +89,7 @@ describe(defineService.name, () => {
                 '/path2': {
                     requestDataShape: undefined,
                     requiredAuth: undefined,
-                    requiredClientOrigin: undefined,
+                    requiredOrigin: undefined,
                     responseDataShape: undefined,
                     methods: {
                         [HttpMethod.Get]: true,
@@ -95,6 +98,7 @@ describe(defineService.name, () => {
             },
             serviceName: 'my-service',
             serviceOrigin: 'some origin',
+            requiredOrigin: AnyOrigin,
         });
 
         assert.tsType(myService.allowedAuth).equals<undefined>();
@@ -106,7 +110,7 @@ describe(defineService.name, () => {
                 '/path': {
                     requestDataShape: undefined,
                     requiredAuth: undefined,
-                    requiredClientOrigin: undefined,
+                    requiredOrigin: undefined,
                     responseDataShape: undefined,
                     methods: {
                         [HttpMethod.Get]: true,
@@ -115,7 +119,7 @@ describe(defineService.name, () => {
                 '/path2': {
                     requestDataShape: undefined,
                     requiredAuth: undefined,
-                    requiredClientOrigin: undefined,
+                    requiredOrigin: undefined,
                     responseDataShape: undefined,
                     methods: {
                         [HttpMethod.Get]: true,
@@ -124,6 +128,7 @@ describe(defineService.name, () => {
             },
             serviceName: 'my-service',
             serviceOrigin: 'some origin',
+            requiredOrigin: AnyOrigin,
         });
 
         function acceptsDefinition(input: ServiceDefinition) {}
@@ -143,7 +148,7 @@ describe(defineService.name, () => {
                             requiredAuth: undefined,
                             requestDataShape: undefined,
                             responseDataShape: undefined,
-                            requiredClientOrigin: undefined,
+                            requiredOrigin: undefined,
                             methods: {
                                 [HttpMethod.Get]: true,
                             },
@@ -153,7 +158,7 @@ describe(defineService.name, () => {
                             requiredAuth: undefined,
                             requestDataShape: undefined,
                             responseDataShape: undefined,
-                            requiredClientOrigin: undefined,
+                            requiredOrigin: undefined,
                             methods: {
                                 [HttpMethod.Get]: true,
                             },
@@ -200,15 +205,16 @@ describe(defineService.name, () => {
             () => {
                 defineService({
                     serviceName: 'no-auth-roles-service',
-                    allowedAuth: getObjectTypedValues(MyAuth),
+                    allowedAuth: getObjectTypedValues(MyMockAuth),
                     serviceOrigin: '',
+                    requiredOrigin: AnyOrigin,
                     endpoints: {
                         '/no-auth-roles': {
                             // @ts-expect-error: empty requiredAuth is not allowed
                             requiredAuth: [],
                             requestDataShape: undefined,
                             responseDataShape: undefined,
-                            requiredClientOrigin: undefined,
+                            requiredOrigin: undefined,
                         },
                     },
                 });
@@ -228,6 +234,7 @@ describe(defineService.name, () => {
                     allowedAuth: undefined,
                     serviceOrigin: '',
                     endpoints: {},
+                    requiredOrigin: AnyOrigin,
                 });
             },
             {
@@ -245,6 +252,7 @@ describe(defineService.name, () => {
                     allowedAuth: undefined,
                     serviceOrigin: '',
                     endpoints: {},
+                    requiredOrigin: AnyOrigin,
                 });
             },
             {
@@ -305,13 +313,14 @@ describe(defineService.name, () => {
         defineService({
             serviceName: 'test-endpoint-service',
             allowedAuth: undefined,
+            requiredOrigin: AnyOrigin,
             serviceOrigin: '',
             endpoints: {
                 '/test-endpoint': {
                     requiredAuth: undefined,
                     requestDataShape: undefined,
                     responseDataShape: undefined,
-                    requiredClientOrigin: undefined,
+                    requiredOrigin: undefined,
                     methods: {
                         [HttpMethod.Get]: true,
                     },
@@ -324,13 +333,14 @@ describe(defineService.name, () => {
         defineService({
             serviceName: 'test-endpoint-service',
             allowedAuth: undefined,
+            requiredOrigin: AnyOrigin,
             serviceOrigin: '',
             endpoints: {
                 '/test-endpoint': {
                     requiredAuth: undefined,
                     requestDataShape: undefined,
                     responseDataShape: undefined,
-                    requiredClientOrigin: undefined,
+                    requiredOrigin: undefined,
                     methods: {
                         [HttpMethod.Get]: true,
                     },
@@ -351,7 +361,7 @@ describe(defineService.name, () => {
                             requiredAuth: undefined,
                             requestDataShape: undefined,
                             responseDataShape: undefined,
-                            requiredClientOrigin: undefined,
+                            requiredOrigin: undefined,
                             // @ts-expect-error: needs at least once method
                             methods: {},
                         },
@@ -369,13 +379,14 @@ describe(defineService.name, () => {
                 defineService({
                     serviceName: 'test-endpoint-service',
                     allowedAuth: undefined,
+                    requiredOrigin: AnyOrigin,
                     serviceOrigin: '',
                     endpoints: {
                         '/test-endpoint/': {
                             requiredAuth: undefined,
                             requestDataShape: undefined,
                             responseDataShape: undefined,
-                            requiredClientOrigin: undefined,
+                            requiredOrigin: undefined,
                             methods: {
                                 [HttpMethod.Get]: true,
                             },
@@ -398,6 +409,7 @@ describe(assertValidServiceDefinition.name, () => {
             input: defineService({
                 serviceName: 'test-service',
                 allowedAuth: undefined,
+                requiredOrigin: AnyOrigin,
                 serviceOrigin: '',
                 endpoints: {},
             }),
@@ -410,11 +422,13 @@ describe(assertValidServiceDefinition.name, () => {
                 serviceName: 'test-service',
                 serviceOrigin: '',
                 allowedAuth: undefined,
+                requiredOrigin: AnyOrigin,
                 init: {
                     endpoints: {},
                     allowedAuth: undefined,
                     serviceName: 'test-service',
                     serviceOrigin: '',
+                    requiredOrigin: AnyOrigin,
                 },
             },
             throws: undefined,
@@ -425,11 +439,13 @@ describe(assertValidServiceDefinition.name, () => {
                 serviceName: 'test-service',
                 serviceOrigin: '',
                 allowedAuth: undefined,
+                requiredOrigin: AnyOrigin,
                 init: {
                     endpoints: {},
                     allowedAuth: undefined,
                     serviceName: 'test-service',
                     serviceOrigin: '',
+                    requiredOrigin: AnyOrigin,
                 },
                 endpoints: {
                     // @ts-expect-error: endpoint path is not valid (must start with a slash
@@ -456,7 +472,7 @@ describe(assertValidServiceDefinition.name, () => {
                     // @ts-expect-error: endpoint path must be a string
                     [endpointSymbol]: {
                         requiredAuth: undefined,
-                        requiredClientOrigin: '',
+                        requiredOrigin: '',
                         requestDataShape: undefined,
                         responseDataShape: undefined,
                         RequestType: undefined,
@@ -475,7 +491,9 @@ describe(assertValidServiceDefinition.name, () => {
                     serviceOrigin: '',
                     allowedAuth: undefined,
                     endpoints: {},
+                    requiredOrigin: AnyOrigin,
                 },
+                requiredOrigin: AnyOrigin,
             },
             throws: {
                 matchConstructor: ServiceDefinitionError,

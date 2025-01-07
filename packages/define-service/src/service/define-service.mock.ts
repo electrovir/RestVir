@@ -1,9 +1,10 @@
 import {getEnumValues} from '@augment-vir/common';
 import {or} from 'object-shape-tester';
+import {HttpMethod} from '../util/http-method.js';
+import {AnyOrigin} from '../util/origin.js';
 import {defineService} from './define-service.js';
-import {HttpMethod} from './http-method.js';
 
-export enum MyAuth {
+export enum MyMockAuth {
     Admin = 'admin',
     Manager = 'manager',
     User = 'user',
@@ -13,11 +14,12 @@ const websiteOrigin = 'https://example.com';
 
 export const mockService = defineService({
     serviceName: 'mock-service',
-    allowedAuth: getEnumValues(MyAuth),
+    allowedAuth: getEnumValues(MyMockAuth),
     serviceOrigin: 'https://example.com',
+    requiredOrigin: AnyOrigin,
     endpoints: {
         '/test': {
-            requiredAuth: [MyAuth.Admin],
+            requiredAuth: [MyMockAuth.Admin],
             requestDataShape: {
                 somethingHere: '',
                 testValue: 5,
@@ -32,7 +34,7 @@ export const mockService = defineService({
                     testValue: 5,
                 },
             },
-            requiredClientOrigin: undefined,
+            requiredOrigin: undefined,
         },
         '/with/:param1/:param2': {
             methods: {
@@ -41,23 +43,23 @@ export const mockService = defineService({
             },
             requestDataShape: undefined,
             requiredAuth: undefined,
-            requiredClientOrigin: undefined,
+            requiredOrigin: undefined,
             responseDataShape: undefined,
         },
         '/empty': {
             requiredAuth: undefined,
             requestDataShape: undefined,
             responseDataShape: undefined,
-            requiredClientOrigin: undefined,
+            requiredOrigin: undefined,
             methods: {
                 [HttpMethod.Get]: true,
             },
         },
         '/requires-admin': {
-            requiredAuth: [MyAuth.Admin],
+            requiredAuth: [MyMockAuth.Admin],
             requestDataShape: undefined,
             responseDataShape: undefined,
-            requiredClientOrigin: undefined,
+            requiredOrigin: undefined,
             methods: {
                 [HttpMethod.Get]: true,
             },
@@ -66,7 +68,7 @@ export const mockService = defineService({
             requiredAuth: undefined,
             requestDataShape: undefined,
             responseDataShape: undefined,
-            requiredClientOrigin: websiteOrigin,
+            requiredOrigin: websiteOrigin,
             methods: {
                 [HttpMethod.Get]: true,
             },
@@ -76,7 +78,7 @@ export const mockService = defineService({
             requiredAuth: undefined,
             requestDataShape: undefined,
             responseDataShape: undefined,
-            requiredClientOrigin: undefined,
+            requiredOrigin: undefined,
             methods: {
                 [HttpMethod.Get]: true,
             },
@@ -86,7 +88,7 @@ export const mockService = defineService({
             requiredAuth: undefined,
             requestDataShape: undefined,
             responseDataShape: undefined,
-            requiredClientOrigin: undefined,
+            requiredOrigin: undefined,
             methods: {
                 [HttpMethod.Get]: true,
             },
@@ -96,7 +98,7 @@ export const mockService = defineService({
             requiredAuth: undefined,
             requestDataShape: undefined,
             responseDataShape: undefined,
-            requiredClientOrigin: websiteOrigin,
+            requiredOrigin: websiteOrigin,
             methods: {
                 [HttpMethod.Get]: true,
             },

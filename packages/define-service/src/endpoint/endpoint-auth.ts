@@ -1,6 +1,6 @@
 import {check} from '@augment-vir/assert';
 import {type AtLeastTuple, stringify} from '@augment-vir/common';
-import {ServiceDefinitionError} from './service-definition.error.js';
+import {ServiceDefinitionError} from '../service/service-definition.error.js';
 
 /**
  * Base type used for the right side of "extends" in type parameters for AuthRoleEnum tuples.
