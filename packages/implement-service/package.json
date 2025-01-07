@@ -1,0 +1,61 @@
+{
+    "name": "@rest-vir/implement-service",
+    "version": "0.0.2",
+    "description": "Implement a service defined by @rest-vir/define-service.",
+    "keywords": [
+        "rest",
+        "api",
+        "express",
+        "service",
+        "backend",
+        "server",
+        "vir"
+    ],
+    "homepage": "https://github.com/electrovir/rest-vir",
+    "bugs": {
+        "url": "https://github.com/electrovir/rest-vir/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/electrovir/rest-vir.git"
+    },
+    "license": "(MIT or CC0 1.0)",
+    "author": {
+        "name": "electrovir",
+        "url": "https://github.com/electrovir"
+    },
+    "type": "module",
+    "main": "src/index.ts",
+    "module": "src/index.ts",
+    "types": "src/index.ts",
+    "scripts": {
+        "compile": "virmator compile",
+        "docs": "virmator docs",
+        "start": "tsx src/index.ts",
+        "test": "virmator test node",
+        "test:coverage": "npm run test coverage",
+        "test:docs": "virmator docs check",
+        "test:update": "npm test update"
+    },
+    "dependencies": {
+        "@augment-vir/assert": "^31.6.0",
+        "@augment-vir/common": "^31.6.0",
+        "@rest-vir/define-service": "^0.0.2",
+        "date-vir": "^7.1.2",
+        "object-shape-tester": "^4.0.0",
+        "url-vir": "^2.0.1"
+    },
+    "engines": {
+        "node": ">=22"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "devDependencies": {
+        "@augment-vir/test": "^31.6.0",
+        "@types/express": "^5.0.0",
+        "@types/node": "^22.10.5",
+        "c8": "^10.1.3",
+        "istanbul-smart-text-reporter": "^1.1.5"
+    }
+}
