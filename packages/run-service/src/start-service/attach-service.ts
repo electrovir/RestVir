@@ -1,6 +1,9 @@
-import type {MinimalRequest, ServiceImplementation} from '@rest-vir/implement-service';
+import {
+    type EndpointRequest,
+    type EndpointResponse,
+    type ServiceImplementation,
+} from '@rest-vir/implement-service';
 import {handleEndpointRequest} from '../handle-endpoint/handle-endpoint.js';
-import type {MinimalResponse} from '../handle-endpoint/response.js';
 
 /**
  * The bare minimum server object type needed for rest-vir to function.
@@ -15,9 +18,12 @@ import type {MinimalResponse} from '../handle-endpoint/response.js';
 export type MinimalServer = {
     /** Attaches a middleware for the given path to the server. */
     use(
-        path: string,
         /** The middleware's request handler. */
-        handler: (request: MinimalRequest, response: MinimalResponse) => unknown,
+        handler: (
+            request: EndpointRequest,
+            response: EndpointResponse,
+            next: () => void,
+        ) => unknown,
     ): unknown;
 };
 
@@ -32,9 +38,14 @@ export function attachService(
     server: Readonly<MinimalServer>,
     service: Readonly<ServiceImplementation>,
 ): void {
-    Object.values(service.endpoints).forEach((endpoint) => {
-        server.use(endpoint.endpointPath, async (request, response) => {
+    server.use(async (request, response, next) => {
+        const endpointMatch = service.getEndpointPath(request.path);
+        const endpoint = endpointMatch ? service.endpoints[endpointMatch] : undefined;
+
+        if (endpoint) {
             await handleEndpointRequest(request, response, endpoint, service);
-        });
+        } else {
+            next();
+        }
     });
 }

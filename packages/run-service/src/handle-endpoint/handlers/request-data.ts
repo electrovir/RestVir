@@ -1,9 +1,8 @@
 import {check} from '@augment-vir/assert';
 import {SelectFrom, wrapInTry} from '@augment-vir/common';
 import {type Endpoint} from '@rest-vir/define-service';
-import {MinimalRequest} from '@rest-vir/implement-service/src/request.js';
+import {EndpointRequest, InternalEndpointError} from '@rest-vir/implement-service';
 import {assertValidShape} from 'object-shape-tester';
-import {EndpointError} from '../endpoint.error.js';
 
 /**
  * Attempts to extract expected request data from the given request.
@@ -13,7 +12,7 @@ import {EndpointError} from '../endpoint.error.js';
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
 export function extractRequestData(
-    request: Readonly<Pick<MinimalRequest, 'body'>>,
+    request: Readonly<Pick<EndpointRequest, 'body'>>,
     endpoint: Readonly<
         SelectFrom<
             Endpoint,
@@ -30,10 +29,15 @@ export function extractRequestData(
 
     if (!requestDataShape) {
         if (requestData) {
-            return new EndpointError(endpoint, `Did not expect any request data but received it.`);
+            return new InternalEndpointError(
+                endpoint,
+                `Did not expect any request data but received it.`,
+            );
         } else {
             return undefined;
         }
+    } else if (!requestData) {
+        return new InternalEndpointError(endpoint, `Expected a request body but got none.`);
     }
 
     const assertResult = wrapInTry(() =>
@@ -50,7 +54,7 @@ export function extractRequestData(
     return requestData;
 }
 
-function parseRequestData(request: Readonly<Pick<MinimalRequest, 'body'>>) {
+function parseRequestData(request: Readonly<Pick<EndpointRequest, 'body'>>) {
     try {
         if (!request.body) {
             return undefined;

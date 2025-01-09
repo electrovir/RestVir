@@ -15,9 +15,9 @@ import {
  */
 export async function createContext(
     params: Omit<EndpointImplementationParams, 'context' | 'auth'>,
-    serviceImplementation: Readonly<ServiceImplementation>,
+    service: Readonly<ServiceImplementation>,
 ) {
-    const contextInput: ContextInit<AnyObject> = serviceImplementation.context;
+    const contextInput: ContextInit<AnyObject> = service.context;
 
     if (check.isFunction(contextInput)) {
         return contextInput(params);

@@ -1,24 +1,23 @@
 import {
     ArrayElement,
     ErrorHttpStatusCategories,
-    ExtractKeysWithMatchingValues,
     HttpStatusByCategory,
     MaybePromise,
     SuccessHttpStatusCategories,
-    type Logger,
+    type ExtractKeysWithMatchingValues,
 } from '@augment-vir/common';
 import {
     BaseServiceEndpointsInit,
     Endpoint,
     EndpointInit,
     EndpointPathBase,
-    HttpMethod,
-    MinimalService,
     NoParam,
     WithFinalEndpointProps,
+    type HttpMethod,
+    type MinimalService,
 } from '@rest-vir/define-service';
-import {type IncomingMessage} from 'node:http';
-import {type MinimalRequest} from '../request.js';
+import {EndpointRequest} from '../util/message.js';
+import type {ServiceLogger} from '../util/service-logger.js';
 
 /**
  * The object that all endpoint implementations should return.
@@ -57,24 +56,24 @@ export type EndpointImplementationOutput<ResponseDataType = unknown> =
  */
 export type EndpointImplementationParams<
     Context = any,
-    ServiceName extends string = string,
+    ServiceName extends string = any,
     SpecificEndpoint extends Endpoint | NoParam = NoParam,
 > = {
     context: Context;
-    auth: Exclude<SpecificEndpoint, NoParam> extends never
+    auth: Extract<SpecificEndpoint, NoParam> extends NoParam
         ? unknown
         : ArrayElement<Exclude<SpecificEndpoint, NoParam>['requiredAuth']>;
-    method: Exclude<SpecificEndpoint, NoParam> extends never
+    method: Extract<SpecificEndpoint, NoParam> extends NoParam
         ? HttpMethod
         : ExtractKeysWithMatchingValues<Exclude<SpecificEndpoint, NoParam>['methods'], true>;
-    endpoint: Exclude<SpecificEndpoint, NoParam> extends never ? Endpoint : SpecificEndpoint;
+    endpoint: Extract<SpecificEndpoint, NoParam> extends NoParam ? Endpoint : SpecificEndpoint;
     service: MinimalService<ServiceName>;
 
-    requestData: Exclude<SpecificEndpoint, NoParam> extends never
+    requestData: Extract<SpecificEndpoint, NoParam> extends NoParam
         ? any
         : WithFinalEndpointProps<Exclude<SpecificEndpoint, NoParam>, any>['RequestType'];
-    request: Readonly<IncomingMessage & MinimalRequest>;
-    log: Logger;
+    request: Readonly<EndpointRequest>;
+    log: Readonly<ServiceLogger>;
 };
 
 /**
@@ -86,13 +85,17 @@ export type EndpointImplementationParams<
  */
 export type EndpointImplementation<
     Context = any,
-    ServiceName extends string = string,
+    ServiceName extends string = any,
     SpecificEndpoint extends Endpoint | NoParam = NoParam,
 > = (
     params: Readonly<EndpointImplementationParams<Context, ServiceName, SpecificEndpoint>>,
-) => MaybePromise<
-    EndpointImplementationOutput<WithFinalEndpointProps<SpecificEndpoint, any>['ResponseType']>
->;
+) => Extract<SpecificEndpoint, NoParam> extends NoParam
+    ? any
+    : MaybePromise<
+          EndpointImplementationOutput<
+              WithFinalEndpointProps<SpecificEndpoint, any>['ResponseType']
+          >
+      >;
 
 /**
  * All endpoint implementations to match the given endpoint definition inits object.
@@ -103,16 +106,10 @@ export type EndpointImplementation<
  */
 export type EndpointImplementations<
     Context = any,
-    ServiceName extends string = string,
+    ServiceName extends string = any,
     EndpointsInit extends BaseServiceEndpointsInit | NoParam = NoParam,
 > = EndpointsInit extends NoParam
-    ? {
-          [EndpointPath in EndpointPathBase]: EndpointImplementation<
-              any,
-              ServiceName,
-              WithFinalEndpointProps<EndpointInit, EndpointPath>
-          >;
-      }
+    ? Record<EndpointPathBase, EndpointImplementation>
     : {
           [EndpointPath in keyof EndpointsInit]: EndpointsInit[EndpointPath] extends EndpointInit
               ? EndpointPath extends EndpointPathBase

@@ -55,49 +55,48 @@ export type FetchMethod<EndpointToFetch extends Pick<Endpoint, 'methods'>> =
  *
  * @category Internal
  */
-export type FetchEndpointParams<EndpointToFetch extends Endpoint | NoParam> =
-    EndpointToFetch extends Endpoint
-        ? Readonly<
-              (IsNever<PathParams<EndpointToFetch['endpointPath']>> extends true
+export type FetchEndpointParams<EndpointToFetch extends Endpoint> = EndpointToFetch extends Endpoint
+    ? Readonly<
+          (IsNever<PathParams<EndpointToFetch['endpointPath']>> extends true
+              ? {
+                    /** This endpoint has no path parameters to configure. */
+                    pathParams?: never;
+                }
+              : PathParams<EndpointToFetch['endpointPath']> extends string
+                ? {
+                      pathParams: Readonly<
+                          Record<PathParams<EndpointToFetch['endpointPath']>, string>
+                      >;
+                  }
+                : {
+                      /** This endpoint has no path parameters to configure. */
+                      pathParams?: never;
+                  }) &
+              (EndpointExecutorData<EndpointToFetch>['request'] extends undefined
                   ? {
-                        /** This endpoint has no path parameters to configure. */
-                        pathParams?: never;
+                        /**
+                         * This endpoint does not accept any request data, so there is none to be
+                         * set.
+                         */
+                        requestData?: never;
                     }
-                  : PathParams<EndpointToFetch['endpointPath']> extends string
-                    ? {
-                          pathParams: Readonly<
-                              Record<PathParams<EndpointToFetch['endpointPath']>, string>
-                          >;
-                      }
-                    : {
-                          /** This endpoint has no path parameters to configure. */
-                          pathParams?: never;
-                      }) &
-                  (EndpointExecutorData<EndpointToFetch>['request'] extends undefined
-                      ? {
-                            /**
-                             * This endpoint does not accept any request data, so there is none to
-                             * be set.
-                             */
-                            requestData?: never;
-                        }
-                      : {
-                            requestData: EndpointExecutorData<EndpointToFetch>['request'];
-                        }) &
-                  (IsNever<FetchMethod<EndpointToFetch>> extends true
-                      ? {
-                            /**
-                             * This endpoint only allows one method so it does not need to be
-                             * configured.
-                             */
-                            method?: never;
-                        }
-                      : {
-                            method: FetchMethod<EndpointToFetch>;
-                        }) &
-                  Pick<GenericFetchEndpointParams, 'options' | 'fetch'>
-          >
-        : GenericFetchEndpointParams;
+                  : {
+                        requestData: EndpointExecutorData<EndpointToFetch>['request'];
+                    }) &
+              (IsNever<FetchMethod<EndpointToFetch>> extends true
+                  ? {
+                        /**
+                         * This endpoint only allows one method so it does not need to be
+                         * configured.
+                         */
+                        method?: never;
+                    }
+                  : {
+                        method: FetchMethod<EndpointToFetch>;
+                    }) &
+              Pick<GenericFetchEndpointParams, 'options' | 'fetch'>
+      >
+    : GenericFetchEndpointParams;
 
 /**
  * Type safe output from sending a request to an endpoint definition. Used by {@link fetchEndpoint}.
@@ -187,7 +186,9 @@ export async function fetchEndpoint<const EndpointToFetch extends Readonly<Endpo
         pathParams,
         requestData,
         fetch,
-    }: Readonly<FetchEndpointParams<EndpointToFetch>>,
+    }: EndpointToFetch extends NoParam
+        ? Readonly<GenericFetchEndpointParams>
+        : Readonly<FetchEndpointParams<Exclude<EndpointToFetch, NoParam>>>,
 ): Promise<FetchEndpointOutput<EndpointToFetch>> {
     if (requestData) {
         if (endpoint.requestDataShape) {

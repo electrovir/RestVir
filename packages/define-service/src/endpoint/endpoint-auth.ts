@@ -1,6 +1,7 @@
 import {check} from '@augment-vir/assert';
 import {type AtLeastTuple, stringify} from '@augment-vir/common';
 import {ServiceDefinitionError} from '../service/service-definition.error.js';
+import {NoParam} from '../util/no-param.js';
 
 /**
  * Base type used for the right side of "extends" in type parameters for AuthRoleEnum tuples.
@@ -36,7 +37,7 @@ export function assertValidEndpointAuth<
     requiredEndpointAuth: BaseEndpointRequiredAuth<AllowedAuthEntries>;
     allowedAuth: Readonly<AtLeastTuple<AllowedAuthEntries, 1>> | undefined;
     endpointPath: string;
-    serviceName: string;
+    serviceName: string | NoParam;
 }>) {
     if (requiredEndpointAuth === undefined) {
         return;

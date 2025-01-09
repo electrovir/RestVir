@@ -1,17 +1,20 @@
 import {check} from '@augment-vir/assert';
-import {
-    getObjectTypedEntries,
-    type ArrayElement,
-    type Logger,
-    type MaybePromise,
-} from '@augment-vir/common';
+import {getObjectTypedEntries, type ArrayElement, type MaybePromise} from '@augment-vir/common';
 import {
     ServiceDefinitionError,
     type BaseServiceEndpointsInit,
+    type EndpointPathBase,
     type NoParam,
     type ServiceDefinition,
 } from '@rest-vir/define-service';
+import {match} from 'path-to-regexp';
 import type {IsEqual} from 'type-fest';
+import {
+    createServiceLogger,
+    ServiceLoggerOption,
+    silentServiceLogger,
+    type ServiceLogger,
+} from '../util/service-logger.js';
 import type {EndpointImplementationParams, EndpointImplementations} from './implement-endpoint.js';
 
 /**
@@ -63,8 +66,12 @@ export type ServiceImplementationInit<
     Context,
     AllowedAuth extends ReadonlyArray<any> | undefined,
 > = {
-    errorHandler?: CustomErrorHandler;
-    log?: Logger;
+    /**
+     * Logger for the service. Use {@link silentServiceLogger} to disable logging entirely (even
+     * errors) or simply set `undefined` to the log type that you wish to suppress. An omitted log
+     * keys will fallback to the efault logger.
+     */
+    logger?: ServiceLoggerOption;
 } & (IsEqual<Context, undefined> extends true
     ? {context?: undefined}
     : {context: ContextInit<Context>}) &
@@ -103,8 +110,37 @@ export function implementService<
         implementations: endpointImplementations,
         context: init.context as ContextInit<Context>,
         extractAuth: init.extractAuth,
-        errorHandler: init.errorHandler,
-        log: init.log,
+        logger: createServiceLogger(init.logger),
+        getEndpointPath: generateEndpointFinder(service),
+    };
+}
+
+/**
+ * Given a raw path, finds the matching endpoint service path. If no match is found, this returns
+ * `undefined`.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/implement-service
+ * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
+ */
+export type EndpointFinder = (requestPath: string) => EndpointPathBase | undefined;
+
+function generateEndpointFinder(service: Readonly<ServiceDefinition>): EndpointFinder {
+    const endpointMatchers = Object.keys(service.endpoints).map((endpointPath) => {
+        return {
+            match: match(endpointPath),
+            endpointPath: endpointPath as EndpointPathBase,
+        };
+    });
+
+    return (path: string) => {
+        for (const matcher of endpointMatchers) {
+            if (matcher.match(path)) {
+                return matcher.endpointPath;
+            }
+        }
+
+        return undefined;
     };
 }
 
@@ -117,15 +153,15 @@ export function implementService<
  */
 export type ServiceImplementation<
     Context = any,
-    ServiceName extends string = string,
+    ServiceName extends string = any,
     AllowedAuth extends ReadonlyArray<any> | undefined = any,
     EndpointsInit extends BaseServiceEndpointsInit<AllowedAuth> | NoParam = NoParam,
 > = ServiceDefinition<ServiceName, AllowedAuth, EndpointsInit> & {
     implementations: EndpointImplementations<Context, ServiceName, EndpointsInit>;
     context: ContextInit<Context>;
     extractAuth: ExtractAuth<Context, AllowedAuth> | undefined;
-    errorHandler: CustomErrorHandler | undefined;
-    log: Logger | undefined;
+    logger: ServiceLogger;
+    getEndpointPath: EndpointFinder;
 };
 
 /**

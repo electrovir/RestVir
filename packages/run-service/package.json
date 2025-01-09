@@ -42,6 +42,7 @@
         "url-vir": "^2.0.2"
     },
     "devDependencies": {
+        "@augment-vir/test": "^31.6.0",
         "@types/node": "^22.10.5"
     },
     "engines": {

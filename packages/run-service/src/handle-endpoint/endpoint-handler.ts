@@ -1,8 +1,10 @@
 import type {MaybePromise} from '@augment-vir/common';
 import {Endpoint} from '@rest-vir/define-service';
-import type {ServiceImplementation} from '@rest-vir/implement-service';
-import {MinimalRequest} from '@rest-vir/implement-service/src/request.js';
-import {MinimalResponse} from './response.js';
+import type {
+    EndpointRequest,
+    EndpointResponse,
+    ServiceImplementation,
+} from '@rest-vir/implement-service';
 
 /**
  * Output from {@link EndpointHandler}.
@@ -29,8 +31,8 @@ export type HandledOutput = {
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
 export type EndpointHandler = (
-    request: Readonly<MinimalRequest>,
-    response: Readonly<MinimalResponse>,
+    request: Readonly<EndpointRequest>,
+    response: Readonly<EndpointResponse>,
     endpoint: Readonly<Endpoint>,
-    serviceImplementation: Readonly<ServiceImplementation>,
+    service: Readonly<ServiceImplementation>,
 ) => MaybePromise<HandledOutput>;

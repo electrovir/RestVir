@@ -1,6 +1,8 @@
+import type {AnyObject} from '@augment-vir/common';
 import type {HttpMethod} from '@rest-vir/define-service';
-import type {MinimalRequest} from '@rest-vir/implement-service';
+import type {EndpointRequest} from '@rest-vir/implement-service';
 import type {IncomingHttpHeaders} from 'node:http';
+import type {OmitIndexSignature} from 'type-fest';
 
 /**
  * Creates a mock Request object for backend endpoint testing.
@@ -12,7 +14,7 @@ import type {IncomingHttpHeaders} from 'node:http';
 export function createMockRequest(init: {
     method: HttpMethod;
     body?: unknown;
-    headers?: IncomingHttpHeaders;
+    headers?: Record<keyof OmitIndexSignature<IncomingHttpHeaders>, string>;
 }) {
-    return init satisfies Partial<MinimalRequest> as MinimalRequest;
+    return init satisfies Partial<EndpointRequest> as AnyObject as EndpointRequest;
 }

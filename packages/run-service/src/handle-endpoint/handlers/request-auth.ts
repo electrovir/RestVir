@@ -9,11 +9,11 @@ import {EndpointImplementationParams, ServiceImplementation} from '@rest-vir/imp
  */
 export async function extractAuth(
     params: Omit<EndpointImplementationParams, 'auth'>,
-    serviceImplementation: Readonly<ServiceImplementation>,
+    service: Readonly<ServiceImplementation>,
 ) {
-    if (!serviceImplementation.allowedAuth) {
+    if (!service.allowedAuth) {
         return undefined;
     }
 
-    return await serviceImplementation.extractAuth?.(params);
+    return await service.extractAuth?.(params);
 }

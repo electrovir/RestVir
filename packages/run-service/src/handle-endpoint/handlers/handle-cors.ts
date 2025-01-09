@@ -7,13 +7,15 @@ import {
     HttpMethod,
     OriginRequirement,
 } from '@rest-vir/define-service';
-import {HttpStatus} from '@rest-vir/implement-service';
-import {MinimalRequest} from '@rest-vir/implement-service/src/request.js';
+import {
+    EndpointRequest,
+    EndpointResponse,
+    HttpStatus,
+    InternalEndpointError,
+} from '@rest-vir/implement-service';
 import {convertDuration} from 'date-vir';
 import {HeadersToSet, setResponseHeaders} from '../../util/headers.js';
 import {HandledOutput} from '../endpoint-handler.js';
-import {EndpointError} from '../endpoint.error.js';
-import {MinimalResponse} from '../response.js';
 
 /**
  * Determines the required origin for the endpoint and compares it with the given request.
@@ -33,8 +35,8 @@ import {MinimalResponse} from '../response.js';
  */
 export async function handleCors(
     this: void,
-    request: Readonly<Pick<MinimalRequest, 'headers' | 'method'>>,
-    response: Readonly<Pick<MinimalResponse, 'sendStatus' | 'setHeader' | 'removeHeader'>>,
+    request: Readonly<Pick<EndpointRequest, 'headers' | 'method'>>,
+    response: Readonly<Pick<EndpointResponse, 'sendStatus' | 'setHeader' | 'removeHeader'>>,
     endpoint: Readonly<
         SelectFrom<
             Endpoint,
@@ -173,7 +175,7 @@ async function matchOrigin(
      * If the service requirement is `undefined`, something went wrong because service definitions
      * are not allowed to have an `undefined` origin requirement.
      */
-    throw new EndpointError(
+    throw new InternalEndpointError(
         endpoint,
         `Request origin '${origin}' failed to get checked for endpoint '${endpoint.endpointPath}' or service '${endpoint.service.serviceName}'`,
     );

@@ -1,16 +1,20 @@
-import {ensureError, log} from '@augment-vir/common';
+import {ensureError} from '@augment-vir/common';
 import {type Endpoint} from '@rest-vir/define-service';
-import type {ServiceImplementation} from '@rest-vir/implement-service';
-import {MinimalRequest} from '@rest-vir/implement-service/src/request.js';
-import {EndpointHandler} from './endpoint-handler.js';
-import {EndpointError} from './endpoint.error.js';
+import {
+    EndpointRequest,
+    EndpointResponse,
+    InternalEndpointError,
+    ServiceImplementation,
+} from '@rest-vir/implement-service';
+import type {EndpointHandler} from './endpoint-handler.js';
 import {handleCors} from './handlers/handle-cors.js';
+import {handleImplementation} from './handlers/handle-implementation.js';
 import {handleRequestMethod} from './handlers/handle-request-method.js';
-import {MinimalResponse} from './response.js';
 
 const endpointHandlers: EndpointHandler[] = [
     handleRequestMethod,
     handleCors,
+    handleImplementation,
 ];
 
 /**
@@ -22,17 +26,20 @@ const endpointHandlers: EndpointHandler[] = [
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
 export async function handleEndpointRequest(
-    request: Readonly<MinimalRequest>,
-    response: Readonly<MinimalResponse>,
+    request: Readonly<EndpointRequest>,
+    response: Readonly<EndpointResponse>,
     endpoint: Readonly<Endpoint>,
-    serviceImplementation: Readonly<ServiceImplementation>,
+    service: Readonly<ServiceImplementation>,
 ) {
-    const errorHandler =
-        serviceImplementation.errorHandler || serviceImplementation.log?.error || log.error;
+    const logParts = [
+        request.method,
+        request.originalUrl,
+    ];
+    service.logger.info(logParts.join('\t'));
 
     try {
         for (const handler of endpointHandlers) {
-            const result = await handler(request, response, endpoint, serviceImplementation);
+            const result = await handler(request, response, endpoint, service);
             if (result.handled) {
                 /**
                  * If the request has been fully handled then we need not execute any following
@@ -42,8 +49,8 @@ export async function handleEndpointRequest(
             }
         }
 
-        throw new EndpointError(endpoint, 'Request was not handled.');
+        throw new InternalEndpointError(endpoint, 'Request was not handled.');
     } catch (caught) {
-        await errorHandler(ensureError(caught));
+        service.logger.error(ensureError(caught));
     }
 }

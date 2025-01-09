@@ -42,6 +42,7 @@
         "@augment-vir/common": "^31.6.0",
         "@rest-vir/define-service": "^0.0.2",
         "object-shape-tester": "^4.1.0",
+        "path-to-regexp": "^8.2.0",
         "type-fest": "^4.31.0"
     },
     "devDependencies": {

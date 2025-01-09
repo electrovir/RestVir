@@ -1,5 +1,5 @@
 import {getObjectTypedEntries} from '@augment-vir/common';
-import {MinimalResponse} from '../handle-endpoint/response.js';
+import type {EndpointResponse} from '@rest-vir/implement-service';
 
 /**
  * An object of headers to set. Used in {@link setResponseHeaders}.
@@ -20,7 +20,7 @@ export type HeadersToSet = Record<string, string | string[] | undefined>;
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
 export function setResponseHeaders(
-    response: Readonly<Pick<MinimalResponse, 'setHeader' | 'removeHeader'>>,
+    response: Readonly<Pick<EndpointResponse, 'setHeader' | 'removeHeader'>>,
     headers: Readonly<HeadersToSet>,
 ): void {
     getObjectTypedEntries(headers).forEach(

@@ -1,3 +1,6 @@
+// not supporting all methods
+// import {METHODS} from 'node:http';
+
 /**
  * All available HTTP methods.
  *

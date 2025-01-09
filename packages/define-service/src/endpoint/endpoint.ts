@@ -262,7 +262,7 @@ export function assertValidEndpoint<
          * ServiceName is used purely for error messaging purposes, so that it's possible to
          * understand which service the endpoint is coming from.
          */
-        serviceName: string;
+        serviceName: string | NoParam;
         allowedAuth: Readonly<AtLeastTuple<AllowedAuthEntries, 1>> | undefined;
     },
 ) {

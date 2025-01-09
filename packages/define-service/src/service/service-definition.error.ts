@@ -1,4 +1,5 @@
 import {stringify} from '@augment-vir/common';
+import type {NoParam} from '../util/no-param.js';
 
 /**
  * An error thrown by endpoint and service validation assertions.
@@ -14,11 +15,11 @@ export class ServiceDefinitionError extends Error {
         endpointPath,
         errorMessage,
     }: {
-        serviceName: string;
+        serviceName: string | NoParam;
         endpointPath: unknown;
         errorMessage: string;
     }) {
-        const serviceNameMessage = `service '${serviceName}'`;
+        const serviceNameMessage = `service '${String(serviceName)}'`;
 
         const nameMessage = endpointPath
             ? `endpoint '${stringify(endpointPath)}' on ${serviceNameMessage}`

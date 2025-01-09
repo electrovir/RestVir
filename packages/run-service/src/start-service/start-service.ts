@@ -4,7 +4,7 @@ import {ClusterManager, runInCluster} from 'cluster-vir';
 import {Server} from 'hyper-express';
 import {getPortPromise} from 'portfinder';
 import {attachService} from './attach-service.js';
-import {finalizeOptions, StartServiceUserOptions} from './run-service-options.js';
+import {finalizeOptions, StartServiceUserOptions} from './start-service-options.js';
 
 /**
  * Output of {@link startService}.
@@ -50,7 +50,7 @@ export async function startService(
     userOptions: Readonly<StartServiceUserOptions>,
 ): Promise<StartServiceOutput> {
     const options = finalizeOptions(userOptions);
-    const finalizedPort = options.lockPort
+    options.port = options.lockPort
         ? options.port
         : await getPortPromise({
               port: options.port,
@@ -58,12 +58,16 @@ export async function startService(
 
     if (options.workerCount === 1) {
         /** Only run a single server. */
-        return await startHyperExpressService(service, finalizedPort);
+        const result = await startHyperExpressService(service, options.port);
+
+        service.logger.info(`${service.serviceName} started on http://localhost:${options.port}`);
+
+        return result;
     } else {
         /** Run in a cluster. */
         const manager = runInCluster(
             async () => {
-                const {kill} = await startHyperExpressService(service, finalizedPort);
+                const {kill} = await startHyperExpressService(service, options.port);
 
                 return () => {
                     kill();
@@ -78,9 +82,12 @@ export async function startService(
 
         if (check.instanceOf(manager, ClusterManager)) {
             await manager.startWorkers();
+            service.logger.info(
+                `${service.serviceName} started on http://localhost:${options.port}`,
+            );
 
             return {
-                port: finalizedPort,
+                port: options.port,
                 clusterManager: manager,
                 kill() {
                     manager.destroy();
@@ -88,7 +95,7 @@ export async function startService(
             };
         } else {
             return {
-                port: finalizedPort,
+                port: options.port,
                 kill() {
                     manager.destroy();
                 },

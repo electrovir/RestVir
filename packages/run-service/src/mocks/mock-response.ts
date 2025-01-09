@@ -4,7 +4,7 @@ import {
     type PartialWithUndefined,
 } from '@augment-vir/common';
 import {type createMockFetchResponse} from '@rest-vir/define-service';
-import {MinimalResponse} from '../handle-endpoint/response.js';
+import type {EndpointResponse} from '@rest-vir/implement-service';
 
 /**
  * A mock Express response with mock response data attached for easy testing and debugging.
@@ -23,7 +23,7 @@ export type MockResponse = {
 };
 
 /**
- * Creates a `MinimalResponse` object for backend testing. **Do not use this mock for frontend
+ * Creates a {@link EndpointResponse} object for backend testing. **Do not use this mock for frontend
  * testing**. Instead use {@link createMockFetchResponse}
  *
  * @category Util
@@ -32,7 +32,7 @@ export type MockResponse = {
  */
 export function createMockResponse(
     init: PartialWithUndefined<MockResponse['mockData']> = {},
-): MinimalResponse & MockResponse {
+): EndpointResponse & MockResponse {
     const mockData = mergeDefinedProperties<MockResponse['mockData']>(
         {
             headers: {},
@@ -63,9 +63,14 @@ export function createMockResponse(
             return mockResponse;
         },
         setHeaders(headers) {
-            headers.forEach((value, key) => {
-                mockData.headers[key] = value;
-            });
+            Object.entries(headers).forEach(
+                ([
+                    key,
+                    value,
+                ]) => {
+                    mockData.headers[key] = value;
+                },
+            );
             return mockResponse;
         },
         setHeader(name, value) {
@@ -84,7 +89,8 @@ export function createMockResponse(
             return mockResponse;
         },
         mockData,
-    } satisfies MinimalResponse & MockResponse as AnyObject as MinimalResponse & MockResponse;
+    } satisfies Partial<EndpointResponse> & MockResponse as AnyObject as EndpointResponse &
+        MockResponse;
 
     return mockResponse;
 }

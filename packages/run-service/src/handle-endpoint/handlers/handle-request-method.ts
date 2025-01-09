@@ -1,10 +1,12 @@
 import {checkWrap} from '@augment-vir/assert';
 import {HttpStatus, SelectFrom} from '@augment-vir/common';
 import {Endpoint, HttpMethod} from '@rest-vir/define-service';
-import {MinimalRequest} from '@rest-vir/implement-service';
+import {
+    InternalEndpointError,
+    type EndpointRequest,
+    type EndpointResponse,
+} from '@rest-vir/implement-service';
 import {HandledOutput} from '../endpoint-handler.js';
-import {EndpointError} from '../endpoint.error.js';
-import {MinimalResponse} from '../response.js';
 
 /**
  * Verifies that a request's method matches the given endpoint's expectations. If it does not, an
@@ -16,8 +18,8 @@ import {MinimalResponse} from '../response.js';
  */
 export function handleRequestMethod(
     this: void,
-    request: Readonly<Pick<MinimalRequest, 'method'>>,
-    response: Readonly<Pick<MinimalResponse, 'sendStatus'>>,
+    request: Readonly<Pick<EndpointRequest, 'method'>>,
+    response: Readonly<Pick<EndpointResponse, 'sendStatus'>>,
     endpoint: Readonly<
         SelectFrom<
             Endpoint,
@@ -36,7 +38,7 @@ export function handleRequestMethod(
         return {handled: false};
     } else if (!requestMethod || !endpoint.methods[requestMethod]) {
         response.sendStatus(HttpStatus.MethodNotAllowed);
-        throw new EndpointError(endpoint, `Unexpected request method: '${request.method}'`);
+        throw new InternalEndpointError(endpoint, `Unexpected request method: '${request.method}'`);
     }
 
     return {handled: false};

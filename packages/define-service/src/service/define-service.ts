@@ -70,7 +70,7 @@ export type ServiceInit<
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export type ServiceDefinition<
-    ServiceName extends string = string,
+    ServiceName extends string = any,
     AllowedAuth extends ReadonlyArray<any> | undefined = any,
     EndpointsInit extends BaseServiceEndpointsInit<NoInfer<AllowedAuth>> | NoParam = NoParam,
 > = MinimalService<ServiceName> & {
