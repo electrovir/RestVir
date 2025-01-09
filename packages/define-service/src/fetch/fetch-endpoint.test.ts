@@ -8,7 +8,7 @@ import {type NoParam} from '../util/no-param.js';
 import {
     buildEndpointUrl,
     fetchEndpoint,
-    type FetchEndpointParameters,
+    type FetchEndpointParams,
     type GenericFetchEndpointParams,
 } from './fetch-endpoint.js';
 
@@ -86,7 +86,7 @@ describe(buildEndpointUrl.name, () => {
 
 describe('FetchEndpointParameters', () => {
     it('includes request data', () => {
-        assert.tsType<FetchEndpointParameters<(typeof mockService.endpoints)['/test']>>().equals<
+        assert.tsType<FetchEndpointParams<(typeof mockService.endpoints)['/test']>>().equals<
             Readonly<{
                 pathParams?: never;
                 requestData: Readonly<{
@@ -101,9 +101,7 @@ describe('FetchEndpointParameters', () => {
     });
     it('includes url params', () => {
         assert
-            .tsType<
-                FetchEndpointParameters<(typeof mockService.endpoints)['/with/:param1/:param2']>
-            >()
+            .tsType<FetchEndpointParams<(typeof mockService.endpoints)['/with/:param1/:param2']>>()
             .equals<
                 Readonly<{
                     pathParams: Readonly<Record<'param1' | 'param2', string>>;

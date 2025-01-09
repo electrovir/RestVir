@@ -15,6 +15,12 @@ import {EndpointExecutorData, type Endpoint} from '../endpoint/endpoint.js';
 import {type HttpMethod} from '../util/http-method.js';
 import type {NoParam} from '../util/no-param.js';
 
+/**
+ * A general version of {@link FetchEndpointParams} to be used when accepting _any_ endpoint (like in
+ * tests).
+ *
+ * @category Internal
+ */
 export type GenericFetchEndpointParams = {
     pathParams?: Record<string, string> | undefined;
     requestData?: any;
@@ -29,7 +35,12 @@ export type GenericFetchEndpointParams = {
     fetch?: ((input: string, init: RequestInit) => Promise<Response>) | undefined;
 };
 
-export type FetchMethod<EndpointToFetch extends Endpoint> =
+/**
+ * Type that determines which HTTP request methods can be used for the given endpoint definition.
+ *
+ * @category Internal
+ */
+export type FetchMethod<EndpointToFetch extends Pick<Endpoint, 'methods'>> =
     IsEqual<
         KeyCount<Record<ExtractKeysWithMatchingValues<EndpointToFetch['methods'], true>, boolean>>,
         1
@@ -39,7 +50,12 @@ export type FetchMethod<EndpointToFetch extends Endpoint> =
               | Extract<HttpMethod, ExtractKeysWithMatchingValues<EndpointToFetch['methods'], true>>
               | `${Extract<HttpMethod, ExtractKeysWithMatchingValues<EndpointToFetch['methods'], true>>}`;
 
-export type FetchEndpointParameters<EndpointToFetch extends Endpoint | NoParam> =
+/**
+ * All type safe parameters for sending a request to an endpoint using {@link fetchEndpoint}.
+ *
+ * @category Internal
+ */
+export type FetchEndpointParams<EndpointToFetch extends Endpoint | NoParam> =
     EndpointToFetch extends Endpoint
         ? Readonly<
               (IsNever<PathParams<EndpointToFetch['endpointPath']>> extends true
@@ -83,6 +99,11 @@ export type FetchEndpointParameters<EndpointToFetch extends Endpoint | NoParam> 
           >
         : GenericFetchEndpointParams;
 
+/**
+ * Type safe output from sending a request to an endpoint definition. Used by {@link fetchEndpoint}.
+ *
+ * @category Internal
+ */
 export type FetchEndpointOutput<EndpointToFetch extends Endpoint | NoParam> = Readonly<{
     data: EndpointToFetch extends Endpoint
         ? EndpointExecutorData<EndpointToFetch>['response']
@@ -90,7 +111,14 @@ export type FetchEndpointOutput<EndpointToFetch extends Endpoint | NoParam> = Re
     response: Readonly<Response>;
 }>;
 
-export function getAllowedEndpointMethods(endpoint: Readonly<Pick<Endpoint, 'methods'>>) {
+/**
+ * Extracts an array of all allowed methods for the given endpoint definition.
+ *
+ * @category Internal
+ */
+export function getAllowedEndpointMethods(
+    endpoint: Readonly<Pick<Endpoint, 'methods'>>,
+): HttpMethod[] {
     return filterMap(
         getObjectTypedEntries(endpoint.methods),
         ([
@@ -144,6 +172,13 @@ function filterToValidMethod(
     }
 }
 
+/**
+ * Send a request to an endpoint definition with type safe parameters.
+ *
+ * This can safely be used on a frontend _or_ backend.
+ *
+ * @category Fetch
+ */
 export async function fetchEndpoint<const EndpointToFetch extends Readonly<Endpoint> | NoParam>(
     endpoint: EndpointToFetch extends Endpoint ? EndpointToFetch : Endpoint,
     {
@@ -152,7 +187,7 @@ export async function fetchEndpoint<const EndpointToFetch extends Readonly<Endpo
         pathParams,
         requestData,
         fetch,
-    }: Readonly<FetchEndpointParameters<EndpointToFetch>>,
+    }: Readonly<FetchEndpointParams<EndpointToFetch>>,
 ): Promise<FetchEndpointOutput<EndpointToFetch>> {
     if (requestData) {
         if (endpoint.requestDataShape) {
@@ -187,6 +222,11 @@ export async function fetchEndpoint<const EndpointToFetch extends Readonly<Endpo
     };
 }
 
+/**
+ * Creates and finalizes a URL for sending fetches to the given endpoint.
+ *
+ * @category Internal
+ */
 export function buildEndpointUrl(
     endpoint: Readonly<
         SelectFrom<

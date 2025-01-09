@@ -17,8 +17,16 @@ import {
     NoParam,
     WithFinalEndpointProps,
 } from '@rest-vir/define-service';
-import {Request} from 'express';
+import {type IncomingMessage} from 'node:http';
+import {type MinimalRequest} from '../request.js';
 
+/**
+ * The object that all endpoint implementations should return.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/implement-service
+ * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
+ */
 export type EndpointImplementationOutput<ResponseDataType = unknown> =
     | {
           statusCode: HttpStatusByCategory<ErrorHttpStatusCategories>;
@@ -40,6 +48,13 @@ export type EndpointImplementationOutput<ResponseDataType = unknown> =
           ? {responseData?: ResponseDataType}
           : {responseData: ResponseDataType}));
 
+/**
+ * The object that all endpoint implementations receive as an input.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/implement-service
+ * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
+ */
 export type EndpointImplementationParams<
     Context = any,
     ServiceName extends string = string,
@@ -58,10 +73,17 @@ export type EndpointImplementationParams<
     requestData: Exclude<SpecificEndpoint, NoParam> extends never
         ? any
         : WithFinalEndpointProps<Exclude<SpecificEndpoint, NoParam>, any>['RequestType'];
-    request: Readonly<Request>;
+    request: Readonly<IncomingMessage & MinimalRequest>;
     log: Logger;
 };
 
+/**
+ * A full, type-safe endpoint implementation type.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/implement-service
+ * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
+ */
 export type EndpointImplementation<
     Context = any,
     ServiceName extends string = string,
@@ -72,6 +94,13 @@ export type EndpointImplementation<
     EndpointImplementationOutput<WithFinalEndpointProps<SpecificEndpoint, any>['ResponseType']>
 >;
 
+/**
+ * All endpoint implementations to match the given endpoint definition inits object.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/implement-service
+ * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
+ */
 export type EndpointImplementations<
     Context = any,
     ServiceName extends string = string,

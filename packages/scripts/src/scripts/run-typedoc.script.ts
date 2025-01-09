@@ -16,6 +16,8 @@ async function main() {
         categoryOrder: [
             'Define Service',
             'Implement Service',
+            'Run Service',
+            'Fetch',
             'Util',
             'Internal',
             '*',

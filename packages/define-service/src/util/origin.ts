@@ -1,9 +1,17 @@
 import {MaybePromise} from '@augment-vir/common';
 
-/** Explicity denotes that any origin is allowed. */
+/**
+ * Explicity denotes that any origin is allowed.
+ *
+ * @category Internal
+ */
 export const AnyOrigin = Symbol('any-origin');
 
-/** Type for {@link AnyOrigin} symbol. */
+/**
+ * Type for {@link AnyOrigin} symbol.
+ *
+ * @category Internal
+ */
 export type AnyOrigin = typeof AnyOrigin;
 
 /**
@@ -18,6 +26,8 @@ export type AnyOrigin = typeof AnyOrigin;
  *   allowed.
  * - An array: a combination of `string` values, `RegExp` values, or functions to compare against. If
  *   any of the array entries allow a request origin, it passes.
+ *
+ * @category Internal
  */
 export type OriginRequirement =
     | undefined

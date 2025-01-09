@@ -65,7 +65,7 @@ export type ServiceInit<
 /**
  * A fully defined service (without executable endpoint implementations).
  *
- * @category Define Service
+ * @category Internal
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */

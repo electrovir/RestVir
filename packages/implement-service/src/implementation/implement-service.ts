@@ -14,12 +14,26 @@ import {
 import type {IsEqual} from 'type-fest';
 import type {EndpointImplementationParams, EndpointImplementations} from './implement-endpoint.js';
 
+/**
+ * User-defined service Context or Context generator.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/implement-service
+ * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
+ */
 export type ContextInit<Context> =
     | Context
     | ((
           params: Readonly<Omit<EndpointImplementationParams, 'context' | 'auth'>>,
       ) => MaybePromise<Context>);
 
+/**
+ * User-defined function that extracts the current auth of an individual request.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/implement-service
+ * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
+ */
 export type ExtractAuth<Context, AllowedAuth extends ReadonlyArray<any> | undefined> =
     Exclude<AllowedAuth, undefined> extends never
         ? undefined
@@ -29,13 +43,27 @@ export type ExtractAuth<Context, AllowedAuth extends ReadonlyArray<any> | undefi
               (AllowedAuth extends any[] ? ArrayElement<AllowedAuth> : undefined) | undefined
           >;
 
-export type ServiceErrorHandler = (error: Error) => MaybePromise<void>;
+/**
+ * A user-defined endpoint error handler for service (and its endpoints) errors.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/implement-service
+ * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
+ */
+export type CustomErrorHandler = (error: Error) => MaybePromise<void>;
 
+/**
+ * Type-safe input for {@link implementService}.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/implement-service
+ * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
+ */
 export type ServiceImplementationInit<
     Context,
     AllowedAuth extends ReadonlyArray<any> | undefined,
 > = {
-    errorHandler?: ServiceErrorHandler;
+    errorHandler?: CustomErrorHandler;
     log?: Logger;
 } & (IsEqual<Context, undefined> extends true
     ? {context?: undefined}
@@ -44,6 +72,16 @@ export type ServiceImplementationInit<
         ? {extractAuth?: undefined}
         : {extractAuth: ExtractAuth<Context, AllowedAuth>});
 
+/**
+ * Creates an implemented service that is fully ready to be run as a server by attaching endpoint
+ * implementations to the given {@link ServiceDefinition}.
+ *
+ * This can _only_ be run in backend code.
+ *
+ * @category Implement Service
+ * @category Package : @rest-vir/implement-service
+ * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
+ */
 export function implementService<
     const Context,
     const ServiceName extends string,
@@ -70,6 +108,13 @@ export function implementService<
     };
 }
 
+/**
+ * A finalized service implementation created by {@link implementService}.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/implement-service
+ * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
+ */
 export type ServiceImplementation<
     Context = any,
     ServiceName extends string = string,
@@ -79,13 +124,17 @@ export type ServiceImplementation<
     implementations: EndpointImplementations<Context, ServiceName, EndpointsInit>;
     context: ContextInit<Context>;
     extractAuth: ExtractAuth<Context, AllowedAuth> | undefined;
-    errorHandler: ServiceErrorHandler | undefined;
+    errorHandler: CustomErrorHandler | undefined;
     log: Logger | undefined;
 };
 
 /**
- * A type util that converts a `ServiceDefinition` instance into its companion
- * `ServiceImplementation`.
+ * A type util that converts a {@link ServiceDefinition} instance type into its companion
+ * {@link ServiceImplementation} type.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/implement-service
+ * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
  */
 export type ServiceImplementationFromServiceDefinition<
     SpecificServiceDefinition extends ServiceDefinition,

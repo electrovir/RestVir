@@ -46,7 +46,6 @@
     },
     "devDependencies": {
         "@augment-vir/test": "^31.6.0",
-        "@types/express": "^5.0.0",
         "@types/node": "^22.10.5",
         "c8": "^10.1.3",
         "istanbul-smart-text-reporter": "^1.1.5"

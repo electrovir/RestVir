@@ -41,7 +41,6 @@
     "dependencies": {
         "@augment-vir/assert": "^31.6.0",
         "@augment-vir/common": "^31.6.0",
-        "@types/express": "^5.0.0",
         "object-shape-tester": "^4.1.0",
         "type-fest": "^4.31.0",
         "url-vir": "^2.0.2"
