@@ -1,4 +1,6 @@
+import {check} from '@augment-vir/assert';
 import type {ServiceImplementation} from '@rest-vir/implement-service';
+import {ClusterManager, runInCluster} from 'cluster-vir';
 import {Server} from 'hyper-express';
 import {getPortPromise} from 'portfinder';
 import {attachService} from './attach-service.js';
@@ -19,9 +21,17 @@ export type StartServiceOutput = {
     port: number;
     /**
      * The instantiated and running [`hyper-express`
-     * server](https://www.npmjs.com/package/hyper-express).
+     * server](https://www.npmjs.com/package/hyper-express). This is populated when the server is
+     * run on only a single thread (when `options.workerCount` is 1).
      */
-    server: Server;
+    server?: Server;
+    /**
+     * The `ClusterManager` for all the spawned server workers. This is populated when the server is
+     * run with a multiple threads (when `options.workerCount` > 1).
+     */
+    clusterManager?: ClusterManager;
+    /** A function that will kill the service even if it's using multiple workers. */
+    kill: () => void;
 };
 
 /**
@@ -46,14 +56,62 @@ export async function startService(
               port: options.port,
           });
 
+    if (options.workerCount === 1) {
+        /** Only run a single server. */
+        return await startHyperExpressService(service, finalizedPort);
+    } else {
+        /** Run in a cluster. */
+        const manager = runInCluster(
+            async () => {
+                const {kill} = await startHyperExpressService(service, finalizedPort);
+
+                return () => {
+                    kill();
+                };
+            },
+            {
+                startWorkersImmediately: false,
+                respawnWorkers: true,
+                workerCount: options.workerCount,
+            },
+        );
+
+        if (check.instanceOf(manager, ClusterManager)) {
+            await manager.startWorkers();
+
+            return {
+                port: finalizedPort,
+                clusterManager: manager,
+                kill() {
+                    manager.destroy();
+                },
+            };
+        } else {
+            return {
+                port: finalizedPort,
+                kill() {
+                    manager.destroy();
+                },
+            };
+        }
+    }
+}
+
+async function startHyperExpressService(
+    service: Readonly<ServiceImplementation>,
+    port: number,
+): Promise<StartServiceOutput> {
     const server = new Server();
 
     attachService(server, service);
 
-    await server.listen(finalizedPort);
+    await server.listen(port);
 
     return {
-        port: finalizedPort,
+        port,
         server,
+        kill() {
+            server.close();
+        },
     };
 }

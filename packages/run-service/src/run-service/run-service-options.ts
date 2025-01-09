@@ -69,7 +69,11 @@ export type StartServiceUserOptions = SetRequiredAndNotNull<
 export function finalizeOptions(
     userOptions: Readonly<StartServiceUserOptions>,
 ): StartServiceOptions {
-    const options = mergeDefinedProperties(startServiceOptionsShape.defaultValue, userOptions);
+    const options = mergeDefinedProperties<StartServiceOptions>(
+        startServiceOptionsShape.defaultValue,
+        userOptions,
+    );
+    options.workerCount = Math.max(1, options.workerCount);
 
     assertValidShape(options, startServiceOptionsShape);
 
