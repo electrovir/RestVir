@@ -7,18 +7,27 @@ import {
     type EndpointImplementationOutput,
     type EndpointImplementationParams,
 } from '@rest-vir/implement-service';
-import {type Request, type Response} from 'express';
+import {MinimalRequest} from '@rest-vir/implement-service/src/request.js';
+import {IncomingMessage} from 'node:http';
 import {setResponseHeaders} from '../../util/headers.js';
 import {type HandledOutput} from '../endpoint-handler.js';
 import {EndpointError} from '../endpoint.error.js';
+import {MinimalResponse} from '../response.js';
 import {extractAuth} from './request-auth.js';
 import {createContext} from './request-context.js';
 import {extractRequestData} from './request-data.js';
 
+/**
+ * Handles an endpoint's implementation execution.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/run-service
+ * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
+ */
 export async function handleImplementation(
     this: void,
-    request: Readonly<Request>,
-    response: Readonly<Response>,
+    request: Readonly<IncomingMessage & MinimalRequest>,
+    response: Readonly<MinimalResponse>,
     endpoint: Readonly<Endpoint>,
     serviceImplementation: Readonly<ServiceImplementation>,
 ): Promise<HandledOutput> {

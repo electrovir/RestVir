@@ -3,16 +3,17 @@ import {
     type AnyObject,
     type PartialWithUndefined,
 } from '@augment-vir/common';
-import {type Response} from 'express';
+import {type createMockFetchResponse} from '@rest-vir/define-service';
+import {MinimalResponse} from '../handle-endpoint/response.js';
 
 /**
  * A mock Express response with mock response data attached for easy testing and debugging.
  *
- * @category Util
- * @category Package : @rest-vir/implement-service
- * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
+ * @category Internal
+ * @category Package : @rest-vir/run-service
+ * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
-export type MockExpressResponse = {
+export type MockResponse = {
     mockData: {
         headers: Record<string, string | number | ReadonlyArray<string>>;
         body: unknown;
@@ -22,16 +23,17 @@ export type MockExpressResponse = {
 };
 
 /**
- * Mocks Express's `Response` object. Currently this only implements only a few methods.
+ * Creates a `MinimalResponse` object for backend testing. **Do not use this mock for frontend
+ * testing**. Instead use {@link createMockFetchResponse}
  *
  * @category Util
- * @category Package : @rest-vir/implement-service
- * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
+ * @category Package : @rest-vir/run-service
+ * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
-export function createMockExpressResponse(
-    init: PartialWithUndefined<MockExpressResponse['mockData']> = {},
-): Response & MockExpressResponse {
-    const mockData = mergeDefinedProperties<MockExpressResponse['mockData']>(
+export function createMockResponse(
+    init: PartialWithUndefined<MockResponse['mockData']> = {},
+): MinimalResponse & MockResponse {
+    const mockData = mergeDefinedProperties<MockResponse['mockData']>(
         {
             headers: {},
             body: undefined,
@@ -77,9 +79,12 @@ export function createMockExpressResponse(
         get headersSent() {
             return mockData.sent;
         },
+        removeHeader(headerName) {
+            delete mockData.headers[headerName];
+            return mockResponse;
+        },
         mockData,
-    } satisfies Partial<Response> & MockExpressResponse as AnyObject as Response &
-        MockExpressResponse;
+    } satisfies MinimalResponse & MockResponse as AnyObject as MinimalResponse & MockResponse;
 
     return mockResponse;
 }

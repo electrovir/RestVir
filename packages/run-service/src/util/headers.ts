@@ -1,16 +1,26 @@
 import {getObjectTypedEntries} from '@augment-vir/common';
-import {Response} from 'express';
+import {MinimalResponse} from '../handle-endpoint/response.js';
 
-/** Any headers set to `undefined` will be removed and not set. */
-export type HeadersToSet = Record<string, number | string | readonly string[] | undefined>;
+/**
+ * An object of headers to set. Used in {@link setResponseHeaders}.
+ *
+ * Any headers set to `undefined` will be removed and not set.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/run-service
+ * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
+ */
+export type HeadersToSet = Record<string, string | string[] | undefined>;
 
-export type MinimalResponseForApplyingHeaders = {
-    setHeader: (...args: Parameters<Response['setHeader']>) => unknown;
-    removeHeader(headerName: string): void;
-};
-
+/**
+ * Easily apply an object of headers to a Response object.
+ *
+ * @category Util
+ * @category Package : @rest-vir/run-service
+ * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
+ */
 export function setResponseHeaders(
-    response: Readonly<MinimalResponseForApplyingHeaders>,
+    response: Readonly<Pick<MinimalResponse, 'setHeader' | 'removeHeader'>>,
     headers: Readonly<HeadersToSet>,
 ): void {
     getObjectTypedEntries(headers).forEach(

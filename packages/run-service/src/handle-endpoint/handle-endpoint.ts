@@ -1,11 +1,12 @@
 import {ensureError, log} from '@augment-vir/common';
 import {type Endpoint} from '@rest-vir/define-service';
 import type {ServiceImplementation} from '@rest-vir/implement-service';
-import {type Request, type Response} from 'express';
+import {MinimalRequest} from '@rest-vir/implement-service/src/request.js';
 import {EndpointHandler} from './endpoint-handler.js';
 import {EndpointError} from './endpoint.error.js';
 import {handleCors} from './handlers/handle-cors.js';
 import {handleRequestMethod} from './handlers/handle-request-method.js';
+import {MinimalResponse} from './response.js';
 
 const endpointHandlers: EndpointHandler[] = [
     handleRequestMethod,
@@ -15,10 +16,14 @@ const endpointHandlers: EndpointHandler[] = [
 /**
  * Once this is called, the endpoint to be executed has already been extracted and we know it
  * matches the current request.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/run-service
+ * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
 export async function handleEndpointRequest(
-    request: Readonly<Request>,
-    response: Readonly<Response>,
+    request: Readonly<MinimalRequest>,
+    response: Readonly<MinimalResponse>,
     endpoint: Readonly<Endpoint>,
     serviceImplementation: Readonly<ServiceImplementation>,
 ) {

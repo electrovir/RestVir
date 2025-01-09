@@ -1,4 +1,5 @@
 import {check} from '@augment-vir/assert';
+import {SelectFrom} from '@augment-vir/common';
 import {
     AnyOrigin,
     Endpoint,
@@ -7,17 +8,47 @@ import {
     OriginRequirement,
 } from '@rest-vir/define-service';
 import {HttpStatus} from '@rest-vir/implement-service';
+import {MinimalRequest} from '@rest-vir/implement-service/src/request.js';
 import {convertDuration} from 'date-vir';
-import {Request, Response} from 'express';
 import {HeadersToSet, setResponseHeaders} from '../../util/headers.js';
 import {HandledOutput} from '../endpoint-handler.js';
 import {EndpointError} from '../endpoint.error.js';
+import {MinimalResponse} from '../response.js';
 
+/**
+ * Determines the required origin for the endpoint and compares it with the given request.
+ *
+ * If an OPTIONS request is being handled, a `NoContent` response is always sent, with all CORS
+ * headers set appropriately.
+ *
+ * For other requests:
+ *
+ * - If the request fails the origin checks, a `Forbidden` response is sent.
+ * - If the request passes origin checks, the appropriate CORS headers are set and a response is not
+ *   sent (so further handlers can process it).
+ *
+ * @category Internal
+ * @category Package : @rest-vir/run-service
+ * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
+ */
 export async function handleCors(
     this: void,
-    request: Readonly<Request>,
-    response: Readonly<Response>,
-    endpoint: Readonly<Endpoint>,
+    request: Readonly<Pick<MinimalRequest, 'headers' | 'method'>>,
+    response: Readonly<Pick<MinimalResponse, 'sendStatus' | 'setHeader' | 'removeHeader'>>,
+    endpoint: Readonly<
+        SelectFrom<
+            Endpoint,
+            {
+                requiredOrigin: true;
+                endpointPath: true;
+                service: {
+                    serviceName: true;
+                    requiredOrigin: true;
+                };
+                methods: true;
+            }
+        >
+    >,
 ): Promise<HandledOutput> {
     const origin = request.headers.origin;
     const matchedOrigin = await matchOrigin(endpoint, origin);
@@ -27,9 +58,13 @@ export async function handleCors(
         setResponseHeaders(response, buildOptionsRequestCorsHeaders(matchedOrigin, allowedMethods));
         response.sendStatus(HttpStatus.NoContent);
         return {handled: true};
-    } else {
+    } else if (matchedOrigin) {
         setResponseHeaders(response, buildStandardCorsHeaders(matchedOrigin));
         return {handled: false};
+    } else {
+        /** The CORS requirements for this request have not been met. */
+        response.sendStatus(HttpStatus.Forbidden);
+        return {handled: true};
     }
 }
 
@@ -94,7 +129,19 @@ function buildOptionsRequestCorsHeaders(
 type MatchedOrigin = string | undefined | AnyOrigin;
 
 async function matchOrigin(
-    endpoint: Readonly<Pick<Endpoint, 'service' | 'requiredOrigin' | 'endpointPath'>>,
+    endpoint: Readonly<
+        SelectFrom<
+            Endpoint,
+            {
+                requiredOrigin: true;
+                endpointPath: true;
+                service: {
+                    serviceName: true;
+                    requiredOrigin: true;
+                };
+            }
+        >
+    >,
     origin: string | undefined,
 ): Promise<MatchedOrigin> {
     const endpointRequirement = await checkOriginRequirement(endpoint.requiredOrigin, origin);

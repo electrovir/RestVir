@@ -34,17 +34,20 @@
         "@augment-vir/common": "^31.6.0",
         "@rest-vir/define-service": "^0.0.2",
         "@rest-vir/implement-service": "^0.0.2",
+        "cluster-vir": "^0.0.1",
         "date-vir": "^7.1.2",
+        "hyper-express": "^6.17.3",
         "object-shape-tester": "^4.1.0",
+        "portfinder": "^1.0.32",
         "url-vir": "^2.0.2"
+    },
+    "devDependencies": {
+        "@types/node": "^22.10.5"
     },
     "engines": {
         "node": ">=22"
     },
     "publishConfig": {
         "access": "public"
-    },
-    "devDependencies": {
-        "@types/express": "^5.0.0"
     }
 }
