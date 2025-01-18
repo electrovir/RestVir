@@ -23,7 +23,7 @@ export type MockResponse = {
 };
 
 /**
- * Creates a {@link EndpointResponse} object for backend testing. **Do not use this mock for frontend
+ * Creates a `EndpointResponse` object for backend testing. **Do not use this mock for frontend
  * testing**. Instead use {@link createMockFetchResponse}
  *
  * @category Util

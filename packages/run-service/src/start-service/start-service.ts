@@ -1,5 +1,13 @@
 import {check} from '@augment-vir/assert';
-import type {ServiceImplementation} from '@rest-vir/implement-service';
+import {EndpointPathBase, ServiceDefinition} from '@rest-vir/define-service';
+import {
+    ContextInit,
+    EndpointFinder,
+    EndpointImplementation,
+    ExtractAuth,
+    ServiceLogger,
+    type ServiceImplementation,
+} from '@rest-vir/implement-service';
 import {ClusterManager, runInCluster} from 'cluster-vir';
 import {Server} from 'hyper-express';
 import {getPortPromise} from 'portfinder';
@@ -35,6 +43,21 @@ export type StartServiceOutput = {
 };
 
 /**
+ * Output of {@link startService}.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/run-service
+ * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
+ */
+export type GenericServiceImplementation = ServiceDefinition & {
+    implementations: Record<EndpointPathBase, EndpointImplementation<any, any, any>>;
+    context: ContextInit<any>;
+    extractAuth: ExtractAuth<any, any> | undefined;
+    logger: ServiceLogger;
+    getEndpointPath: EndpointFinder;
+};
+
+/**
  * Starts the given {@link ServiceImplementation} inside of a backend [`hyper-express`
  * server](https://www.npmjs.com/package/hyper-express).
  *
@@ -46,7 +69,7 @@ export type StartServiceOutput = {
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
 export async function startService(
-    service: Readonly<ServiceImplementation>,
+    service: Readonly<GenericServiceImplementation>,
     userOptions: Readonly<StartServiceUserOptions>,
 ): Promise<StartServiceOutput> {
     const options = finalizeOptions(userOptions);

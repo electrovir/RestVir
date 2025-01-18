@@ -30,8 +30,9 @@
         "test:update": "npm test update"
     },
     "dependencies": {
-        "@augment-vir/assert": "^31.6.0",
-        "@augment-vir/common": "^31.6.0",
+        "@augment-vir/assert": "^31.7.1",
+        "@augment-vir/common": "^31.7.1",
+        "@augment-vir/node": "^31.7.1",
         "@rest-vir/define-service": "^0.0.2",
         "@rest-vir/implement-service": "^0.0.2",
         "cluster-vir": "^0.0.1",
@@ -39,11 +40,14 @@
         "hyper-express": "^6.17.3",
         "object-shape-tester": "^4.1.0",
         "portfinder": "^1.0.32",
+        "type-fest": "^4.32.0",
         "url-vir": "^2.0.2"
     },
     "devDependencies": {
-        "@augment-vir/test": "^31.6.0",
-        "@types/node": "^22.10.5"
+        "@augment-vir/test": "^31.7.1",
+        "@types/node": "^22.10.5",
+        "c8": "^10.1.3",
+        "istanbul-smart-text-reporter": "^1.1.5"
     },
     "engines": {
         "node": ">=22"

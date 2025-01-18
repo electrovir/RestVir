@@ -172,6 +172,39 @@ describe(implementService.name, () => {
             },
         );
     });
+    it('requires response data', () => {
+        implementService(
+            defineService({
+                endpoints: {
+                    '/test': {
+                        methods: {
+                            GET: true,
+                        },
+                        requestDataShape: undefined,
+                        responseDataShape: {
+                            data: '',
+                        },
+                    },
+                },
+                requiredOrigin: AnyOrigin,
+                serviceName: 'test',
+                serviceOrigin: '',
+            }),
+            {
+                // @ts-expect-error: missing response data
+                '/test'() {
+                    return {
+                        statusCode: HttpStatus.Ok,
+                    };
+                },
+            },
+            {
+                context() {
+                    return 'hi';
+                },
+            },
+        );
+    });
     it('requires endpoints to be implemented', () => {
         assert.throws(() =>
             implementService(

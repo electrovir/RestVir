@@ -1,1 +1,8 @@
-- add typed web sockets
+-   add typed web sockets
+-   test `fetchEndpoint` within `run-service`
+-   add a new `run-endpoint` package
+    -   export `testEndpoint`
+    -   make sure `implement-service` can depend on it
+    -   probably will need to split some functionality out of `run-service` and put it into `run-endpoint` instead so that it can be used to test endpoints in `implement-service`
+-   replace `undefined` `requiredAuth` functionality with a new `NoAuth` export, similar to how `AnyOrigin` is used
+-   add typed search params

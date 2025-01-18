@@ -232,6 +232,7 @@ describe(defineService.name, () => {
                     | '/test'
                     | '/throws-error'
                     | '/with/:param1/:param2'
+                    | '/plain'
                 )[]
             >();
     });

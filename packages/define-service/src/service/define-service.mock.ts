@@ -36,6 +36,17 @@ export const mockService = defineService({
             },
             requiredOrigin: undefined,
         },
+        '/plain': {
+            requiredAuth: undefined,
+            requestDataShape: undefined,
+            methods: {
+                [HttpMethod.Get]: true,
+            },
+            responseDataShape: {
+                fakeData: '',
+            },
+            requiredOrigin: undefined,
+        },
         '/with/:param1/:param2': {
             methods: {
                 [HttpMethod.Head]: true,

@@ -16,6 +16,7 @@ import {
     type HttpMethod,
     type MinimalService,
 } from '@rest-vir/define-service';
+import type {IsEqual} from 'type-fest';
 import {EndpointRequest} from '../util/message.js';
 import type {ServiceLogger} from '../util/service-logger.js';
 
@@ -60,16 +61,18 @@ export type EndpointImplementationParams<
     SpecificEndpoint extends Endpoint | NoParam = NoParam,
 > = {
     context: Context;
-    auth: Extract<SpecificEndpoint, NoParam> extends NoParam
+    auth: IsEqual<Extract<SpecificEndpoint, NoParam>, NoParam> extends true
         ? unknown
         : ArrayElement<Exclude<SpecificEndpoint, NoParam>['requiredAuth']>;
-    method: Extract<SpecificEndpoint, NoParam> extends NoParam
+    method: IsEqual<Extract<SpecificEndpoint, NoParam>, NoParam> extends true
         ? HttpMethod
         : ExtractKeysWithMatchingValues<Exclude<SpecificEndpoint, NoParam>['methods'], true>;
-    endpoint: Extract<SpecificEndpoint, NoParam> extends NoParam ? Endpoint : SpecificEndpoint;
+    endpoint: IsEqual<Extract<SpecificEndpoint, NoParam>, NoParam> extends true
+        ? Endpoint
+        : SpecificEndpoint;
     service: MinimalService<ServiceName>;
 
-    requestData: Extract<SpecificEndpoint, NoParam> extends NoParam
+    requestData: IsEqual<Extract<SpecificEndpoint, NoParam>, NoParam> extends true
         ? any
         : WithFinalEndpointProps<Exclude<SpecificEndpoint, NoParam>, any>['RequestType'];
     request: Readonly<EndpointRequest>;
@@ -89,7 +92,7 @@ export type EndpointImplementation<
     SpecificEndpoint extends Endpoint | NoParam = NoParam,
 > = (
     params: Readonly<EndpointImplementationParams<Context, ServiceName, SpecificEndpoint>>,
-) => Extract<SpecificEndpoint, NoParam> extends NoParam
+) => IsEqual<Extract<SpecificEndpoint, NoParam>, NoParam> extends true
     ? any
     : MaybePromise<
           EndpointImplementationOutput<

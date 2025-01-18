@@ -18,6 +18,14 @@ export const mockServiceImplementation = implementService(
                 responseData: undefined,
             };
         },
+        '/plain'() {
+            return {
+                statusCode: HttpStatus.Ok,
+                responseData: {
+                    fakeData: 'hi there',
+                },
+            };
+        },
         '/missing'() {
             return {
                 statusCode: HttpStatus.Accepted,
