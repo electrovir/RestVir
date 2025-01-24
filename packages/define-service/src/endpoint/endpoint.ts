@@ -3,8 +3,10 @@ import {
     AnyObject,
     AtLeastTuple,
     extractErrorMessage,
+    HttpMethod,
     JsonCompatibleValue,
     Overwrite,
+    type MaybePromise,
 } from '@augment-vir/common';
 import {
     classShape,
@@ -19,7 +21,6 @@ import {
 import {IsEqual, type RequireAtLeastOne} from 'type-fest';
 import {type MinimalService} from '../service/minimal-service.js';
 import {ServiceDefinitionError} from '../service/service-definition.error.js';
-import {HttpMethod} from '../util/http-method.js';
 import {type NoParam} from '../util/no-param.js';
 import {type OriginRequirement} from '../util/origin.js';
 import {assertValidEndpointAuth} from './endpoint-auth.js';
@@ -46,7 +47,10 @@ export type RequiredAuth<AllowedAuth extends ReadonlyArray<any> | undefined | No
     IsEqual<AllowedAuth, undefined> extends true
         ? undefined
         : AllowedAuth extends ReadonlyArray<infer AuthElement>
-          ? AtLeastTuple<AuthElement, 1> | undefined
+          ?
+                | AtLeastTuple<AuthElement, 1>
+                | ((currentAuth: AuthElement) => MaybePromise<boolean>)
+                | undefined
           : any;
 
 /**
@@ -62,7 +66,7 @@ export type EndpointInit<
         Record<HttpMethod, boolean>
     >,
     RequestDataShape extends EndpointDataShapeBase | NoParam = EndpointDataShapeBase | NoParam,
-    ResponseDataShape extends EndpointDataShapeBase | NoParam = EndpointDataShapeBase | NoParam,
+    ResponseDataShape = unknown,
 > = (AllowedAuth extends undefined
     ? {
           /**
@@ -121,7 +125,7 @@ export const endpointInitShape = defineShape({
     responseDataShape: unknownShape(),
     /** Possible required origin shapes. */
     requiredOrigin: or(undefined, '', classShape(RegExp), () => {}, [
-        or('', classShape(RegExp)),
+        or('', classShape(RegExp), () => {}),
     ]),
     methods: indexedKeys({
         keys: enumShape(HttpMethod),

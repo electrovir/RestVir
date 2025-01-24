@@ -1,4 +1,5 @@
-import {ensureError} from '@augment-vir/common';
+import {check} from '@augment-vir/assert';
+import {ensureError, HttpStatus} from '@augment-vir/common';
 import {type Endpoint} from '@rest-vir/define-service';
 import {
     EndpointRequest,
@@ -6,9 +7,11 @@ import {
     InternalEndpointError,
     ServiceImplementation,
 } from '@rest-vir/implement-service';
+import cluster from 'node:cluster';
+import {setResponseHeaders} from '../util/headers.js';
 import type {EndpointHandler} from './endpoint-handler.js';
 import {handleCors} from './handlers/handle-cors.js';
-import {handleImplementation} from './handlers/handle-implementation.js';
+import {handleImplementation} from './handlers/handle-implementation/handle-implementation.js';
 import {handleRequestMethod} from './handlers/handle-request-method.js';
 
 const endpointHandlers: EndpointHandler[] = [
@@ -26,31 +29,51 @@ const endpointHandlers: EndpointHandler[] = [
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
 export async function handleEndpointRequest(
-    request: Readonly<EndpointRequest>,
-    response: Readonly<EndpointResponse>,
+    request: EndpointRequest,
+    response: EndpointResponse,
     endpoint: Readonly<Endpoint>,
     service: Readonly<ServiceImplementation>,
+    throwErrorsForExternalHandling: boolean,
 ) {
-    const logParts = [
-        request.method,
-        request.originalUrl,
-    ];
-    service.logger.info(logParts.join('\t'));
-
     try {
+        const workerPid = cluster.isPrimary ? '' : process.pid;
+
+        const logParts = [
+            workerPid,
+            request.method,
+            request.originalUrl,
+        ].filter(check.isTruthy);
+        service.logger.info(logParts.join('\t'));
+
         for (const handler of endpointHandlers) {
-            const result = await handler(request, response, endpoint, service);
-            if (result.handled) {
-                /**
-                 * If the request has been fully handled then we need not execute any following
-                 * handlers.
-                 */
-                return;
+            const handlerResult = await handler({request, response, endpoint, service});
+            if (handlerResult) {
+                if (handlerResult.headers) {
+                    setResponseHeaders(response, handlerResult.headers);
+                }
+
+                if (handlerResult.statusCode) {
+                    response.statusCode = handlerResult.statusCode;
+
+                    if (handlerResult.body) {
+                        response.send(handlerResult.body);
+                    } else {
+                        response.send();
+                    }
+                    return;
+                }
             }
         }
 
+        /* node:coverage ignore next: currently this is not possible to trigger, but it is here as a fail-safe for the potential future edge case. */
         throw new InternalEndpointError(endpoint, 'Request was not handled.');
-    } catch (caught) {
-        service.logger.error(ensureError(caught));
+    } catch (error) {
+        service.logger.error(ensureError(error));
+        if (throwErrorsForExternalHandling) {
+            throw error;
+        } else if (!response.sent) {
+            response.statusCode = HttpStatus.InternalServerError;
+            response.send();
+        }
     }
 }

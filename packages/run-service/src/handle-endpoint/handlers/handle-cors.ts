@@ -1,21 +1,15 @@
 import {check} from '@augment-vir/assert';
-import {SelectFrom} from '@augment-vir/common';
+import {HttpMethod, SelectFrom} from '@augment-vir/common';
 import {
     AnyOrigin,
     Endpoint,
     getAllowedEndpointMethods,
-    HttpMethod,
     OriginRequirement,
 } from '@rest-vir/define-service';
-import {
-    EndpointRequest,
-    EndpointResponse,
-    HttpStatus,
-    InternalEndpointError,
-} from '@rest-vir/implement-service';
+import {HttpStatus, InternalEndpointError} from '@rest-vir/implement-service';
 import {convertDuration} from 'date-vir';
-import {HeadersToSet, setResponseHeaders} from '../../util/headers.js';
-import {HandledOutput} from '../endpoint-handler.js';
+import type {OutgoingHttpHeaders} from 'node:http';
+import {EndpointHandlerParams, HandledOutput} from '../endpoint-handler.js';
 
 /**
  * Determines the required origin for the endpoint and compares it with the given request.
@@ -35,19 +29,26 @@ import {HandledOutput} from '../endpoint-handler.js';
  */
 export async function handleCors(
     this: void,
-    request: Readonly<Pick<EndpointRequest, 'headers' | 'method'>>,
-    response: Readonly<Pick<EndpointResponse, 'sendStatus' | 'setHeader' | 'removeHeader'>>,
-    endpoint: Readonly<
+    {
+        endpoint,
+        request,
+    }: Readonly<
         SelectFrom<
-            Endpoint,
+            EndpointHandlerParams,
             {
-                requiredOrigin: true;
-                endpointPath: true;
-                service: {
-                    serviceName: true;
-                    requiredOrigin: true;
+                request: {
+                    headers: true;
+                    method: true;
                 };
-                methods: true;
+                endpoint: {
+                    requiredOrigin: true;
+                    endpointPath: true;
+                    service: {
+                        serviceName: true;
+                        requiredOrigin: true;
+                    };
+                    methods: true;
+                };
             }
         >
     >,
@@ -57,27 +58,27 @@ export async function handleCors(
     const allowedMethods = getAllowedEndpointMethods(endpoint);
 
     if (request.method.toUpperCase() === HttpMethod.Options) {
-        setResponseHeaders(response, buildOptionsRequestCorsHeaders(matchedOrigin, allowedMethods));
-        response.sendStatus(HttpStatus.NoContent);
-        return {handled: true};
+        return {
+            statusCode: HttpStatus.NoContent,
+            headers: buildOptionsRequestCorsHeaders(matchedOrigin, allowedMethods),
+        };
     } else if (matchedOrigin) {
-        setResponseHeaders(response, buildStandardCorsHeaders(matchedOrigin));
-        return {handled: false};
+        return {
+            headers: buildStandardCorsHeaders(matchedOrigin),
+        };
     } else {
         /** The CORS requirements for this request have not been met. */
-        response.sendStatus(HttpStatus.Forbidden);
-        return {handled: true};
+        return {
+            statusCode: HttpStatus.Forbidden,
+        };
     }
 }
 
-function buildStandardCorsHeaders(matchedOrigin: MatchedOrigin): HeadersToSet {
+function buildStandardCorsHeaders(matchedOrigin: NonNullable<MatchedOrigin>): OutgoingHttpHeaders {
     if (matchedOrigin === AnyOrigin) {
         return {
             'Access-Control-Allow-Origin': '*',
         };
-    } else if (matchedOrigin == undefined) {
-        /** Do not allow the given origin. */
-        return {};
     } else {
         return {
             'Access-Control-Allow-Origin': matchedOrigin,
@@ -102,7 +103,7 @@ const contentLengthHeaders = {
 function buildOptionsRequestCorsHeaders(
     matchedOrigin: MatchedOrigin,
     allowedMethods: HttpMethod[],
-): HeadersToSet {
+): OutgoingHttpHeaders {
     if (matchedOrigin == undefined) {
         return contentLengthHeaders;
     }

@@ -3,11 +3,9 @@ import {getObjectTypedEntries, type ArrayElement, type MaybePromise} from '@augm
 import {
     ServiceDefinitionError,
     type BaseServiceEndpointsInit,
-    type EndpointPathBase,
     type NoParam,
     type ServiceDefinition,
 } from '@rest-vir/define-service';
-import {match} from 'path-to-regexp';
 import type {IsEqual} from 'type-fest';
 import {
     createServiceLogger,
@@ -111,36 +109,6 @@ export function implementService<
         context: init.context as ContextInit<Context>,
         extractAuth: init.extractAuth,
         logger: createServiceLogger(init.logger),
-        getEndpointPath: generateEndpointFinder(service),
-    };
-}
-
-/**
- * Given a raw path, finds the matching endpoint service path. If no match is found, this returns
- * `undefined`.
- *
- * @category Internal
- * @category Package : @rest-vir/implement-service
- * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
- */
-export type EndpointFinder = (requestPath: string) => EndpointPathBase | undefined;
-
-function generateEndpointFinder(service: Readonly<ServiceDefinition>): EndpointFinder {
-    const endpointMatchers = Object.keys(service.endpoints).map((endpointPath) => {
-        return {
-            match: match(endpointPath),
-            endpointPath: endpointPath as EndpointPathBase,
-        };
-    });
-
-    return (path: string) => {
-        for (const matcher of endpointMatchers) {
-            if (matcher.match(path)) {
-                return matcher.endpointPath;
-            }
-        }
-
-        return undefined;
     };
 }
 
@@ -161,7 +129,6 @@ export type ServiceImplementation<
     context: ContextInit<Context>;
     extractAuth: ExtractAuth<Context, AllowedAuth> | undefined;
     logger: ServiceLogger;
-    getEndpointPath: EndpointFinder;
 };
 
 /**

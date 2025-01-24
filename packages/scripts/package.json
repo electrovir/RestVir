@@ -21,8 +21,8 @@
         "test:coverage": "exit 0"
     },
     "dependencies": {
-        "@virmator/docs": "^13.11.2",
-        "type-fest": "^4.32.0",
+        "@virmator/docs": "^13.12.0",
+        "type-fest": "^4.33.0",
         "typedoc": "^0.27.6"
     },
     "engines": {

@@ -1,18 +1,17 @@
 import {check} from '@augment-vir/assert';
-import {EndpointPathBase, ServiceDefinition} from '@rest-vir/define-service';
 import {
-    ContextInit,
-    EndpointFinder,
-    EndpointImplementation,
-    ExtractAuth,
-    ServiceLogger,
+    type GenericServiceImplementation,
     type ServiceImplementation,
 } from '@rest-vir/implement-service';
-import {ClusterManager, runInCluster} from 'cluster-vir';
-import {Server} from 'hyper-express';
+import {ClusterManager, runInCluster, type WorkerRunner} from 'cluster-vir';
+import fastify, {type FastifyInstance} from 'fastify';
 import {getPortPromise} from 'portfinder';
 import {attachService} from './attach-service.js';
-import {finalizeOptions, StartServiceUserOptions} from './start-service-options.js';
+import {
+    finalizeOptions,
+    StartServiceOptions,
+    StartServiceUserOptions,
+} from './start-service-options.js';
 
 /**
  * Output of {@link startService}.
@@ -28,41 +27,37 @@ export type StartServiceOutput = {
      */
     port: number;
     /**
-     * The instantiated and running [`hyper-express`
-     * server](https://www.npmjs.com/package/hyper-express). This is populated when the server is
-     * run on only a single thread (when `options.workerCount` is 1).
+     * The host that the server was attached to. (This is simply passed directly from the user
+     * options, merged with the default.)
      */
-    server?: Server;
+    host: string;
+    /**
+     * The instantiated and running [`fastify`](https://www.npmjs.com/package/fastify) instance.
+     * This is populated when the server is run on only a single thread (when `options.workerCount`
+     * is 1).
+     */
+    server?: FastifyInstance;
     /**
      * The `ClusterManager` for all the spawned server workers. This is populated when the server is
-     * run with a multiple threads (when `options.workerCount` > 1).
+     * run with a multiple threads (when `options.workerCount` > 1). It will only be populated for
+     * the primary thread.
      */
-    clusterManager?: ClusterManager;
+    cluster?: ClusterManager;
+    /**
+     * The `WorkerRunner` for the current worker. This is populated when the server is run with a
+     * multiple threads (when `options.workerCount` > 1). It will only be populated for non-primary
+     * threads.
+     */
+    worker?: WorkerRunner;
     /** A function that will kill the service even if it's using multiple workers. */
     kill: () => void;
 };
 
 /**
- * Output of {@link startService}.
+ * Starts the given {@link ServiceImplementation} inside of a backend [Fastify
+ * server](https://www.npmjs.com/package/fastify).
  *
- * @category Internal
- * @category Package : @rest-vir/run-service
- * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
- */
-export type GenericServiceImplementation = ServiceDefinition & {
-    implementations: Record<EndpointPathBase, EndpointImplementation<any, any, any>>;
-    context: ContextInit<any>;
-    extractAuth: ExtractAuth<any, any> | undefined;
-    logger: ServiceLogger;
-    getEndpointPath: EndpointFinder;
-};
-
-/**
- * Starts the given {@link ServiceImplementation} inside of a backend [`hyper-express`
- * server](https://www.npmjs.com/package/hyper-express).
- *
- * To freely use a service implementation inside of any kind of server (not just `hyper-express`),
- * instead use {@link attachService}.
+ * To attach the service endpoint handlers to an existing Fastify server, use {@link attachService}.
  *
  * @category Run Service
  * @category Package : @rest-vir/run-service
@@ -81,7 +76,7 @@ export async function startService(
 
     if (options.workerCount === 1) {
         /** Only run a single server. */
-        const result = await startHyperExpressService(service, options.port);
+        const result = await startServer(service, options);
 
         service.logger.info(`${service.serviceName} started on http://localhost:${options.port}`);
 
@@ -90,7 +85,7 @@ export async function startService(
         /** Run in a cluster. */
         const manager = runInCluster(
             async () => {
-                const {kill} = await startHyperExpressService(service, options.port);
+                const {kill} = await startServer(service, options);
 
                 return () => {
                     kill();
@@ -98,7 +93,7 @@ export async function startService(
             },
             {
                 startWorkersImmediately: false,
-                respawnWorkers: true,
+                respawnWorkers: !options.preventWorkerRespawn,
                 workerCount: options.workerCount,
             },
         );
@@ -110,15 +105,18 @@ export async function startService(
             );
 
             return {
+                host: options.host,
                 port: options.port,
-                clusterManager: manager,
+                cluster: manager,
                 kill() {
                     manager.destroy();
                 },
             };
         } else {
             return {
+                host: options.host,
                 port: options.port,
+                worker: manager,
                 kill() {
                     manager.destroy();
                 },
@@ -127,21 +125,22 @@ export async function startService(
     }
 }
 
-async function startHyperExpressService(
+async function startServer(
     service: Readonly<ServiceImplementation>,
-    port: number,
+    {host, port}: Readonly<Pick<StartServiceOptions, 'host' | 'port'>>,
 ): Promise<StartServiceOutput> {
-    const server = new Server();
+    const server = fastify();
 
     attachService(server, service);
 
-    await server.listen(port);
+    await server.listen({port, host});
 
     return {
+        host,
         port,
         server,
         kill() {
-            server.close();
+            server.server.close();
         },
     };
 }

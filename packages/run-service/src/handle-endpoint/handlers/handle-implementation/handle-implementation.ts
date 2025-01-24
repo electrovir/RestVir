@@ -1,18 +1,20 @@
 import {assertWrap, check} from '@augment-vir/assert';
-import {ensureErrorAndPrependMessage, HttpStatus, isErrorHttpStatus} from '@augment-vir/common';
-import {HttpMethod, type Endpoint} from '@rest-vir/define-service';
+import {
+    ensureErrorAndPrependMessage,
+    HttpMethod,
+    HttpStatus,
+    isErrorHttpStatus,
+    wrapInTry,
+} from '@augment-vir/common';
 import {
     createEndpointErrorPrefix,
     InternalEndpointError,
     type EndpointImplementation,
     type EndpointImplementationOutput,
     type EndpointImplementationParams,
-    type EndpointRequest,
-    type EndpointResponse,
-    type ServiceImplementation,
 } from '@rest-vir/implement-service';
-import {setResponseHeaders} from '../../util/headers.js';
-import {type HandledOutput} from '../endpoint-handler.js';
+import {assertValidShape} from 'object-shape-tester';
+import {EndpointHandlerParams, type HandledOutput} from '../../endpoint-handler.js';
 import {extractAuth} from './request-auth.js';
 import {createContext} from './request-context.js';
 import {extractRequestData} from './request-data.js';
@@ -26,26 +28,27 @@ import {extractRequestData} from './request-data.js';
  */
 export async function handleImplementation(
     this: void,
-    request: Readonly<EndpointRequest>,
-    response: Readonly<EndpointResponse>,
-    endpoint: Readonly<Endpoint>,
-    service: Readonly<ServiceImplementation>,
+    {endpoint, request, response, service}: Readonly<EndpointHandlerParams>,
 ): Promise<HandledOutput> {
     try {
-        const requestData = extractRequestData(request, endpoint);
+        const requestData = wrapInTry(() => extractRequestData(request.body, endpoint));
 
         if (check.instanceOf(requestData, Error)) {
-            response.sendStatus(HttpStatus.BadRequest);
-            throw requestData;
+            return {
+                statusCode: HttpStatus.BadRequest,
+                error: requestData,
+            };
         }
 
         const contextParams: Omit<EndpointImplementationParams, 'context' | 'auth'> = {
             endpoint,
             log: service.logger,
             method: assertWrap.isEnumValue(request.method, HttpMethod),
+            response,
             request,
             requestData,
-            service: service,
+            service,
+            requestHeaders: request.headers,
         };
 
         const context = await createContext(contextParams, service);
@@ -75,13 +78,10 @@ export async function handleImplementation(
         )) as EndpointImplementationOutput;
 
         if (isErrorHttpStatus(endpointResult.statusCode)) {
-            if (endpointResult.responseErrorMessage) {
-                response
-                    .status(endpointResult.statusCode)
-                    .send(endpointResult.responseErrorMessage);
-            } else {
-                response.sendStatus(endpointResult.statusCode);
-            }
+            return {
+                statusCode: endpointResult.statusCode,
+                body: endpointResult.responseErrorMessage,
+            };
         } else if (endpointResult.responseData) {
             if (!endpoint.responseDataShape) {
                 throw new InternalEndpointError(
@@ -90,17 +90,20 @@ export async function handleImplementation(
                 );
             }
 
-            setResponseHeaders(response, {
-                'Content-Type': 'application/json',
-            });
-            response.send(JSON.stringify(endpointResult.responseData));
-        } else {
-            response.sendStatus(endpointResult.statusCode);
-        }
+            assertValidShape(endpointResult.responseData, endpoint.responseDataShape);
 
-        return {
-            handled: true,
-        };
+            return {
+                headers: {
+                    'content-type': endpointResult.dataType || 'application/json',
+                },
+                statusCode: HttpStatus.Ok,
+                body: endpointResult.responseData,
+            };
+        } else {
+            return {
+                statusCode: HttpStatus.Ok,
+            };
+        }
     } catch (error) {
         throw ensureErrorAndPrependMessage(error, createEndpointErrorPrefix(endpoint));
     }

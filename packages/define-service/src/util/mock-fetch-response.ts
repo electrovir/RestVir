@@ -3,7 +3,7 @@ import type {AnyObject, JsonCompatibleValue} from '@augment-vir/common';
 /**
  * Mocks a fetch's `Response` value. Currently this only implements the `json` method.
  *
- * @category Util
+ * @category Testing
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */

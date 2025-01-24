@@ -1,8 +1,8 @@
 import {assert} from '@augment-vir/assert';
+import {HttpMethod} from '@augment-vir/common';
 import {describe, it, itCases} from '@augment-vir/test';
 import {type Endpoint} from '../endpoint/endpoint.js';
 import {mockService} from '../service/define-service.mock.js';
-import {HttpMethod} from '../util/http-method.js';
 import {createMockFetchResponse} from '../util/mock-fetch-response.js';
 import {type NoParam} from '../util/no-param.js';
 import {
@@ -15,18 +15,36 @@ import {
 type FetchOptions = NonNullable<GenericFetchEndpointParams['options']>;
 
 describe(buildEndpointUrl.name, () => {
-    itCases(buildEndpointUrl, [
+    function testBuildEndpointUrl(
+        endpoint: Pick<Endpoint, 'endpointPath'>,
+        pathParams?: Record<string, string> | undefined,
+    ) {
+        return buildEndpointUrl(
+            {
+                service: {
+                    serviceOrigin: 'http://example.com',
+                    serviceName: 'test',
+                },
+                methods: {
+                    [HttpMethod.Get]: true,
+                },
+                requestDataShape: undefined,
+                responseDataShape: undefined,
+                ...endpoint,
+            },
+            {
+                pathParams,
+            },
+        );
+    }
+
+    itCases(testBuildEndpointUrl, [
         {
             it: 'handles a path without params',
             inputs: [
                 {
                     endpointPath: '/hi',
-                    service: {
-                        serviceOrigin: 'http://example.com',
-                        serviceName: 'test',
-                    },
                 },
-                undefined,
             ],
             expect: 'http://example.com/hi',
         },
@@ -35,10 +53,6 @@ describe(buildEndpointUrl.name, () => {
             inputs: [
                 {
                     endpointPath: '/hi',
-                    service: {
-                        serviceOrigin: 'http://example.com',
-                        serviceName: 'test',
-                    },
                 },
                 {},
             ],
@@ -51,10 +65,6 @@ describe(buildEndpointUrl.name, () => {
             inputs: [
                 {
                     endpointPath: '/hi/:param1/:param2',
-                    service: {
-                        serviceOrigin: 'http://example.com',
-                        serviceName: 'test',
-                    },
                 },
                 {
                     param1: 'bye',
@@ -68,10 +78,6 @@ describe(buildEndpointUrl.name, () => {
             inputs: [
                 {
                     endpointPath: '/hi/:param1/:param2',
-                    service: {
-                        serviceOrigin: 'http://example.com',
-                        serviceName: 'test',
-                    },
                 },
                 {
                     param1: 'bye',
@@ -194,7 +200,7 @@ describe('FetchEndpointParameters', () => {
                         somethingHere: 'hi',
                         testValue: 4,
                     }),
-                    method: HttpMethod.Get,
+                    method: HttpMethod.Post,
                 },
             },
         },

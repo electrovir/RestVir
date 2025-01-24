@@ -1,5 +1,11 @@
 import {assert, check} from '@augment-vir/assert';
-import {AnyObject, getObjectTypedEntries, mapObjectValues, stringify} from '@augment-vir/common';
+import {
+    AnyObject,
+    extractErrorMessage,
+    getObjectTypedEntries,
+    mapObjectValues,
+    stringify,
+} from '@augment-vir/common';
 import {assertValidShape, defineShape} from 'object-shape-tester';
 import {type IsEqual} from 'type-fest';
 import {type EndpointPathBase} from '../endpoint/endpoint-path.js';
@@ -116,48 +122,61 @@ function finalizeServiceDefinition<
 >(
     serviceInit: ServiceInit<ServiceName, AllowedAuth, EndpointsInit>,
 ): ServiceDefinition<ServiceName, AllowedAuth, EndpointsInit> {
-    /**
-     * Make the types less strict because we don't care what they are inside of this function's
-     * implementation. Just the return type is what matters.
-     */
-    const genericEndpoints = serviceInit.endpoints as BaseServiceEndpointsInit<AllowedAuth>;
+    try {
+        /**
+         * Make the types less strict because we don't care what they are inside of this function's
+         * implementation. Just the return type is what matters.
+         */
+        const genericEndpoints = serviceInit.endpoints as BaseServiceEndpointsInit<AllowedAuth>;
 
-    const endpoints = mapObjectValues(genericEndpoints, (endpointPath, endpointInit) => {
-        assertValidShape(endpointInit, endpointInitShape);
-        const endpoint = {
-            ...endpointInit,
-            requestDataShape: endpointInit.requestDataShape
-                ? defineShape<any, true>(endpointInit.requestDataShape, true)
-                : undefined,
-            responseDataShape: endpointInit.responseDataShape
-                ? defineShape<any, true>(endpointInit.responseDataShape, true)
-                : undefined,
-            endpointPath,
-            service: {
-                serviceName: serviceInit.serviceName,
-                serviceOrigin: serviceInit.serviceOrigin,
-                requiredOrigin: serviceInit.requiredOrigin,
-            } satisfies MinimalService<ServiceName>,
+        const endpoints = mapObjectValues(genericEndpoints, (endpointPath, endpointInit) => {
+            assertValidShape(endpointInit, endpointInitShape);
+            const endpoint = {
+                ...endpointInit,
+                requestDataShape: endpointInit.requestDataShape
+                    ? defineShape<any, true>(endpointInit.requestDataShape, true)
+                    : undefined,
+                responseDataShape: endpointInit.responseDataShape
+                    ? defineShape<any, true>(endpointInit.responseDataShape, true)
+                    : undefined,
+                endpointPath,
+                service: {
+                    serviceName: serviceInit.serviceName,
+                    serviceOrigin: serviceInit.serviceOrigin,
+                    requiredOrigin: serviceInit.requiredOrigin,
+                } satisfies MinimalService<ServiceName>,
+            };
+
+            attachEndpointShapeTypeGetters(endpoint);
+
+            return endpoint;
+        });
+
+        return {
+            allowedAuth: serviceInit.allowedAuth as AllowedAuth,
+            serviceName: serviceInit.serviceName,
+            serviceOrigin: serviceInit.serviceOrigin,
+            init: serviceInit,
+            requiredOrigin: serviceInit.requiredOrigin,
+            /** As cast needed again to narrow the type (for the return value) after broadening it. */
+            endpoints: endpoints as AnyObject as ServiceDefinition<
+                ServiceName,
+                AllowedAuth,
+                EndpointsInit
+            >['endpoints'],
         };
-
-        attachEndpointShapeTypeGetters(endpoint);
-
-        return endpoint;
-    });
-
-    return {
-        allowedAuth: serviceInit.allowedAuth as AllowedAuth,
-        serviceName: serviceInit.serviceName,
-        serviceOrigin: serviceInit.serviceOrigin,
-        init: serviceInit,
-        requiredOrigin: serviceInit.requiredOrigin,
-        /** As cast needed again to narrow the type (for the return value) after broadening it. */
-        endpoints: endpoints as AnyObject as ServiceDefinition<
-            ServiceName,
-            AllowedAuth,
-            EndpointsInit
-        >['endpoints'],
-    };
+    } catch (error) {
+        /* node:coverage ignore next 3: just covering an edge case */
+        if (error instanceof ServiceDefinitionError) {
+            throw error;
+        } else {
+            throw new ServiceDefinitionError({
+                endpointPath: undefined,
+                errorMessage: extractErrorMessage(error),
+                serviceName: serviceInit.serviceName,
+            });
+        }
+    }
 }
 
 /**
@@ -171,36 +190,38 @@ function finalizeServiceDefinition<
 export function assertValidServiceDefinition(
     serviceDefinition: ServiceDefinition,
 ): asserts serviceDefinition is ServiceDefinition {
-    if (!serviceDefinition.serviceName || !check.isString(serviceDefinition.serviceName)) {
-        throw new ServiceDefinitionError({
-            endpointPath: undefined,
-            serviceName: serviceDefinition.serviceName,
-            errorMessage: `Invalid service name: '${stringify(serviceDefinition.serviceName)}'. Expected a non-empty string.`,
-        });
-    }
+    try {
+        if (!serviceDefinition.serviceName || !check.isString(serviceDefinition.serviceName)) {
+            throw new Error(
+                `Invalid service name: '${stringify(serviceDefinition.serviceName)}'. Expected a non-empty string.`,
+            );
+        }
 
-    if (serviceDefinition.allowedAuth) {
-        assert.isLengthAtLeast(serviceDefinition.allowedAuth, 1);
-    }
-    assert.isDefined(serviceDefinition.requiredOrigin);
+        if (serviceDefinition.allowedAuth) {
+            assert.isLengthAtLeast(serviceDefinition.allowedAuth, 1);
+        }
+        assert.isDefined(serviceDefinition.requiredOrigin);
 
-    getObjectTypedEntries(serviceDefinition.endpoints).forEach(
-        ([
-            endpointPath,
-            endpoint,
-        ]) => {
-            if (check.isString(endpoint)) {
-                throw new ServiceDefinitionError({
-                    endpointPath,
+        getObjectTypedEntries(serviceDefinition.endpoints).forEach(
+            ([
+                ,
+                endpoint,
+            ]) => {
+                assertValidEndpoint(endpoint, {
+                    allowedAuth: serviceDefinition.allowedAuth,
                     serviceName: serviceDefinition.serviceName,
-                    errorMessage: 'Invalid endpoint config, it cannot be a string.',
                 });
-            }
-
-            assertValidEndpoint(endpoint, {
-                allowedAuth: serviceDefinition.allowedAuth,
+            },
+        );
+    } catch (error) {
+        if (error instanceof ServiceDefinitionError) {
+            throw error;
+        } else {
+            throw new ServiceDefinitionError({
+                endpointPath: undefined,
                 serviceName: serviceDefinition.serviceName,
+                errorMessage: extractErrorMessage(error),
             });
-        },
-    );
+        }
+    }
 }

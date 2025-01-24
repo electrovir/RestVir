@@ -5,6 +5,7 @@ import {
     MaybePromise,
     SuccessHttpStatusCategories,
     type ExtractKeysWithMatchingValues,
+    type HttpMethod,
 } from '@augment-vir/common';
 import {
     BaseServiceEndpointsInit,
@@ -13,12 +14,12 @@ import {
     EndpointPathBase,
     NoParam,
     WithFinalEndpointProps,
-    type HttpMethod,
     type MinimalService,
 } from '@rest-vir/define-service';
-import type {IsEqual} from 'type-fest';
-import {EndpointRequest} from '../util/message.js';
-import type {ServiceLogger} from '../util/service-logger.js';
+import type {IncomingHttpHeaders, OutgoingHttpHeaders} from 'node:http';
+import {type IsEqual} from 'type-fest';
+import {EndpointRequest, type EndpointResponse} from '../util/message.js';
+import {type ServiceLogger} from '../util/service-logger.js';
 
 /**
  * The object that all endpoint implementations should return.
@@ -37,13 +38,20 @@ export type EndpointImplementationOutput<ResponseDataType = unknown> =
            */
           responseErrorMessage?: string | undefined;
           responseData?: undefined;
-          headers?: Record<string, string> | undefined;
+          headers?: OutgoingHttpHeaders | undefined;
+          dataType?: undefined;
       }
     | ({
           statusCode: HttpStatusByCategory<SuccessHttpStatusCategories>;
 
           responseErrorMessage?: never;
-          headers?: Record<string, string> | undefined;
+
+          /**
+           * Set the response data type. If any response data is included, the default is
+           * `application/json`.
+           */
+          dataType?: string | undefined;
+          headers?: OutgoingHttpHeaders | undefined;
       } & (ResponseDataType extends undefined
           ? {responseData?: ResponseDataType}
           : {responseData: ResponseDataType}));
@@ -71,11 +79,13 @@ export type EndpointImplementationParams<
         ? Endpoint
         : SpecificEndpoint;
     service: MinimalService<ServiceName>;
+    requestHeaders: IncomingHttpHeaders;
 
     requestData: IsEqual<Extract<SpecificEndpoint, NoParam>, NoParam> extends true
         ? any
         : WithFinalEndpointProps<Exclude<SpecificEndpoint, NoParam>, any>['RequestType'];
-    request: Readonly<EndpointRequest>;
+    request: EndpointRequest;
+    response: EndpointResponse;
     log: Readonly<ServiceLogger>;
 };
 

@@ -33,6 +33,19 @@ export const startServiceOptionsShape = defineShape({
      * @default cpus().length - 1
      */
     workerCount: cpus().length - 1,
+    /**
+     * The host name that the server should listen to. In most cases this doesn't need to be set.
+     *
+     * @default 'localhost'
+     */
+    host: 'localhost',
+    /**
+     * If set to `true`, a multi-threaded service (`workerCount` > 1) will not automatically respawn
+     * its workers. This has no effect on single-threaded services (`workerCount` == 1).
+     *
+     * @default false
+     */
+    preventWorkerRespawn: false,
 });
 
 /**

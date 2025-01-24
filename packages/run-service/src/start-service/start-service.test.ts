@@ -1,75 +1,394 @@
 import {assert} from '@augment-vir/assert';
-import {DeferredPromise, removeColor, safeMatch} from '@augment-vir/common';
-import {
-    interpolationSafeWindowsPath,
-    ShellStderrEvent,
-    ShellStdoutEvent,
-    streamShellCommand,
-} from '@augment-vir/node';
+import {HttpMethod, HttpStatus, mergeDeep} from '@augment-vir/common';
+import {runShellCommand} from '@augment-vir/node';
 import {describe, it} from '@augment-vir/test';
-import {join} from 'node:path';
-import {joinUrlPaths} from 'url-vir';
-import {startServiceMocksDirPath} from '../util/file-paths.mock.js';
+import {fetchEndpoint} from '@rest-vir/define-service';
+import {
+    mockService,
+    mockWebsiteOrigin,
+} from '@rest-vir/define-service/src/service/define-service.mock.js';
 import {startService} from './start-service.js';
-
-async function runTestCase(fileName: string) {
-    const testFilePath = join(startServiceMocksDirPath, fileName + '.script.mock.ts');
-
-    const command = [
-        'tsx',
-        interpolationSafeWindowsPath(testFilePath),
-    ].join(' ');
-
-    const serverStarted = new DeferredPromise<string>();
-
-    const stdout: string[] = [];
-    const stderr: string[] = [];
-
-    const shellTarget = streamShellCommand(command);
-
-    shellTarget.listen(ShellStdoutEvent, (event) => {
-        const output = removeColor(String(event.detail)).toLowerCase();
-        const [
-            ,
-            url,
-        ] = safeMatch(output, /started on (http.+)$/);
-
-        if (url) {
-            serverStarted.resolve(url);
-        }
-
-        stdout.push(output);
-    });
-    shellTarget.listen(ShellStderrEvent, (event) => {
-        const output = removeColor(String(event.detail)).toLowerCase();
-
-        stderr.push(output);
-    });
-
-    const serviceUrl = await serverStarted.promise;
-
-    return {
-        stdout,
-        stderr,
-        childProcess: shellTarget.childProcess,
-        url: serviceUrl,
-    };
-}
-
-async function fetchService(url: string) {
-    const response = await fetch(url);
-
-    return await response.json();
-}
+import {
+    condenseResponse,
+    describeServiceScript,
+    getMockScriptCommand,
+} from './test-start-service.mock.js';
 
 describe(startService.name, () => {
-    it('runs a service on a single thread', async () => {
-        const {childProcess, stderr, stdout, url} = await runTestCase('single-thread');
+    describeServiceScript('single-thread', ({it}) => {
+        it('rejects an unexpected method', async ({fetchService}) => {
+            assert.strictEquals(
+                (
+                    await fetchService(mockService.endpoints['/test'].endpointPath, {
+                        method: HttpMethod.Get,
+                    })
+                ).status,
+                HttpStatus.MethodNotAllowed,
+            );
+        });
+        it('does not parse body when content type is not json', async ({fetchService}) => {
+            assert.strictEquals(
+                (
+                    await fetchService(mockService.endpoints['/test'].endpointPath, {
+                        method: HttpMethod.Post,
+                        body: JSON.stringify({
+                            somethingHere: 'value',
+                            testValue: 422,
+                        } satisfies (typeof mockService.endpoints)['/test']['RequestType']),
+                    })
+                ).status,
+                HttpStatus.BadRequest,
+            );
+        });
+        it('parses body when content type is json', async ({fetchService}) => {
+            const postResponse = await fetchService(mockService.endpoints['/test'].endpointPath, {
+                method: HttpMethod.Post,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    somethingHere: 'value',
+                    testValue: 422,
+                } satisfies (typeof mockService.endpoints)['/test']['RequestType']),
+            });
 
-        const result = await fetchService(joinUrlPaths(url, 'test'));
+            assert.isTrue(postResponse.ok);
+            assert.strictEquals(postResponse.status, HttpStatus.Ok);
 
-        assert.deepEquals(result, {});
+            assert.deepEquals(await postResponse.json(), {
+                result: 4,
+                requestData: {
+                    somethingHere: 'value',
+                    testValue: 422,
+                },
+            });
+        });
+        it('rejects a missing origin when CORS is required', async ({fetchService}) => {
+            assert.strictEquals(
+                (await fetchService(mockService.endpoints['/requires-origin'].endpointPath)).status,
+                HttpStatus.Forbidden,
+            );
+        });
+        it('passes a matching CORS origin', async ({fetchService}) => {
+            assert.strictEquals(
+                (
+                    await fetchService(mockService.endpoints['/requires-origin'].endpointPath, {
+                        headers: {
+                            origin: mockWebsiteOrigin,
+                        },
+                    })
+                ).status,
+                HttpStatus.Ok,
+                'should accept matching origin',
+            );
+        });
+        it("allows options requests even when the endpoint doesn't specify it", async ({
+            fetchService,
+        }) => {
+            assert.strictEquals(
+                (
+                    await fetchService(mockService.endpoints['/test'].endpointPath, {
+                        method: HttpMethod.Options,
+                    })
+                ).status,
+                HttpStatus.NoContent,
+                'options should be allowed without content',
+            );
+        });
+        it('gets blocked', async ({fetchService}) => {
+            const startTime = Date.now();
+            const longRunningTime = fetchService(
+                mockService.endpoints['/long-running'].endpointPath,
+            ).then(() => Date.now() - startTime);
+            const plainTime = fetchService(mockService.endpoints['/plain'].endpointPath).then(
+                () => Date.now() - startTime,
+            );
 
-        childProcess.kill();
+            assert.isAtLeast(await plainTime, await longRunningTime);
+        });
+        it('handles function CORS requirements', async ({fetchService}) => {
+            assert.deepEquals(
+                await condenseResponse(
+                    await fetchService(mockService.endpoints['/function-origin'].endpointPath, {
+                        method: HttpMethod.Get,
+                        headers: {
+                            origin: 'https://electrovir.com',
+                        },
+                    }),
+                ),
+                {
+                    status: HttpStatus.Forbidden,
+                    headers: {},
+                },
+                'blocks an invalid origin with functions',
+            );
+            assert.deepEquals(
+                await condenseResponse(
+                    await fetchService(mockService.endpoints['/function-origin'].endpointPath, {
+                        method: HttpMethod.Get,
+                        headers: {
+                            origin: 'https://example.com',
+                        },
+                    }),
+                ),
+                {
+                    status: HttpStatus.Ok,
+                    headers: {
+                        'access-control-allow-credentials': 'true',
+                        'access-control-allow-origin': 'https://example.com',
+                        vary: 'Origin',
+                    },
+                },
+                'accepts a valid origin with functions',
+            );
+            assert.deepEquals(
+                await condenseResponse(
+                    await fetchService(mockService.endpoints['/function-origin'].endpointPath, {
+                        method: HttpMethod.Options,
+                        headers: {
+                            origin: 'https://electrovir.com',
+                        },
+                    }),
+                ),
+                {
+                    status: HttpStatus.NoContent,
+                    headers: {},
+                },
+                'blocks an invalid OPTIONS origin with functions',
+            );
+            assert.deepEquals(
+                await condenseResponse(
+                    await fetchService(mockService.endpoints['/function-origin'].endpointPath, {
+                        method: HttpMethod.Options,
+                        headers: {
+                            origin: 'https://example.com',
+                        },
+                    }),
+                ),
+                {
+                    status: HttpStatus.NoContent,
+                    headers: {
+                        'access-control-allow-credentials': 'true',
+                        'access-control-allow-headers': 'Cookie,Authorization,Content-Type',
+                        'access-control-allow-methods': 'GET',
+                        'access-control-allow-origin': 'https://example.com',
+                        'access-control-max-age': '3600',
+                        vary: 'Origin',
+                    },
+                },
+                'accepts a valid OPTIONS origin with functions',
+            );
+        });
+        it('handles array CORS requirements', async ({fetchService}) => {
+            assert.deepEquals(
+                await condenseResponse(
+                    await fetchService(mockService.endpoints['/array-origin'].endpointPath, {
+                        method: HttpMethod.Get,
+                        headers: {
+                            origin: 'https://wikipedia.org',
+                        },
+                    }),
+                ),
+                {
+                    status: HttpStatus.Forbidden,
+                    headers: {},
+                },
+                'blocks an invalid origin with an array',
+            );
+            assert.deepEquals(
+                await condenseResponse(
+                    await fetchService(mockService.endpoints['/array-origin'].endpointPath, {
+                        method: HttpMethod.Get,
+                        headers: {
+                            origin: 'https://example.com',
+                        },
+                    }),
+                ),
+                {
+                    status: HttpStatus.Ok,
+                    headers: {
+                        'access-control-allow-credentials': 'true',
+                        'access-control-allow-origin': 'https://example.com',
+                        vary: 'Origin',
+                    },
+                },
+                'accepts a valid origin with an array',
+            );
+            assert.deepEquals(
+                await condenseResponse(
+                    await fetchService(mockService.endpoints['/array-origin'].endpointPath, {
+                        method: HttpMethod.Options,
+                        headers: {
+                            origin: 'https://wikipedia.org',
+                        },
+                    }),
+                ),
+                {
+                    status: HttpStatus.NoContent,
+                    headers: {},
+                },
+                'blocks an invalid OPTIONS origin with an array',
+            );
+            assert.deepEquals(
+                await condenseResponse(
+                    await fetchService(mockService.endpoints['/array-origin'].endpointPath, {
+                        method: HttpMethod.Options,
+                        headers: {
+                            origin: 'https://example.com',
+                        },
+                    }),
+                ),
+                {
+                    status: HttpStatus.NoContent,
+                    headers: {
+                        'access-control-allow-credentials': 'true',
+                        'access-control-allow-headers': 'Cookie,Authorization,Content-Type',
+                        'access-control-allow-methods': 'GET',
+                        'access-control-allow-origin': 'https://example.com',
+                        'access-control-max-age': '3600',
+                        vary: 'Origin',
+                    },
+                },
+                'accepts a valid OPTIONS origin with an array',
+            );
+        });
+        it("accepts a service's AnyOrigin", async ({fetchService}) => {
+            assert.deepEquals(
+                await condenseResponse(
+                    await fetchService(mockService.endpoints['/health'].endpointPath, {
+                        method: HttpMethod.Get,
+                    }),
+                ),
+                {
+                    status: HttpStatus.Ok,
+                    headers: {
+                        'access-control-allow-origin': '*',
+                    },
+                },
+                'accepts a get request without any origin',
+            );
+            assert.deepEquals(
+                await condenseResponse(
+                    await fetchService(mockService.endpoints['/health'].endpointPath, {
+                        method: HttpMethod.Options,
+                    }),
+                ),
+                {
+                    status: HttpStatus.NoContent,
+                    headers: {
+                        'access-control-allow-headers': 'Cookie,Authorization,Content-Type',
+                        'access-control-allow-methods': 'GET',
+                        'access-control-allow-origin': '*',
+                        'access-control-max-age': '3600',
+                    },
+                },
+                'accepts an options request without any origin',
+            );
+        });
+        it('generates an error response', async ({fetchService}) => {
+            assert.deepEquals(
+                await condenseResponse(
+                    await fetchService(
+                        mockService.endpoints['/returns-response-error'].endpointPath,
+                        {
+                            method: HttpMethod.Get,
+                        },
+                    ),
+                ),
+                {
+                    status: HttpStatus.NotAcceptable,
+                    body: 'INTENTIONAL ERROR',
+                    headers: {
+                        'access-control-allow-origin': '*',
+                        /** This header is automatically added by fastify. */
+                        'content-type': 'text/plain; charset=utf-8',
+                    },
+                },
+            );
+        });
+        it('rejects unexpect request body', async ({fetchService}) => {
+            assert.deepEquals(
+                await condenseResponse(
+                    await fetchService(mockService.endpoints['/plain'].endpointPath, {
+                        method: HttpMethod.Post,
+                        body: JSON.stringify({somethingHere: 'hi'}),
+                        headers: {
+                            'content-type': 'application/json',
+                        },
+                    }),
+                ),
+                {
+                    status: HttpStatus.BadRequest,
+                    headers: {
+                        'access-control-allow-origin': '*',
+                    },
+                },
+            );
+        });
+        it('errors on missing implementation', async ({fetchService}) => {
+            assert.deepEquals(
+                await condenseResponse(
+                    await fetchService(mockService.endpoints['/missing'].endpointPath, {
+                        method: HttpMethod.Get,
+                    }),
+                ),
+                {
+                    status: HttpStatus.InternalServerError,
+                    headers: {
+                        'access-control-allow-origin': '*',
+                    },
+                },
+            );
+        });
+        it('works with fetchEndpoint', async ({address}) => {
+            const output = await fetchEndpoint(
+                mergeDeep(mockService.endpoints['/empty'], {
+                    service: {
+                        serviceOrigin: address,
+                    },
+                }),
+            );
+
+            assert.isUndefined(output.data);
+
+            assert.deepEquals(await condenseResponse(output.response), {
+                status: HttpStatus.Ok,
+                headers: {
+                    'access-control-allow-origin': '*',
+                },
+            });
+        });
+    });
+
+    describeServiceScript('multi-threaded', ({it}) => {
+        it('does not get blocked', async ({fetchService}) => {
+            const startTime = Date.now();
+            const longRunningTime = fetchService(
+                mockService.endpoints['/long-running'].endpointPath,
+            ).then(() => Date.now() - startTime);
+            const plainTime = fetchService(mockService.endpoints['/plain'].endpointPath).then(
+                () => Date.now() - startTime,
+            );
+
+            assert.isBelow(await plainTime, await longRunningTime);
+        });
+    });
+    describeServiceScript('locked-port', ({it}) => {
+        it('locks the port number', ({address}) => {
+            assert.strictEquals(address, 'http://localhost:3789');
+        });
+    });
+
+    it('kills workers and exits automatically', async () => {
+        assert.strictEquals(
+            (await runShellCommand(getMockScriptCommand('kill-workers'))).exitCode,
+            0,
+        );
+    });
+    it('kills the cluster', async () => {
+        assert.strictEquals(
+            (await runShellCommand(getMockScriptCommand('kill-cluster'))).exitCode,
+            0,
+        );
     });
 });

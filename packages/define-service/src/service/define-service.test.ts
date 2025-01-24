@@ -1,8 +1,11 @@
 import {assert} from '@augment-vir/assert';
-import {getObjectTypedKeys, getObjectTypedValues, type ArrayElement} from '@augment-vir/common';
+import {
+    getObjectTypedKeys,
+    getObjectTypedValues,
+    HttpMethod,
+    type ArrayElement,
+} from '@augment-vir/common';
 import {describe, it, itCases} from '@augment-vir/test';
-import {ShapeMismatchError} from 'object-shape-tester';
-import {HttpMethod} from '../util/http-method.js';
 import {AnyOrigin} from '../util/origin.js';
 import {
     assertValidServiceDefinition,
@@ -47,32 +50,41 @@ describe(defineService.name, () => {
         assert.tsType<ArrayElement<typeof myService.allowedAuth>>().equals<MyMockAuth>();
     });
     it('required endpoint auth must be a subset of the service allowed auth', () => {
-        const myService = defineService({
-            allowedAuth: [
-                'a',
-                'b',
-                'c',
-            ],
-            endpoints: {
-                '/path': {
-                    requestDataShape: undefined,
-                    requiredAuth: [
-                        // @ts-expect-error: not a subset of the allowed auth
-                        'q',
+        assert.throws(
+            () => {
+                const myService = defineService({
+                    allowedAuth: [
+                        'a',
+                        'b',
+                        'c',
                     ],
-                    requiredOrigin: undefined,
-                    responseDataShape: undefined,
-                    methods: {
-                        [HttpMethod.Get]: true,
+                    endpoints: {
+                        '/path': {
+                            requestDataShape: undefined,
+                            requiredAuth: [
+                                // @ts-expect-error: not a subset of the allowed auth
+                                'q',
+                            ],
+                            requiredOrigin: undefined,
+                            responseDataShape: undefined,
+                            methods: {
+                                [HttpMethod.Get]: true,
+                            },
+                        },
                     },
-                },
-            },
-            serviceName: 'my-service',
-            serviceOrigin: 'some origin',
-            requiredOrigin: AnyOrigin,
-        });
+                    serviceName: 'my-service',
+                    serviceOrigin: 'some origin',
+                    requiredOrigin: AnyOrigin,
+                });
 
-        assert.tsType<ArrayElement<typeof myService.allowedAuth>>().equals<'a' | 'b' | 'c'>();
+                assert
+                    .tsType<ArrayElement<typeof myService.allowedAuth>>()
+                    .equals<'a' | 'b' | 'c'>();
+            },
+            {
+                matchMessage: 'Invalid required endpoint auth',
+            },
+        );
     });
     it('does not require allowed auth', () => {
         const myService = defineService({
@@ -233,6 +245,11 @@ describe(defineService.name, () => {
                     | '/throws-error'
                     | '/with/:param1/:param2'
                     | '/plain'
+                    | '/long-running'
+                    | '/function-origin'
+                    | '/array-origin'
+                    | '/health'
+                    | '/requires-origin'
                 )[]
             >();
     });
@@ -268,7 +285,7 @@ describe(defineService.name, () => {
                 });
             },
             {
-                matchConstructor: ShapeMismatchError,
+                matchConstructor: ServiceDefinitionError,
             },
         );
     });
@@ -352,7 +369,7 @@ describe(defineService.name, () => {
                 });
             },
             {
-                matchConstructor: ShapeMismatchError,
+                matchConstructor: ServiceDefinitionError,
             },
         );
     });
@@ -404,6 +421,7 @@ describe(defineService.name, () => {
                     serviceName: 'test-endpoint-service',
                     allowedAuth: undefined,
                     serviceOrigin: '',
+                    requiredOrigin: AnyOrigin,
                     endpoints: {
                         '/test-endpoint': {
                             requiredAuth: undefined,
@@ -417,6 +435,24 @@ describe(defineService.name, () => {
                 }),
             {
                 matchMessage: 'Endpoint has no allowed HTTP methods',
+            },
+        );
+    });
+    it('rejects a string endpoint', () => {
+        assert.throws(
+            () =>
+                defineService({
+                    serviceName: 'test-service',
+                    allowedAuth: undefined,
+                    requiredOrigin: AnyOrigin,
+                    serviceOrigin: '',
+                    endpoints: {
+                        // @ts-expect-error: invalid endpoint
+                        '/derp': 'fake endpoint',
+                    },
+                }),
+            {
+                matchConstructor: ServiceDefinitionError,
             },
         );
     });

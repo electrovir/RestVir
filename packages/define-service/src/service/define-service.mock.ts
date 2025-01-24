@@ -1,6 +1,8 @@
-import {getEnumValues} from '@augment-vir/common';
+/* node:coverage disable */
+/** This is just a mock file. */
+
+import {getEnumValues, HttpMethod, wait} from '@augment-vir/common';
 import {or} from 'object-shape-tester';
-import {HttpMethod} from '../util/http-method.js';
 import {AnyOrigin} from '../util/origin.js';
 import {defineService} from './define-service.js';
 
@@ -10,7 +12,7 @@ export enum MyMockAuth {
     User = 'user',
 }
 
-const websiteOrigin = 'https://example.com';
+export const mockWebsiteOrigin = 'https://example.com';
 
 export const mockService = defineService({
     serviceName: 'mock-service',
@@ -18,6 +20,41 @@ export const mockService = defineService({
     serviceOrigin: 'https://example.com',
     requiredOrigin: AnyOrigin,
     endpoints: {
+        '/function-origin': {
+            methods: {
+                [HttpMethod.Get]: true,
+            },
+            requestDataShape: undefined,
+            requiredAuth: undefined,
+            responseDataShape: undefined,
+            async requiredOrigin(origin) {
+                await wait({milliseconds: 1});
+                return !!origin?.includes('example.com');
+            },
+        },
+        '/array-origin': {
+            methods: {
+                [HttpMethod.Get]: true,
+            },
+            requestDataShape: undefined,
+            requiredAuth: undefined,
+            responseDataShape: undefined,
+            requiredOrigin: [
+                'http://example.com',
+                /example\.com/,
+                (origin) => {
+                    return !!origin?.includes('electrovir');
+                },
+            ],
+        },
+        '/health': {
+            methods: {
+                [HttpMethod.Get]: true,
+            },
+            requestDataShape: undefined,
+            requiredAuth: undefined,
+            responseDataShape: undefined,
+        },
         '/test': {
             requiredAuth: [MyMockAuth.Admin],
             requestDataShape: {
@@ -25,7 +62,7 @@ export const mockService = defineService({
                 testValue: 5,
             },
             methods: {
-                [HttpMethod.Get]: true,
+                [HttpMethod.Post]: true,
             },
             responseDataShape: {
                 result: or({hello: 'there'}, 5),
@@ -34,18 +71,36 @@ export const mockService = defineService({
                     testValue: 5,
                 },
             },
-            requiredOrigin: undefined,
         },
         '/plain': {
             requiredAuth: undefined,
             requestDataShape: undefined,
             methods: {
                 [HttpMethod.Get]: true,
+                [HttpMethod.Post]: true,
             },
             responseDataShape: {
                 fakeData: '',
             },
-            requiredOrigin: undefined,
+        },
+        '/requires-origin': {
+            requiredAuth: undefined,
+            requestDataShape: undefined,
+            methods: {
+                [HttpMethod.Get]: true,
+            },
+            responseDataShape: undefined,
+            requiredOrigin: mockWebsiteOrigin,
+        },
+        '/long-running': {
+            requiredAuth: undefined,
+            requestDataShape: or(undefined, {count: -1}),
+            methods: {
+                [HttpMethod.Get]: true,
+            },
+            responseDataShape: {
+                result: -1,
+            },
         },
         '/with/:param1/:param2': {
             methods: {
@@ -54,14 +109,12 @@ export const mockService = defineService({
             },
             requestDataShape: undefined,
             requiredAuth: undefined,
-            requiredOrigin: undefined,
             responseDataShape: undefined,
         },
         '/empty': {
             requiredAuth: undefined,
             requestDataShape: undefined,
             responseDataShape: undefined,
-            requiredOrigin: undefined,
             methods: {
                 [HttpMethod.Get]: true,
             },
@@ -70,16 +123,15 @@ export const mockService = defineService({
             requiredAuth: [MyMockAuth.Admin],
             requestDataShape: undefined,
             responseDataShape: undefined,
-            requiredOrigin: undefined,
             methods: {
                 [HttpMethod.Get]: true,
             },
         },
+        /** This endpoint is missing its implementation in the mock service implementation. */
         '/missing': {
             requiredAuth: undefined,
             requestDataShape: undefined,
             responseDataShape: undefined,
-            requiredOrigin: websiteOrigin,
             methods: {
                 [HttpMethod.Get]: true,
             },
@@ -89,7 +141,6 @@ export const mockService = defineService({
             requiredAuth: undefined,
             requestDataShape: undefined,
             responseDataShape: undefined,
-            requiredOrigin: undefined,
             methods: {
                 [HttpMethod.Get]: true,
             },
@@ -99,7 +150,6 @@ export const mockService = defineService({
             requiredAuth: undefined,
             requestDataShape: undefined,
             responseDataShape: undefined,
-            requiredOrigin: undefined,
             methods: {
                 [HttpMethod.Get]: true,
             },
@@ -109,7 +159,7 @@ export const mockService = defineService({
             requiredAuth: undefined,
             requestDataShape: undefined,
             responseDataShape: undefined,
-            requiredOrigin: websiteOrigin,
+            requiredOrigin: mockWebsiteOrigin,
             methods: {
                 [HttpMethod.Get]: true,
             },

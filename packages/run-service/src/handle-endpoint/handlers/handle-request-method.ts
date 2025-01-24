@@ -1,12 +1,6 @@
 import {checkWrap} from '@augment-vir/assert';
-import {HttpStatus, SelectFrom} from '@augment-vir/common';
-import {Endpoint, HttpMethod} from '@rest-vir/define-service';
-import {
-    InternalEndpointError,
-    type EndpointRequest,
-    type EndpointResponse,
-} from '@rest-vir/implement-service';
-import {HandledOutput} from '../endpoint-handler.js';
+import {HttpMethod, HttpStatus, SelectFrom} from '@augment-vir/common';
+import {HandledOutput, type EndpointHandlerParams} from '../endpoint-handler.js';
 
 /**
  * Verifies that a request's method matches the given endpoint's expectations. If it does not, an
@@ -18,15 +12,21 @@ import {HandledOutput} from '../endpoint-handler.js';
  */
 export function handleRequestMethod(
     this: void,
-    request: Readonly<Pick<EndpointRequest, 'method'>>,
-    response: Readonly<Pick<EndpointResponse, 'sendStatus'>>,
-    endpoint: Readonly<
+    {
+        endpoint,
+        request,
+    }: Readonly<
         SelectFrom<
-            Endpoint,
+            EndpointHandlerParams,
             {
-                methods: true;
-                endpointPath: true;
-                service: {serviceName: true};
+                request: {
+                    method: true;
+                };
+                endpoint: {
+                    methods: true;
+                    endpointPath: true;
+                    service: {serviceName: true};
+                };
             }
         >
     >,
@@ -35,11 +35,12 @@ export function handleRequestMethod(
 
     /** Always allow preflight requests. */
     if (requestMethod === HttpMethod.Options) {
-        return {handled: false};
+        return undefined;
     } else if (!requestMethod || !endpoint.methods[requestMethod]) {
-        response.sendStatus(HttpStatus.MethodNotAllowed);
-        throw new InternalEndpointError(endpoint, `Unexpected request method: '${request.method}'`);
+        return {
+            statusCode: HttpStatus.MethodNotAllowed,
+        };
     }
 
-    return {handled: false};
+    return undefined;
 }

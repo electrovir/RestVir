@@ -18,7 +18,7 @@ async function main() {
             'Implement Service',
             'Run Service',
             'Fetch',
-            'Util',
+            'Testing',
             'Internal',
             '*',
         ],

@@ -1,5 +1,6 @@
 export {HttpStatus} from '@augment-vir/common';
 
+export * from './implementation/generic-service-implementation.js';
 export * from './implementation/implement-endpoint.js';
 export * from './implementation/implement-service.js';
 export * from './util/endpoint.error.js';

@@ -1,27 +1,23 @@
 import {getObjectTypedEntries} from '@augment-vir/common';
 import type {EndpointResponse} from '@rest-vir/implement-service';
+import type {OutgoingHttpHeaders} from 'node:http';
 
 /**
- * An object of headers to set. Used in {@link setResponseHeaders}.
- *
- * Any headers set to `undefined` will be removed and not set.
+ * Easily apply an object of headers to a Response object. Setting a header to `undefined` removes
+ * it.
  *
  * @category Internal
  * @category Package : @rest-vir/run-service
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
-export type HeadersToSet = Record<string, string | string[] | undefined>;
-
-/**
- * Easily apply an object of headers to a Response object.
- *
- * @category Util
- * @category Package : @rest-vir/run-service
- * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
- */
 export function setResponseHeaders(
-    response: Readonly<Pick<EndpointResponse, 'setHeader' | 'removeHeader'>>,
-    headers: Readonly<HeadersToSet>,
+    response: /**
+     * This is a subset of the fastify response type, but without a return type that makes ESLint think
+     * that these methods are async (by default it returns the original Fastify reply object which
+     * matches PromiseLike and thus confuses ESLint.
+     */
+    Readonly<Pick<EndpointResponse, 'removeHeader' | 'header'>>,
+    headers: Readonly<OutgoingHttpHeaders>,
 ): void {
     getObjectTypedEntries(headers).forEach(
         ([
@@ -29,9 +25,9 @@ export function setResponseHeaders(
             value,
         ]) => {
             if (value == undefined) {
-                response.removeHeader(name);
+                response.removeHeader(String(name));
             } else {
-                response.setHeader(name, value);
+                response.header(String(name), value);
             }
         },
     );

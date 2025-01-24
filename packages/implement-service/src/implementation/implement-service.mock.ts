@@ -1,7 +1,7 @@
 /* node:coverage disable */
 
 import {check} from '@augment-vir/assert';
-import {HttpStatus, type AnyObject} from '@augment-vir/common';
+import {HttpStatus, wait, type AnyObject} from '@augment-vir/common';
 import {mockService, MyMockAuth} from '@rest-vir/define-service/src/service/define-service.mock';
 import {implementService} from './implement-service.js';
 
@@ -12,17 +12,57 @@ export type MockServiceContext = {
 export const mockServiceImplementation = implementService(
     mockService,
     {
+        '/array-origin'() {
+            return {
+                statusCode: HttpStatus.Ok,
+            };
+        },
+        '/function-origin'() {
+            return {
+                statusCode: HttpStatus.Ok,
+            };
+        },
+        '/health'() {
+            return {
+                statusCode: HttpStatus.Ok,
+            };
+        },
+        '/requires-origin'() {
+            return {
+                statusCode: HttpStatus.Ok,
+            };
+        },
         '/empty'() {
             return {
                 statusCode: HttpStatus.Accepted,
                 responseData: undefined,
             };
         },
-        '/plain'() {
+        async '/plain'() {
+            await wait({milliseconds: 1});
+
             return {
                 statusCode: HttpStatus.Ok,
                 responseData: {
                     fakeData: 'hi there',
+                },
+            };
+        },
+        async '/long-running'({requestData}) {
+            const max = requestData?.count ?? 5_000_000_000;
+
+            const count = await new Promise<number>((resolve) => {
+                let counter = 0;
+                for (let i = 0; i < max; i++) {
+                    counter++;
+                }
+                resolve(counter);
+            });
+
+            return {
+                statusCode: HttpStatus.Ok,
+                responseData: {
+                    result: count,
                 },
             };
         },
@@ -46,7 +86,8 @@ export const mockServiceImplementation = implementService(
         },
         '/returns-response-error'() {
             return {
-                statusCode: HttpStatus.Accepted,
+                statusCode: HttpStatus.NotAcceptable,
+                responseErrorMessage: 'INTENTIONAL ERROR',
                 responseData: undefined,
             };
         },

@@ -1,10 +1,13 @@
-import type {MaybePromise} from '@augment-vir/common';
+/* node:coverage disable: this file is just types */
+
+import type {HttpStatus, MaybePromise} from '@augment-vir/common';
 import {Endpoint} from '@rest-vir/define-service';
 import type {
     EndpointRequest,
     EndpointResponse,
     ServiceImplementation,
 } from '@rest-vir/implement-service';
+import {OutgoingHttpHeaders} from 'node:http';
 
 /**
  * Output from {@link EndpointHandler}.
@@ -13,13 +16,38 @@ import type {
  * @category Package : @rest-vir/run-service
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
-export type HandledOutput = {
-    /**
-     * - `true`: indicates that the response was sent and endpoint handling should cease.
-     * - `false` indicates that the response was successfully handled but not yet sent and further
-     *   handling should continue.
-     */
-    handled: boolean;
+export type HandledOutput =
+    | {
+          body?: never;
+          statusCode?: never;
+          headers?: Readonly<OutgoingHttpHeaders>;
+          error?: Error;
+      }
+    | {
+          body?: unknown;
+          /**
+           * If this is set, then the response is sent with this status code and the given body (if
+           * any).
+           */
+          statusCode: HttpStatus;
+          headers?: Readonly<OutgoingHttpHeaders>;
+          error?: Error;
+      }
+    /** A value of `undefined` indicates that the response should not be sent yet. */
+    | undefined;
+
+/**
+ * Params for {@link EndpointHandler}.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/run-service
+ * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
+ */
+export type EndpointHandlerParams = {
+    request: EndpointRequest;
+    response: EndpointResponse;
+    endpoint: Readonly<Endpoint>;
+    service: Readonly<ServiceImplementation>;
 };
 
 /**
@@ -27,12 +55,8 @@ export type HandledOutput = {
  *
  * @category Internal
  * @category Package : @rest-vir/run-service
- * @returns `true` if the response has been sent.
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
 export type EndpointHandler = (
-    request: Readonly<EndpointRequest>,
-    response: Readonly<EndpointResponse>,
-    endpoint: Readonly<Endpoint>,
-    service: Readonly<ServiceImplementation>,
+    params: Readonly<EndpointHandlerParams>,
 ) => MaybePromise<HandledOutput>;

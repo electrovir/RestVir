@@ -1,7 +1,7 @@
+import {HttpMethod} from '@augment-vir/common';
 import {describe, it, itCases} from '@augment-vir/test';
 import {mockService, MyMockAuth} from '../service/define-service.mock.js';
 import {ServiceDefinitionError} from '../service/service-definition.error.js';
-import {HttpMethod} from '../util/http-method.js';
 import {assertValidEndpoint, Endpoint, EndpointInit} from './endpoint.js';
 
 describe('Endpoint', () => {

@@ -1,8 +1,8 @@
 -   add typed web sockets
--   test `fetchEndpoint` within `run-service`
--   add a new `run-endpoint` package
-    -   export `testEndpoint`
-    -   make sure `implement-service` can depend on it
-    -   probably will need to split some functionality out of `run-service` and put it into `run-endpoint` instead so that it can be used to test endpoints in `implement-service`
+-   add `testEndpoint` export
 -   replace `undefined` `requiredAuth` functionality with a new `NoAuth` export, similar to how `AnyOrigin` is used
 -   add typed search params
+-   omit `HttpMethod.Options` from an endpoint init's methods object because it is always allowed anyway
+-   make each endpoint in an implemented service standalone so it can be tested on its own
+    -   meaning, each endpoint object includes its implementation
+-   Make sure all JSDocs have a `@package` tag and a `@category Package` tag
