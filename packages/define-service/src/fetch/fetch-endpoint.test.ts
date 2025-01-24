@@ -3,7 +3,7 @@ import {HttpMethod} from '@augment-vir/common';
 import {describe, it, itCases} from '@augment-vir/test';
 import {type Endpoint} from '../endpoint/endpoint.js';
 import {mockService} from '../service/define-service.mock.js';
-import {createMockFetchResponse} from '../util/mock-fetch-response.js';
+import {createMockFetch, createMockFetchResponse} from '../util/mock-fetch.js';
 import {type NoParam} from '../util/no-param.js';
 import {
     buildEndpointUrl,
@@ -126,17 +126,15 @@ describe('FetchEndpointParameters', () => {
                         somethingHere: 'hi',
                         testValue: -1,
                     },
-                    fetch() {
-                        return Promise.resolve(
-                            createMockFetchResponse({
-                                result: 1,
-                                requestData: {
-                                    somethingHere: 'hi',
-                                    testValue: -1,
-                                },
-                            }),
-                        );
-                    },
+                    fetch: createMockFetch(mockService.endpoints['/test'], {
+                        responseData: {
+                            result: 1,
+                            requestData: {
+                                somethingHere: 'hi',
+                                testValue: -1,
+                            },
+                        },
+                    }),
                 }),
             )
             .equals<
@@ -170,7 +168,9 @@ describe('FetchEndpointParameters', () => {
                 url = givenUrl;
                 requestInit = givenRequestInit;
                 return Promise.resolve(
-                    createMockFetchResponse(endpoint.responseDataShape?.defaultValue),
+                    createMockFetchResponse(endpoint, {
+                        responseData: endpoint.responseDataShape?.defaultValue,
+                    }),
                 );
             },
         });

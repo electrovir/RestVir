@@ -122,8 +122,26 @@ export type FetchEndpointParams<
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export type FetchEndpointOutput<EndpointToFetch extends Endpoint | NoParam> = Readonly<{
-    data: EndpointToFetch extends Endpoint
+export type FetchEndpointOutput<
+    EndpointToFetch extends
+        | Readonly<
+              SelectFrom<
+                  Endpoint,
+                  {
+                      requestDataShape: true;
+                      responseDataShape: true;
+                  }
+              >
+          >
+        | NoParam,
+> = Readonly<{
+    data: EndpointToFetch extends SelectFrom<
+        Endpoint,
+        {
+            requestDataShape: true;
+            responseDataShape: true;
+        }
+    >
         ? EndpointExecutorData<EndpointToFetch>['response']
         : any;
     response: Readonly<Response>;
@@ -200,14 +218,27 @@ function filterToValidMethod(
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export type CollapsedFetchEndpointParams<EndpointToFetch extends Readonly<Endpoint> | NoParam> =
-    EndpointToFetch extends NoParam
-        ? [Readonly<GenericFetchEndpointParams>?]
-        : Readonly<FetchEndpointParams<Exclude<EndpointToFetch, NoParam>>> extends infer RealParams
-          ? RequiredKeysOf<RealParams> extends never
-              ? [RealParams?]
-              : [RealParams]
-          : [];
+export type CollapsedFetchEndpointParams<
+    EndpointToFetch extends
+        | Readonly<
+              SelectFrom<
+                  Endpoint,
+                  {
+                      endpointPath: true;
+                      requestDataShape: true;
+                      responseDataShape: true;
+                      methods: true;
+                  }
+              >
+          >
+        | NoParam,
+> = EndpointToFetch extends NoParam
+    ? [Readonly<GenericFetchEndpointParams>?]
+    : Readonly<FetchEndpointParams<Exclude<EndpointToFetch, NoParam>>> extends infer RealParams
+      ? RequiredKeysOf<RealParams> extends never
+          ? [RealParams?]
+          : [RealParams]
+      : [];
 
 /**
  * Send a request to an endpoint definition with type safe parameters.
@@ -218,8 +249,40 @@ export type CollapsedFetchEndpointParams<EndpointToFetch extends Readonly<Endpoi
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export async function fetchEndpoint<const EndpointToFetch extends Readonly<Endpoint> | NoParam>(
-    endpoint: EndpointToFetch extends Endpoint ? EndpointToFetch : Endpoint,
+export async function fetchEndpoint<
+    const EndpointToFetch extends
+        | Readonly<
+              SelectFrom<
+                  Endpoint,
+                  {
+                      requestDataShape: true;
+                      endpointPath: true;
+                      responseDataShape: true;
+                      methods: true;
+                      service: {
+                          serviceOrigin: true;
+                          serviceName: true;
+                      };
+                  }
+              >
+          >
+        | NoParam,
+>(
+    endpoint: EndpointToFetch extends Endpoint
+        ? EndpointToFetch
+        : SelectFrom<
+              Endpoint,
+              {
+                  requestDataShape: true;
+                  endpointPath: true;
+                  responseDataShape: true;
+                  methods: true;
+                  service: {
+                      serviceOrigin: true;
+                      serviceName: true;
+                  };
+              }
+          >,
     ...[
         {method, options, pathParams, requestData, fetch} = {},
     ]: CollapsedFetchEndpointParams<EndpointToFetch>
@@ -245,7 +308,7 @@ export async function fetchEndpoint<const EndpointToFetch extends Readonly<Endpo
     /* node:coverage ignore next: all tests mock fetch so we're never going to have a fallback here. */
     const response = await (fetch || globalThis.fetch)(url, requestInit);
 
-    const responseData = endpoint.responseDataShape ? JSON.parse(await response.json()) : undefined;
+    const responseData = endpoint.responseDataShape ? await response.json() : undefined;
 
     if (endpoint.responseDataShape) {
         assertValidShape(responseData, endpoint.responseDataShape);

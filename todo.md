@@ -6,3 +6,4 @@
 -   make each endpoint in an implemented service standalone so it can be tested on its own
     -   meaning, each endpoint object includes its implementation
 -   Make sure all JSDocs have a `@package` tag and a `@category Package` tag
+-   fill in mono-repo README

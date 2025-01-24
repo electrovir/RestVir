@@ -25,6 +25,11 @@ describe(defineService.name, () => {
         assert.strictEquals(mockService.serviceOrigin, 'https://example.com');
         assert.strictEquals(myService.serviceOrigin, 'https://electrovir.com');
     });
+    it('allows possibly undefined endpoint message types', () => {
+        assert
+            .tsType<(typeof mockService.endpoints)['/long-running']['RequestType']>()
+            .equals<undefined | {count: number}>();
+    });
 
     it('preserves allowed auth input', () => {
         const myService = defineService({
