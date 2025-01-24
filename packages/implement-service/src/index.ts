@@ -1,4 +1,4 @@
-export {HttpStatus} from '@augment-vir/common';
+export {HttpMethod, HttpStatus} from '@augment-vir/common';
 
 export * from './implementation/generic-service-implementation.js';
 export * from './implementation/implement-endpoint.js';

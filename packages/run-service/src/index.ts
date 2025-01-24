@@ -1,3 +1,4 @@
+export {HttpMethod, HttpStatus} from '@augment-vir/common';
 export {type EndpointRequest, type EndpointResponse} from '@rest-vir/implement-service';
 
 export * from './handle-endpoint/endpoint-handler.js';

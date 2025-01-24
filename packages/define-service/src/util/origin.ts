@@ -4,6 +4,8 @@ import {MaybePromise} from '@augment-vir/common';
  * Explicity denotes that any origin is allowed.
  *
  * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export const AnyOrigin = Symbol('any-origin');
 
@@ -11,6 +13,8 @@ export const AnyOrigin = Symbol('any-origin');
  * Type for {@link AnyOrigin} symbol.
  *
  * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export type AnyOrigin = typeof AnyOrigin;
 
@@ -28,6 +32,8 @@ export type AnyOrigin = typeof AnyOrigin;
  *   any of the array entries allow a request origin, it passes.
  *
  * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export type OriginRequirement =
     | undefined

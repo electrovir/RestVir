@@ -63,7 +63,7 @@ export function createMockFetchResponse<const EndpointToMock extends Endpoint>(
  *
  * @category Testing
  * @category Package : @rest-vir/define-service
- * @package
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export function createMockFetch<const EndpointToMock extends Endpoint>(
     endpoint: EndpointToMock,

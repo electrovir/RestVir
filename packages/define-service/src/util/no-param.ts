@@ -7,8 +7,7 @@
  */
 export const NoParam = Symbol('no type parameter');
 /**
- * Use to keep track of type parameters that are still generic and haven't received a specific type
- * yet.
+ * Use to keep track of type parameters that are generic and haven't received a specific type yet.
  *
  * @category Internal
  * @category Package : @rest-vir/define-service

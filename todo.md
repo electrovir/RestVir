@@ -5,5 +5,4 @@
 -   omit `HttpMethod.Options` from an endpoint init's methods object because it is always allowed anyway
 -   make each endpoint in an implemented service standalone so it can be tested on its own
     -   meaning, each endpoint object includes its implementation
--   Make sure all JSDocs have a `@package` tag and a `@category Package` tag
 -   fill in mono-repo README

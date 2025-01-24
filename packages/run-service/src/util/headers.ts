@@ -1,6 +1,6 @@
 import {getObjectTypedEntries} from '@augment-vir/common';
-import type {EndpointResponse} from '@rest-vir/implement-service';
-import type {OutgoingHttpHeaders} from 'node:http';
+import {type EndpointResponse} from '@rest-vir/implement-service';
+import {type OutgoingHttpHeaders} from 'node:http';
 
 /**
  * Easily apply an object of headers to a Response object. Setting a header to `undefined` removes
