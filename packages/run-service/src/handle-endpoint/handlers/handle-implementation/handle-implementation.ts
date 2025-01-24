@@ -9,7 +9,6 @@ import {
 import {
     createEndpointErrorPrefix,
     InternalEndpointError,
-    type EndpointImplementation,
     type EndpointImplementationOutput,
     type EndpointImplementationParams,
 } from '@rest-vir/implement-service';
@@ -65,9 +64,7 @@ export async function handleImplementation(
             auth,
         };
 
-        const endpointImplementation = service.implementations[endpoint.endpointPath] as
-            | EndpointImplementation
-            | undefined;
+        const endpointImplementation = service.endpoints[endpoint.endpointPath]?.implementation;
 
         if (!endpointImplementation) {
             throw new InternalEndpointError(endpoint, 'Missing endpoint implementation.');

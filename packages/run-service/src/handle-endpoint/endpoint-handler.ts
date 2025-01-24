@@ -2,10 +2,10 @@
 
 import type {HttpStatus, MaybePromise} from '@augment-vir/common';
 import {Endpoint} from '@rest-vir/define-service';
-import type {
+import {
     EndpointRequest,
     EndpointResponse,
-    ServiceImplementation,
+    GenericServiceImplementation,
 } from '@rest-vir/implement-service';
 import {OutgoingHttpHeaders} from 'node:http';
 
@@ -47,7 +47,7 @@ export type EndpointHandlerParams = {
     request: EndpointRequest;
     response: EndpointResponse;
     endpoint: Readonly<Endpoint>;
-    service: Readonly<ServiceImplementation>;
+    service: Readonly<GenericServiceImplementation>;
 };
 
 /**

@@ -86,6 +86,7 @@ async function setupService(scriptName: string) {
             serverStarted.resolve(url);
         }
     });
+    /* node:coverage ignore next 4: keep this in case of errors */
     shellTarget.listen(ShellStderrEvent, (event) => {
         stderr.push(removeColor(String(event.detail)).toLowerCase());
         log.error(String(event.detail));

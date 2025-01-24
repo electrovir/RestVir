@@ -28,14 +28,16 @@ describe(handleEndpointRequest.name, () => {
                     mockService.endpoints['/health'],
                     {
                         logger: defaultServiceLogger,
-                        implementations: {
-                            '/health'() {
-                                return {
-                                    responseData: {
-                                        hi: '4',
-                                    },
-                                    statusCode: HttpStatus.Ok,
-                                };
+                        endpoints: {
+                            '/health': {
+                                implementation() {
+                                    return {
+                                        responseData: {
+                                            hi: '4',
+                                        },
+                                        statusCode: HttpStatus.Ok,
+                                    };
+                                },
                             },
                         },
                     } as AnyObject as GenericServiceImplementation,
@@ -44,6 +46,56 @@ describe(handleEndpointRequest.name, () => {
             {
                 matchMessage: 'Got response data but none was expected.',
             },
+        );
+    });
+    it('errors for missing implementation', async () => {
+        await assert.throws(
+            () =>
+                handleEndpointRequest(
+                    {
+                        method: HttpMethod.Get,
+                        headers: {},
+                    } as EndpointRequest,
+                    {
+                        header() {},
+                        send() {},
+                    } as AnyObject as EndpointResponse,
+                    mockService.endpoints['/health'],
+                    {
+                        logger: defaultServiceLogger,
+                        endpoints: {
+                            '/health': {},
+                        },
+                    } as AnyObject as GenericServiceImplementation,
+                    true,
+                ),
+            {
+                matchMessage: 'Missing endpoint implementation',
+            },
+        );
+    });
+    it('handles endpoint error', async () => {
+        await handleEndpointRequest(
+            {
+                method: HttpMethod.Get,
+                headers: {},
+            } as EndpointRequest,
+            {
+                header() {},
+                send() {},
+            } as AnyObject as EndpointResponse,
+            mockService.endpoints['/health'],
+            {
+                logger: defaultServiceLogger,
+                endpoints: {
+                    '/health': {
+                        implementation() {
+                            throw new Error('Health failure.');
+                        },
+                    },
+                },
+            } as AnyObject as GenericServiceImplementation,
+            false,
         );
     });
 });

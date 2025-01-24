@@ -3,6 +3,4 @@
 -   replace `undefined` `requiredAuth` functionality with a new `NoAuth` export, similar to how `AnyOrigin` is used
 -   add typed search params
 -   omit `HttpMethod.Options` from an endpoint init's methods object because it is always allowed anyway
--   make each endpoint in an implemented service standalone so it can be tested on its own
-    -   meaning, each endpoint object includes its implementation
 -   fill in mono-repo README

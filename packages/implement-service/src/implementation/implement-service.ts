@@ -1,10 +1,17 @@
 import {check} from '@augment-vir/assert';
-import {getObjectTypedEntries, type ArrayElement, type MaybePromise} from '@augment-vir/common';
 import {
+    getObjectTypedEntries,
+    mapObjectValues,
+    type ArrayElement,
+    type MaybePromise,
+} from '@augment-vir/common';
+import {
+    BaseServiceEndpointsInit,
+    EndpointPathBase,
+    NoParam,
+    ServiceDefinition,
     ServiceDefinitionError,
-    type BaseServiceEndpointsInit,
-    type NoParam,
-    type ServiceDefinition,
+    WithFinalEndpointProps,
 } from '@rest-vir/define-service';
 import type {IsEqual} from 'type-fest';
 import {
@@ -14,6 +21,7 @@ import {
     type ServiceLogger,
 } from '../util/service-logger.js';
 import type {EndpointImplementationParams, EndpointImplementations} from './implement-endpoint.js';
+import {EndpointImplementation} from './implement-endpoint.js';
 
 /**
  * User-defined service Context or Context generator.
@@ -103,9 +111,18 @@ export function implementService<
 ): ServiceImplementation<Context, ServiceName, AllowedAuth, EndpointsInit> {
     assertValidEndpointImplementations(service, endpointImplementations);
 
+    const endpoints = mapObjectValues(service.endpoints, (endpointPath, endpoint) => {
+        const implementation = endpointImplementations[endpointPath as EndpointPathBase];
+
+        return {
+            ...endpoint,
+            implementation,
+        };
+    }) as ServiceImplementation<Context, ServiceName, AllowedAuth, EndpointsInit>['endpoints'];
+
     return {
         ...service,
-        implementations: endpointImplementations,
+        endpoints,
         context: init.context as ContextInit<Context>,
         extractAuth: init.extractAuth,
         logger: createServiceLogger(init.logger),
@@ -124,8 +141,33 @@ export type ServiceImplementation<
     ServiceName extends string = any,
     AllowedAuth extends ReadonlyArray<any> | undefined = any,
     EndpointsInit extends BaseServiceEndpointsInit<AllowedAuth> | NoParam = NoParam,
-> = ServiceDefinition<ServiceName, AllowedAuth, EndpointsInit> & {
-    implementations: EndpointImplementations<Context, ServiceName, EndpointsInit>;
+> = Omit<ServiceDefinition<ServiceName, AllowedAuth, EndpointsInit>, 'endpoints'> & {
+    endpoints: {
+        [EndpointPath in keyof ServiceDefinition<
+            ServiceName,
+            AllowedAuth,
+            EndpointsInit
+        >['endpoints']]: ServiceDefinition<
+            ServiceName,
+            AllowedAuth,
+            EndpointsInit
+        >['endpoints'][EndpointPath] & {
+            implementation: EndpointPath extends EndpointPathBase
+                ? EndpointImplementation<
+                      Context,
+                      ServiceName,
+                      WithFinalEndpointProps<
+                          ServiceDefinition<
+                              ServiceName,
+                              AllowedAuth,
+                              EndpointsInit
+                          >['endpoints'][EndpointPath],
+                          EndpointPath
+                      >
+                  >
+                : never;
+        };
+    };
     context: ContextInit<Context>;
     extractAuth: ExtractAuth<Context, AllowedAuth> | undefined;
     logger: ServiceLogger;

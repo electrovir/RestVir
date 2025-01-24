@@ -131,4 +131,4 @@ export const mockServiceImplementation = implementService(
     },
 );
 
-delete (mockServiceImplementation.implementations as AnyObject)['/missing'];
+delete (mockServiceImplementation.endpoints as AnyObject)['/missing'];

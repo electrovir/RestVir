@@ -325,7 +325,7 @@ describe(startService.name, () => {
                 },
             );
         });
-        it('errors on missing implementation', async ({fetchService}) => {
+        it('404s on missing endpoint', async ({fetchService}) => {
             assert.deepEquals(
                 await condenseResponse(
                     await fetchService(mockService.endpoints['/missing'].endpointPath, {
@@ -333,9 +333,10 @@ describe(startService.name, () => {
                     }),
                 ),
                 {
-                    status: HttpStatus.InternalServerError,
+                    status: 404,
+                    body: '{"message":"Route GET:/missing not found","error":"Not Found","statusCode":404}',
                     headers: {
-                        'access-control-allow-origin': '*',
+                        'content-type': 'application/json; charset=utf-8',
                     },
                 },
             );
