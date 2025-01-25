@@ -1,10 +1,10 @@
 import {
     mergeDefinedProperties,
+    type Overwrite,
     type PartialWithUndefined,
-    type SetRequiredAndNotNull,
 } from '@augment-vir/common';
 import {cpus} from 'node:os';
-import {assertValidShape, defineShape} from 'object-shape-tester';
+import {assertValidShape, defineShape, exact, or} from 'object-shape-tester';
 
 /**
  * Shape definition for `startService` options.
@@ -25,8 +25,13 @@ export const startServiceOptionsShape = defineShape({
      * The port that the service should listen to requests on. Note that if `lockPort` is not set,
      * `startService` will try to find the first available port _starting_ with this given `port`
      * property (so the actual server may be listening to a different port).
+     *
+     * If this property is set to `false`, no port will be listened to (so you can manually do that
+     * later if you wish).
+     *
+     * @default 3000
      */
-    port: -1,
+    port: or(3000, exact(false)),
     /**
      * The number of workers to split the server into (for parallel request handling).
      *
@@ -55,7 +60,12 @@ export const startServiceOptionsShape = defineShape({
  * @category Package : @rest-vir/run-service
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
-export type StartServiceOptions = typeof startServiceOptionsShape.runtimeType;
+export type StartServiceOptions<Port extends number | false> = Overwrite<
+    typeof startServiceOptionsShape.runtimeType,
+    {
+        port: Port;
+    }
+>;
 
 /**
  * User-provided options type for `startService`.
@@ -65,10 +75,8 @@ export type StartServiceOptions = typeof startServiceOptionsShape.runtimeType;
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  * @see {@link startServiceOptionsShape} for option explanations.
  */
-export type StartServiceUserOptions = SetRequiredAndNotNull<
-    PartialWithUndefined<StartServiceOptions>,
-    'port'
->;
+export type StartServiceUserOptions<Port extends number | false = number | false> =
+    PartialWithUndefined<StartServiceOptions<Port>>;
 
 /**
  * Combines user defined options with default options to create a full options type for
@@ -79,11 +87,11 @@ export type StartServiceUserOptions = SetRequiredAndNotNull<
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  * @see {@link startServiceOptionsShape} for option explanations.
  */
-export function finalizeOptions(
-    userOptions: Readonly<StartServiceUserOptions>,
-): StartServiceOptions {
-    const options = mergeDefinedProperties<StartServiceOptions>(
-        startServiceOptionsShape.defaultValue,
+export function finalizeOptions<const Port extends number | false>(
+    userOptions: Readonly<StartServiceUserOptions<Port>>,
+): StartServiceOptions<Port> {
+    const options = mergeDefinedProperties<StartServiceOptions<Port>>(
+        startServiceOptionsShape.defaultValue as StartServiceOptions<any>,
         userOptions,
     );
     options.workerCount = Math.max(1, options.workerCount);

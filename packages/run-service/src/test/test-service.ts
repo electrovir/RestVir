@@ -1,18 +1,75 @@
+import {assert, assertWrap} from '@augment-vir/assert';
 import {
     mapObjectValues,
     mergeDeep,
     mergeDefinedProperties,
-    randomInteger,
+    omitObjectKeys,
     type AnyObject,
     type PartialWithUndefined,
+    type SelectFrom,
 } from '@augment-vir/common';
 import {describe, it} from '@augment-vir/test';
 import {buildEndpointUrl, Endpoint, FetchEndpointParams} from '@rest-vir/define-service';
 import type {GenericServiceImplementation} from '@rest-vir/implement-service';
+import type {OutgoingHttpHeaders} from 'node:http';
 import type {IsEqual} from 'type-fest';
 import {buildUrl} from 'url-vir';
 import type {StartServiceUserOptions} from '../start-service/start-service-options.js';
 import {startService} from '../start-service/start-service.js';
+
+/**
+ * Options for {@link condenseResponse}.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/run-service
+ * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
+ */
+export type CondenseResponseOptions = {
+    /**
+     * Include all headers that fastify automatically appends.
+     *
+     * @default false
+     */
+    includeFastifyHeaders: boolean;
+};
+
+/**
+ * Condense a response into just the interesting properties for easier testing comparisons.
+ *
+ * @category Testing
+ * @category Package : @rest-vir/run-service
+ * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
+ */
+export async function condenseResponse(
+    response: Response,
+    options: PartialWithUndefined<CondenseResponseOptions> = {},
+) {
+    const bodyText = await response.text();
+    const bodyObject = bodyText
+        ? {
+              body: bodyText,
+          }
+        : {};
+
+    const headers: OutgoingHttpHeaders = Object.fromEntries(response.headers.entries());
+
+    return {
+        status: assertWrap.isHttpStatus(response.status),
+        ...bodyObject,
+        headers: options.includeFastifyHeaders
+            ? headers
+            : omitObjectKeys(headers, [
+                  /**
+                   * These headers are automatically set by fastify so we don't care about
+                   * inspecting them in tests.
+                   */
+                  'connection',
+                  'content-length',
+                  'date',
+                  'keep-alive',
+              ]),
+    };
+}
 
 /**
  * Params for the {@link FetchTestService} which is provided by {@link testService} and
@@ -44,7 +101,14 @@ export type FetchTestServiceParams<
  * @category Package : @rest-vir/run-service
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
-export type FetchTestService<Service extends GenericServiceImplementation> = {
+export type FetchTestService<
+    Service extends SelectFrom<
+        GenericServiceImplementation,
+        {
+            endpoints: true;
+        }
+    >,
+> = {
     [EndpointPath in keyof Service['endpoints']]: Service['endpoints'][EndpointPath] extends Endpoint
         ? IsEqual<
               FetchEndpointParams<Service['endpoints'][EndpointPath]>['pathParams'],
@@ -68,50 +132,92 @@ export type FetchTestService<Service extends GenericServiceImplementation> = {
 };
 
 /**
- * Run this to startup your service on an actual port for testing purposes. This returns a function
- * to send fetches to directly to the running service. See also {@link describeService}, which uses
- * this function.
+ * Run this to startup your service with actual full request and response handling. This returns a
+ * function to send fetches to directly to the running service. See also {@link describeService},
+ * which uses this function.
+ *
+ * To listen to an actual port, set `port` in the options parameter. Otherwise, a port doesn't need
+ * to be used to run tests (thus allowing maximum test parallelization).
  *
  * @category Testing
  * @category Package : @rest-vir/run-service
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
-export async function testService<const Service extends GenericServiceImplementation>(
+export async function testService<
+    const Service extends Readonly<
+        SelectFrom<
+            GenericServiceImplementation,
+            {
+                endpoints: true;
+                serviceName: true;
+                logger: true;
+            }
+        >
+    >,
+>(
     service: Readonly<Service>,
-    testServiceOptions: PartialWithUndefined<StartServiceUserOptions> = {},
+    testServiceOptions: Omit<
+        PartialWithUndefined<StartServiceUserOptions>,
+        'workerCount' | 'preventWorkerRespawn'
+    > = {},
 ) {
-    const {kill, port, host} = await startService(
+    const {kill, port, host, server} = await startService(
         service,
         mergeDefinedProperties<StartServiceUserOptions>(
             {
-                port: 3000 + randomInteger({min: 0, max: 5000}),
-                workerCount: 1,
+                port: false,
             },
             testServiceOptions,
+            {
+                workerCount: 1,
+                preventWorkerRespawn: true,
+            },
         ),
     );
 
-    const fetchOrigin = buildUrl({
-        protocol: 'http',
-        hostname: host,
-        port,
-    }).origin;
+    assert.isDefined(server, 'Service server was not started.');
 
-    const fetchService = mapObjectValues(service.endpoints, (endpointKey, endpoint) => {
-        return (params: FetchTestServiceParams = {}): Promise<Response> => {
-            const overwrittenOriginEndpoint = mergeDeep(endpoint as Endpoint, {
-                service: {
-                    serviceOrigin: fetchOrigin,
-                },
-            });
+    const fetchOrigin =
+        port == undefined
+            ? undefined
+            : buildUrl({
+                  protocol: 'http',
+                  hostname: host,
+                  port,
+              }).origin;
 
-            const url = buildEndpointUrl<any>(overwrittenOriginEndpoint, {
-                pathParams: params.pathParams,
-            });
+    const fetchService = mapObjectValues(
+        service.endpoints as GenericServiceImplementation['endpoints'],
+        (endpointKey, endpoint) => {
+            return async (params: FetchTestServiceParams = {}): Promise<Response> => {
+                if (fetchOrigin == undefined) {
+                    const innerResponse = await server.inject({
+                        url: endpoint.endpointPath,
+                    });
 
-            return globalThis.fetch(url, params.init);
-        };
-    }) as AnyObject as FetchTestService<Service>;
+                    const response = new Response(innerResponse.rawPayload, {
+                        status: innerResponse.statusCode,
+                        headers: innerResponse.headers as Record<string, string>,
+                        statusText: innerResponse.statusMessage,
+                    });
+
+                    return response;
+                } else {
+                    const overwrittenOriginEndpoint = mergeDeep(endpoint as Endpoint, {
+                        service: {
+                            serviceOrigin: fetchOrigin,
+                        },
+                    });
+
+                    const url = buildEndpointUrl<any>(overwrittenOriginEndpoint, {
+                        pathParams: params.pathParams,
+                    });
+
+                    return globalThis.fetch(url, params.init);
+                }
+            };
+        },
+    ) as AnyObject as FetchTestService<Service>;
 
     return {
         /**
@@ -147,7 +253,18 @@ export async function testService<const Service extends GenericServiceImplementa
  *
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
-export function describeService<const Service extends GenericServiceImplementation>(
+export function describeService<
+    const Service extends Readonly<
+        SelectFrom<
+            GenericServiceImplementation,
+            {
+                endpoints: true;
+                serviceName: true;
+                logger: true;
+            }
+        >
+    >,
+>(
     {
         service,
         options,

@@ -7,12 +7,9 @@ import {
     mockService,
     mockWebsiteOrigin,
 } from '@rest-vir/define-service/src/service/define-service.mock.js';
+import {condenseResponse} from '../test/test-service.js';
 import {startService} from './start-service.js';
-import {
-    condenseResponse,
-    describeServiceScript,
-    getMockScriptCommand,
-} from './test-start-service.mock.js';
+import {describeServiceScript, getMockScriptCommand} from './test-start-service.mock.js';
 
 describe(startService.name, () => {
     describeServiceScript('single-thread', ({it}) => {

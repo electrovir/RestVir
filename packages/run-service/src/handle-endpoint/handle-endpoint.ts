@@ -20,6 +20,26 @@ const endpointHandlers: EndpointHandler[] = [
 ];
 
 /**
+ * Options for {@link handleEndpointRequest}.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/run-service
+ * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
+ */
+export type HandleEndpointRequestOptions = Partial<{
+    /**
+     * If set to `true`, all service endpoint handlers will throw any errors, allowing your existing
+     * server setup to catch them and handle them as you wish.
+     *
+     * If set to `false`, all service endpoint handlers will handle the errors internally to prevent
+     * accidentally leaking error messages to the frontend.
+     *
+     * @default `false`
+     */
+    throwErrorsForExternalHandling: boolean;
+}>;
+
+/**
  * Once this is called, the endpoint to be executed has already been extracted and we know it
  * matches the current request.
  *
@@ -31,7 +51,7 @@ export async function handleEndpointRequest(
     request: EndpointRequest,
     response: EndpointResponse,
     endpoint: Readonly<ImplementedEndpoint>,
-    throwErrorsForExternalHandling: boolean,
+    {throwErrorsForExternalHandling}: HandleEndpointRequestOptions = {},
 ) {
     try {
         const workerPid = cluster.isPrimary ? '' : process.pid;

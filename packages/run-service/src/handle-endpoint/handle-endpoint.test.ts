@@ -30,7 +30,7 @@ describe(handleEndpointRequest.name, () => {
                             };
                         },
                     },
-                    true,
+                    {throwErrorsForExternalHandling: true},
                 ),
             {
                 matchMessage: 'Got response data but none was expected.',
@@ -53,7 +53,7 @@ describe(handleEndpointRequest.name, () => {
                     throw new Error('Health failure');
                 },
             },
-            false,
+            {throwErrorsForExternalHandling: false},
         );
     });
 });

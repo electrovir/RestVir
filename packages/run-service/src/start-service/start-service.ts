@@ -1,4 +1,5 @@
 import {check} from '@augment-vir/assert';
+import type {SelectFrom} from '@augment-vir/common';
 import {
     type GenericServiceImplementation,
     type ServiceImplementation,
@@ -20,12 +21,12 @@ import {
  * @category Package : @rest-vir/run-service
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
-export type StartServiceOutput = {
+export type StartServiceOutput<Port extends number | false> = {
     /**
      * The port that the server actually started on. This depends on the options given to
      * {@link startService}.
      */
-    port: number;
+    port: Port extends boolean ? undefined : number;
     /**
      * The host that the server was attached to. (This is simply passed directly from the user
      * options, merged with the default.)
@@ -63,18 +64,30 @@ export type StartServiceOutput = {
  * @category Package : @rest-vir/run-service
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
-export async function startService(
-    service: Readonly<GenericServiceImplementation>,
-    userOptions: Readonly<StartServiceUserOptions>,
-): Promise<StartServiceOutput> {
+export async function startService<const Port extends number | false>(
+    service: Readonly<
+        SelectFrom<
+            GenericServiceImplementation,
+            {
+                endpoints: true;
+                serviceName: true;
+                logger: true;
+            }
+        >
+    >,
+    userOptions: Readonly<StartServiceUserOptions<Port>>,
+): Promise<StartServiceOutput<Port>> {
     const options = finalizeOptions(userOptions);
-    options.port = options.lockPort
-        ? options.port
-        : await getPortPromise({
-              port: options.port,
-          });
 
-    if (options.workerCount === 1) {
+    const port: number | boolean =
+        options.lockPort || check.isFalse(options.port)
+            ? options.port
+            : await getPortPromise({
+                  port: options.port,
+              });
+    options.port = port as Port;
+
+    if (options.workerCount === 1 || !check.isNumber(port)) {
         /** Only run a single server. */
         const result = await startServer(service, options);
 
@@ -106,7 +119,7 @@ export async function startService(
 
             return {
                 host: options.host,
-                port: options.port,
+                port: port as StartServiceOutput<Port>['port'],
                 cluster: manager,
                 kill() {
                     manager.destroy();
@@ -115,7 +128,7 @@ export async function startService(
         } else {
             return {
                 host: options.host,
-                port: options.port,
+                port: port as StartServiceOutput<Port>['port'],
                 worker: manager,
                 kill() {
                     manager.destroy();
@@ -125,19 +138,28 @@ export async function startService(
     }
 }
 
-async function startServer(
-    service: Readonly<ServiceImplementation>,
-    {host, port}: Readonly<Pick<StartServiceOptions, 'host' | 'port'>>,
-): Promise<StartServiceOutput> {
+async function startServer<const Port extends number | false>(
+    service: Readonly<
+        SelectFrom<
+            ServiceImplementation,
+            {
+                endpoints: true;
+            }
+        >
+    >,
+    {host, port}: Readonly<Pick<StartServiceOptions<Port>, 'host' | 'port'>>,
+): Promise<StartServiceOutput<Port>> {
     const server = fastify();
 
     attachService(server, service);
 
-    await server.listen({port, host});
+    if (check.isNumber(port)) {
+        await server.listen({port, host});
+    }
 
     return {
         host,
-        port,
+        port: (check.isNumber(port) ? port : undefined) as StartServiceOutput<Port>['port'],
         server,
         kill() {
             server.server.close();

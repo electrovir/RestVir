@@ -1,12 +1,5 @@
 import {waitUntil} from '@augment-vir/assert';
-import {
-    DeferredPromise,
-    log,
-    omitObjectKeys,
-    removeColor,
-    safeMatch,
-    type MaybePromise,
-} from '@augment-vir/common';
+import {DeferredPromise, log, removeColor, safeMatch, type MaybePromise} from '@augment-vir/common';
 import {
     interpolationSafeWindowsPath,
     ShellStderrEvent,
@@ -14,37 +7,9 @@ import {
     streamShellCommand,
 } from '@augment-vir/node';
 import {describe, it} from '@augment-vir/test';
-import type {OutgoingHttpHeaders} from 'node:http';
 import {join} from 'node:path';
 import {buildUrl} from 'url-vir';
 import {startServiceMocksDirPath} from '../util/file-paths.mock.js';
-
-export async function condenseResponse(response: Response) {
-    const bodyText = await response.text();
-    const bodyObject = bodyText
-        ? {
-              body: bodyText,
-          }
-        : {};
-
-    return {
-        status: response.status,
-        ...bodyObject,
-        headers: omitObjectKeys(
-            Object.fromEntries(response.headers.entries()) as OutgoingHttpHeaders,
-            [
-                /**
-                 * These headers are automatically set by fastify so we don't care about inspecting
-                 * them in tests.
-                 */
-                'connection',
-                'content-length',
-                'date',
-                'keep-alive',
-            ],
-        ),
-    };
-}
 
 export type TestFetch = (
     this: void,
