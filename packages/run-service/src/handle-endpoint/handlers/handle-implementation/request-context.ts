@@ -3,7 +3,7 @@ import {type AnyObject} from '@augment-vir/common';
 import {
     ContextInit,
     EndpointImplementationParams,
-    ServiceImplementation,
+    type GenericServiceImplementation,
 } from '@rest-vir/implement-service';
 
 /**
@@ -15,7 +15,7 @@ import {
  */
 export async function createContext(
     params: Omit<EndpointImplementationParams, 'context' | 'auth'>,
-    service: Readonly<ServiceImplementation>,
+    service: Readonly<GenericServiceImplementation>,
 ) {
     const contextInput: ContextInit<AnyObject> = service.context;
 

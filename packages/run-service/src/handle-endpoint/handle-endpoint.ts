@@ -1,11 +1,10 @@
 import {check} from '@augment-vir/assert';
 import {ensureError, HttpStatus} from '@augment-vir/common';
-import {type Endpoint} from '@rest-vir/define-service';
 import {
     EndpointRequest,
     EndpointResponse,
     InternalEndpointError,
-    ServiceImplementation,
+    type ImplementedEndpoint,
 } from '@rest-vir/implement-service';
 import cluster from 'node:cluster';
 import {setResponseHeaders} from '../util/headers.js';
@@ -31,8 +30,7 @@ const endpointHandlers: EndpointHandler[] = [
 export async function handleEndpointRequest(
     request: EndpointRequest,
     response: EndpointResponse,
-    endpoint: Readonly<Endpoint>,
-    service: Readonly<ServiceImplementation>,
+    endpoint: Readonly<ImplementedEndpoint>,
     throwErrorsForExternalHandling: boolean,
 ) {
     try {
@@ -43,10 +41,10 @@ export async function handleEndpointRequest(
             request.method,
             request.originalUrl,
         ].filter(check.isTruthy);
-        service.logger.info(logParts.join('\t'));
+        endpoint.service.logger.info(logParts.join('\t'));
 
         for (const handler of endpointHandlers) {
-            const handlerResult = await handler({request, response, endpoint, service});
+            const handlerResult = await handler({request, response, endpoint});
             if (handlerResult) {
                 if (handlerResult.headers) {
                     setResponseHeaders(response, handlerResult.headers);
@@ -68,7 +66,7 @@ export async function handleEndpointRequest(
         /* node:coverage ignore next: currently this is not possible to trigger, but it is here as a fail-safe for the potential future edge case. */
         throw new InternalEndpointError(endpoint, 'Request was not handled.');
     } catch (error) {
-        service.logger.error(ensureError(error));
+        endpoint.service.logger.error(ensureError(error));
         if (throwErrorsForExternalHandling) {
             throw error;
         } else if (!response.sent) {

@@ -1,4 +1,7 @@
-import {EndpointImplementationParams, ServiceImplementation} from '@rest-vir/implement-service';
+import {
+    EndpointImplementationParams,
+    GenericServiceImplementation,
+} from '@rest-vir/implement-service';
 
 /**
  * Extracts the endpoint handler, user-defined auth for the given service.
@@ -9,7 +12,7 @@ import {EndpointImplementationParams, ServiceImplementation} from '@rest-vir/imp
  */
 export async function extractAuth(
     params: Omit<EndpointImplementationParams, 'auth'>,
-    service: Readonly<ServiceImplementation>,
+    service: Readonly<GenericServiceImplementation>,
 ) {
     if (!service.allowedAuth) {
         return undefined;

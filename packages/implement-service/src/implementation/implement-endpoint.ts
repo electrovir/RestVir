@@ -1,25 +1,91 @@
 import {
     ArrayElement,
     ErrorHttpStatusCategories,
+    ExtractKeysWithMatchingValues,
+    HttpMethod,
     HttpStatusByCategory,
     MaybePromise,
+    Overwrite,
     SuccessHttpStatusCategories,
-    type ExtractKeysWithMatchingValues,
-    type HttpMethod,
 } from '@augment-vir/common';
 import {
     BaseServiceEndpointsInit,
     Endpoint,
     EndpointInit,
     EndpointPathBase,
+    MinimalService,
     NoParam,
+    ServiceDefinition,
     WithFinalEndpointProps,
-    type MinimalService,
 } from '@rest-vir/define-service';
 import type {IncomingHttpHeaders, OutgoingHttpHeaders} from 'node:http';
 import {type IsEqual} from 'type-fest';
 import {EndpointRequest, type EndpointResponse} from '../util/message.js';
 import {type ServiceLogger} from '../util/service-logger.js';
+
+/**
+ * User-defined service Context or Context generator.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/implement-service
+ * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
+ */
+export type ContextInit<Context> =
+    | Context
+    | ((
+          params: Readonly<Omit<EndpointImplementationParams, 'context' | 'auth'>>,
+      ) => MaybePromise<Context>);
+
+/**
+ * User-defined function that extracts the current auth of an individual request.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/implement-service
+ * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
+ */
+export type ExtractAuth<Context, AllowedAuth extends ReadonlyArray<any> | undefined> =
+    Exclude<AllowedAuth, undefined> extends never
+        ? undefined
+        : (
+              params: Readonly<Omit<EndpointImplementationParams<Context>, 'auth'>>,
+          ) => MaybePromise<
+              (AllowedAuth extends any[] ? ArrayElement<AllowedAuth> : undefined) | undefined
+          >;
+
+/**
+ * A fully implemented endpoint.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/implement-service
+ * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
+ */
+export type ImplementedEndpoint<
+    Context = any,
+    ServiceName extends string = any,
+    SpecificEndpoint extends Endpoint = Endpoint,
+> = Overwrite<
+    SpecificEndpoint,
+    {
+        service: GenericServiceImplementation;
+    }
+> & {
+    implementation: EndpointImplementation<Context, ServiceName>;
+};
+
+/**
+ * A super generic service implementation that be assigned to from any concrete service
+ * implementation.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/implement-service
+ * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
+ */
+export type GenericServiceImplementation = Omit<ServiceDefinition, 'endpoints'> & {
+    endpoints: Record<EndpointPathBase, ImplementedEndpoint>;
+    context: ContextInit<any>;
+    extractAuth: ExtractAuth<any, any> | undefined;
+    logger: ServiceLogger;
+};
 
 /**
  * The object that all endpoint implementations should return.

@@ -27,7 +27,7 @@ import {extractRequestData} from './request-data.js';
  */
 export async function handleImplementation(
     this: void,
-    {endpoint, request, response, service}: Readonly<EndpointHandlerParams>,
+    {endpoint, request, response}: Readonly<EndpointHandlerParams>,
 ): Promise<HandledOutput> {
     try {
         const requestData = wrapInTry(() => extractRequestData(request.body, endpoint));
@@ -41,36 +41,30 @@ export async function handleImplementation(
 
         const contextParams: Omit<EndpointImplementationParams, 'context' | 'auth'> = {
             endpoint,
-            log: service.logger,
+            log: endpoint.service.logger,
             method: assertWrap.isEnumValue(request.method, HttpMethod),
             response,
             request,
             requestData,
-            service,
+            service: endpoint.service,
             requestHeaders: request.headers,
         };
 
-        const context = await createContext(contextParams, service);
+        const context = await createContext(contextParams, endpoint.service);
 
         const authParams: Omit<EndpointImplementationParams, 'auth'> = {
             ...contextParams,
             context,
         };
 
-        const auth = await extractAuth(authParams, service);
+        const auth = await extractAuth(authParams, endpoint.service);
 
         const endpointParams: EndpointImplementationParams = {
             ...authParams,
             auth,
         };
 
-        const endpointImplementation = service.endpoints[endpoint.endpointPath]?.implementation;
-
-        if (!endpointImplementation) {
-            throw new InternalEndpointError(endpoint, 'Missing endpoint implementation.');
-        }
-
-        const endpointResult = (await endpointImplementation(
+        const endpointResult = (await endpoint.implementation(
             endpointParams,
         )) as EndpointImplementationOutput;
 

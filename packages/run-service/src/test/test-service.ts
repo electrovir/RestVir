@@ -1,6 +1,8 @@
 import {
     mapObjectValues,
     mergeDeep,
+    mergeDefinedProperties,
+    randomInteger,
     type AnyObject,
     type PartialWithUndefined,
 } from '@augment-vir/common';
@@ -9,17 +11,8 @@ import {buildEndpointUrl, Endpoint, FetchEndpointParams} from '@rest-vir/define-
 import type {GenericServiceImplementation} from '@rest-vir/implement-service';
 import type {IsEqual} from 'type-fest';
 import {buildUrl} from 'url-vir';
-import {StartServiceOptions} from '../start-service/start-service-options.js';
+import type {StartServiceUserOptions} from '../start-service/start-service-options.js';
 import {startService} from '../start-service/start-service.js';
-
-/**
- * Options for {@link testService} and {@link describeService}.
- *
- * @category Internal
- * @category Package : @rest-vir/run-service
- * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
- */
-export type TestServiceOptions = Readonly<Pick<StartServiceOptions, 'host'>>;
 
 /**
  * Params for the {@link FetchTestService} which is provided by {@link testService} and
@@ -85,18 +78,18 @@ export type FetchTestService<Service extends GenericServiceImplementation> = {
  */
 export async function testService<const Service extends GenericServiceImplementation>(
     service: Readonly<Service>,
-    testServiceOptions: PartialWithUndefined<TestServiceOptions> = {},
+    testServiceOptions: PartialWithUndefined<StartServiceUserOptions> = {},
 ) {
-    const options: TestServiceOptions = {
-        host: testServiceOptions.host || 'localhost',
-    };
-
-    const {kill, port, host} = await startService(service, {
-        workerCount: 1,
-        port: 3005,
-        lockPort: true,
-        host: options.host,
-    });
+    const {kill, port, host} = await startService(
+        service,
+        mergeDefinedProperties<StartServiceUserOptions>(
+            {
+                port: 3000 + randomInteger({min: 0, max: 5000}),
+                workerCount: 1,
+            },
+            testServiceOptions,
+        ),
+    );
 
     const fetchOrigin = buildUrl({
         protocol: 'http',
@@ -162,7 +155,7 @@ export function describeService<const Service extends GenericServiceImplementati
         /** The service to startup and send requests to. */
         service: Readonly<Service>;
         /** Options for starting the service. */
-        options?: PartialWithUndefined<TestServiceOptions>;
+        options?: PartialWithUndefined<StartServiceUserOptions>;
     },
     describeCallback: (params: {
         /** Send a request to the service. */

@@ -1,5 +1,5 @@
 import {combineErrorMessages, type SelectFrom} from '@augment-vir/common';
-import type {Endpoint} from '@rest-vir/define-service';
+import type {Endpoint, EndpointPathBase} from '@rest-vir/define-service';
 
 /**
  * An error thrown internally from rest-vir's while handling an endpoint request. This will not
@@ -16,9 +16,12 @@ export class InternalEndpointError extends Error {
     public override readonly name = 'InternalEndpointError';
 
     constructor(
-        endpoint: Readonly<
-            SelectFrom<Endpoint, {endpointPath: true; service: {serviceName: true}}>
-        >,
+        endpoint: Readonly<{
+            endpointPath: EndpointPathBase;
+            service: {
+                serviceName: string;
+            };
+        }>,
         message: string,
     ) {
         super(combineErrorMessages(createEndpointErrorPrefix(endpoint), message));

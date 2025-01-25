@@ -1,17 +1,11 @@
 import {check} from '@augment-vir/assert';
-import {
-    getObjectTypedEntries,
-    mapObjectValues,
-    type ArrayElement,
-    type MaybePromise,
-} from '@augment-vir/common';
+import {getObjectTypedEntries, mapObjectValues, type MaybePromise} from '@augment-vir/common';
 import {
     BaseServiceEndpointsInit,
     EndpointPathBase,
     NoParam,
     ServiceDefinition,
     ServiceDefinitionError,
-    WithFinalEndpointProps,
 } from '@rest-vir/define-service';
 import type {IsEqual} from 'type-fest';
 import {
@@ -20,37 +14,12 @@ import {
     silentServiceLogger,
     type ServiceLogger,
 } from '../util/service-logger.js';
-import type {EndpointImplementationParams, EndpointImplementations} from './implement-endpoint.js';
-import {EndpointImplementation} from './implement-endpoint.js';
-
-/**
- * User-defined service Context or Context generator.
- *
- * @category Internal
- * @category Package : @rest-vir/implement-service
- * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
- */
-export type ContextInit<Context> =
-    | Context
-    | ((
-          params: Readonly<Omit<EndpointImplementationParams, 'context' | 'auth'>>,
-      ) => MaybePromise<Context>);
-
-/**
- * User-defined function that extracts the current auth of an individual request.
- *
- * @category Internal
- * @category Package : @rest-vir/implement-service
- * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
- */
-export type ExtractAuth<Context, AllowedAuth extends ReadonlyArray<any> | undefined> =
-    Exclude<AllowedAuth, undefined> extends never
-        ? undefined
-        : (
-              params: Readonly<Omit<EndpointImplementationParams<Context>, 'auth'>>,
-          ) => MaybePromise<
-              (AllowedAuth extends any[] ? ArrayElement<AllowedAuth> : undefined) | undefined
-          >;
+import type {
+    ContextInit,
+    EndpointImplementations,
+    ExtractAuth,
+    ImplementedEndpoint,
+} from './implement-endpoint.js';
 
 /**
  * A user-defined endpoint error handler for service (and its endpoints) errors.
@@ -114,19 +83,35 @@ export function implementService<
     const endpoints = mapObjectValues(service.endpoints, (endpointPath, endpoint) => {
         const implementation = endpointImplementations[endpointPath as EndpointPathBase];
 
+        /**
+         * Note: this return object is actually wrong. The service property will not be correct as
+         * the `endpoint` here only has the minimal service. Below, after `serviceImplementation` is
+         * created, we attach the correct service to all endpoints.
+         */
         return {
             ...endpoint,
             implementation,
         };
     }) as ServiceImplementation<Context, ServiceName, AllowedAuth, EndpointsInit>['endpoints'];
 
-    return {
+    const serviceImplementation: ServiceImplementation<
+        Context,
+        ServiceName,
+        AllowedAuth,
+        EndpointsInit
+    > = {
         ...service,
         endpoints,
         context: init.context as ContextInit<Context>,
         extractAuth: init.extractAuth,
         logger: createServiceLogger(init.logger),
     };
+
+    Object.values(endpoints).forEach((endpoint) => {
+        endpoint.service = serviceImplementation;
+    });
+
+    return serviceImplementation;
 }
 
 /**
@@ -147,26 +132,17 @@ export type ServiceImplementation<
             ServiceName,
             AllowedAuth,
             EndpointsInit
-        >['endpoints']]: ServiceDefinition<
-            ServiceName,
-            AllowedAuth,
-            EndpointsInit
-        >['endpoints'][EndpointPath] & {
-            implementation: EndpointPath extends EndpointPathBase
-                ? EndpointImplementation<
-                      Context,
+        >['endpoints']]: EndpointPath extends EndpointPathBase
+            ? ImplementedEndpoint<
+                  Context,
+                  ServiceName,
+                  ServiceDefinition<
                       ServiceName,
-                      WithFinalEndpointProps<
-                          ServiceDefinition<
-                              ServiceName,
-                              AllowedAuth,
-                              EndpointsInit
-                          >['endpoints'][EndpointPath],
-                          EndpointPath
-                      >
-                  >
-                : never;
-        };
+                      AllowedAuth,
+                      EndpointsInit
+                  >['endpoints'][EndpointPath]
+              >
+            : never;
     };
     context: ContextInit<Context>;
     extractAuth: ExtractAuth<Context, AllowedAuth> | undefined;

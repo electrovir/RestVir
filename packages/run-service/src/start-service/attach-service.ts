@@ -75,7 +75,6 @@ export function attachService(
                     request,
                     response,
                     endpoint,
-                    service,
                     !!options.throwErrorsForExternalHandling,
                 );
             });

@@ -1,11 +1,10 @@
 /* node:coverage disable: this file is just types */
 
 import type {HttpStatus, MaybePromise} from '@augment-vir/common';
-import {Endpoint} from '@rest-vir/define-service';
 import {
     EndpointRequest,
     EndpointResponse,
-    GenericServiceImplementation,
+    type ImplementedEndpoint,
 } from '@rest-vir/implement-service';
 import {OutgoingHttpHeaders} from 'node:http';
 
@@ -46,8 +45,7 @@ export type HandledOutput =
 export type EndpointHandlerParams = {
     request: EndpointRequest;
     response: EndpointResponse;
-    endpoint: Readonly<Endpoint>;
-    service: Readonly<GenericServiceImplementation>;
+    endpoint: Readonly<ImplementedEndpoint>;
 };
 
 /**

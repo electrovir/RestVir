@@ -18,7 +18,8 @@
     "scripts": {
         "compile": "virmator compile",
         "exec": "tsx",
-        "test:coverage": "exit 0"
+        "test": "exit 0",
+        "test:coverage": "npm test"
     },
     "dependencies": {
         "@virmator/docs": "^13.12.0",
