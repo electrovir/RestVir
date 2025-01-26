@@ -1,5 +1,4 @@
 -   add typed web sockets
--   add `testEndpoint` export
 -   replace `undefined` `requiredAuth` functionality with a new `NoAuth` export, similar to how `AnyOrigin` is used
 -   add typed search params
 -   omit `HttpMethod.Options` from an endpoint init's methods object because it is always allowed anyway

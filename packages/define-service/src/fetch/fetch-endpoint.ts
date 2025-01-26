@@ -72,6 +72,7 @@ export type FetchEndpointParams<
             methods: true;
         }
     >,
+    AllowFetchMock extends boolean = true,
 > = EndpointToFetch extends Endpoint
     ? Readonly<
           (IsNever<PathParams<EndpointToFetch['endpointPath']>> extends true
@@ -111,7 +112,9 @@ export type FetchEndpointParams<
                   : {
                         method: FetchMethod<EndpointToFetch>;
                     }) &
-              Pick<GenericFetchEndpointParams, 'options' | 'fetch'>
+              (AllowFetchMock extends true
+                  ? Pick<GenericFetchEndpointParams, 'options' | 'fetch'>
+                  : Pick<GenericFetchEndpointParams, 'options'>)
       >
     : GenericFetchEndpointParams;
 
@@ -232,9 +235,12 @@ export type CollapsedFetchEndpointParams<
               >
           >
         | NoParam,
+    AllowFetchMock extends boolean = true,
 > = EndpointToFetch extends NoParam
     ? [Readonly<GenericFetchEndpointParams>?]
-    : Readonly<FetchEndpointParams<Exclude<EndpointToFetch, NoParam>>> extends infer RealParams
+    : Readonly<
+            FetchEndpointParams<Exclude<EndpointToFetch, NoParam>, AllowFetchMock>
+        > extends infer RealParams
       ? RequiredKeysOf<RealParams> extends never
           ? [RealParams?]
           : [RealParams]
@@ -283,10 +289,11 @@ export async function fetchEndpoint<
                   };
               }
           >,
-    ...[
-        {method, options, pathParams, requestData, fetch} = {},
-    ]: CollapsedFetchEndpointParams<EndpointToFetch>
+    ...args: CollapsedFetchEndpointParams<EndpointToFetch>
 ): Promise<FetchEndpointOutput<EndpointToFetch>> {
+    /* node:coverage ignore next: `args[0]` will never be empty in tests because we always mock `fetch` */
+    const {requestData, fetch} = args[0] || {};
+
     if (requestData) {
         if (endpoint.requestDataShape) {
             assertValidShape(requestData, endpoint.requestDataShape);
@@ -297,13 +304,7 @@ export async function fetchEndpoint<
         }
     }
 
-    const url = buildEndpointUrl(endpoint, {pathParams});
-
-    const requestInit: RequestInit = {
-        ...options,
-        method: filterToValidMethod(endpoint, method),
-        ...(requestData ? {body: JSON.stringify(requestData)} : {}),
-    };
+    const {requestInit, url} = buildEndpointRequestInit(endpoint, ...args);
 
     /* node:coverage ignore next: all tests mock fetch so we're never going to have a fallback here. */
     const response = await (fetch || globalThis.fetch)(url, requestInit);
@@ -317,6 +318,85 @@ export async function fetchEndpoint<
     return {
         data: responseData,
         response,
+    };
+}
+
+/**
+ * Build request init and URL for fetching an endpoint. Used in {@link fetchEndpoint}.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
+ */
+export function buildEndpointRequestInit<
+    const EndpointToFetch extends
+        | Readonly<
+              SelectFrom<
+                  Endpoint,
+                  {
+                      requestDataShape: true;
+                      endpointPath: true;
+                      responseDataShape: true;
+                      methods: true;
+                      service: {
+                          serviceOrigin: true;
+                          serviceName: true;
+                      };
+                  }
+              >
+          >
+        | NoParam,
+>(
+    endpoint: EndpointToFetch extends Endpoint
+        ? EndpointToFetch
+        : SelectFrom<
+              Endpoint,
+              {
+                  requestDataShape: true;
+                  endpointPath: true;
+                  responseDataShape: true;
+                  methods: true;
+                  service: {
+                      serviceOrigin: true;
+                      serviceName: true;
+                  };
+              }
+          >,
+    ...[
+        {method, options = {}, pathParams, requestData} = {},
+    ]: CollapsedFetchEndpointParams<EndpointToFetch, false>
+) {
+    const headers: Record<string, string> =
+        options.headers instanceof Headers
+            ? Object.fromEntries(options.headers.entries())
+            : check.isArray(options.headers)
+              ? Object.fromEntries(options.headers)
+              : options.headers || {};
+
+    const hasContentTypeHeader = Object.keys(headers).some(
+        (headerKey) => headerKey.toLowerCase() === 'content-type',
+    );
+
+    if (!hasContentTypeHeader && check.isObject(requestData)) {
+        headers['content-type'] = 'application/json';
+    }
+
+    const url = buildEndpointUrl(endpoint, {pathParams});
+
+    const requestInit: RequestInit = {
+        ...options,
+        headers,
+        method: filterToValidMethod(endpoint, method),
+        ...(requestData
+            ? {
+                  body: JSON.stringify(requestData),
+              }
+            : {}),
+    };
+
+    return {
+        url,
+        requestInit,
     };
 }
 

@@ -9,12 +9,17 @@ import {
     type SelectFrom,
 } from '@augment-vir/common';
 import {describe, it} from '@augment-vir/test';
-import {buildEndpointUrl, Endpoint, FetchEndpointParams} from '@rest-vir/define-service';
-import type {GenericServiceImplementation} from '@rest-vir/implement-service';
-import type {OutgoingHttpHeaders} from 'node:http';
-import type {IsEqual} from 'type-fest';
-import {buildUrl} from 'url-vir';
-import type {StartServiceUserOptions} from '../start-service/start-service-options.js';
+import {
+    buildEndpointRequestInit,
+    CollapsedFetchEndpointParams,
+    Endpoint,
+    type NoParam,
+} from '@rest-vir/define-service';
+import {type GenericServiceImplementation} from '@rest-vir/implement-service';
+import {type InjectOptions} from 'light-my-request';
+import {type OutgoingHttpHeaders} from 'node:http';
+import {buildUrl, parseUrl} from 'url-vir';
+import {type StartServiceUserOptions} from '../start-service/start-service-options.js';
 import {startService} from '../start-service/start-service.js';
 
 /**
@@ -72,27 +77,15 @@ export async function condenseResponse(
 }
 
 /**
- * Params for the {@link FetchTestService} which is provided by {@link testService} and
- * {@link describeService}.
+ * Used for each individual endpoint's fetcher in {@link FetchTestService}.
  *
  * @category Internal
  * @category Package : @rest-vir/run-service
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
-export type FetchTestServiceParams<
-    PathParams extends Record<string, string> | undefined = undefined,
-> = (IsEqual<PathParams, undefined> extends true
-    ? {
-          /** Empty path params for endpoints without any. */
-          pathParams?: never;
-      }
-    : {
-          /** Path params for the endpoint in use. */
-          pathParams: PathParams;
-      }) & {
-    /** Request init parameters. */
-    init?: RequestInit | undefined;
-};
+export type FetchTestEndpoint<EndpointToTest extends Endpoint> = (
+    ...params: CollapsedFetchEndpointParams<EndpointToTest, false>
+) => Promise<Response>;
 
 /**
  * Type for the `fetchService` function provided by {@link testService} and {@link describeService}.
@@ -110,34 +103,18 @@ export type FetchTestService<
     >,
 > = {
     [EndpointPath in keyof Service['endpoints']]: Service['endpoints'][EndpointPath] extends Endpoint
-        ? IsEqual<
-              FetchEndpointParams<Service['endpoints'][EndpointPath]>['pathParams'],
-              undefined
-          > extends true
-            ? (
-                  params?:
-                      | FetchTestServiceParams<
-                            FetchEndpointParams<Service['endpoints'][EndpointPath]>['pathParams']
-                        >
-                      | undefined,
-              ) => Promise<Response>
-            : (
-                  params:
-                      | FetchTestServiceParams<
-                            FetchEndpointParams<Service['endpoints'][EndpointPath]>['pathParams']
-                        >
-                      | undefined,
-              ) => Promise<Response>
+        ? FetchTestEndpoint<Service['endpoints'][EndpointPath]>
         : never;
 };
 
 /**
- * Run this to startup your service with actual full request and response handling. This returns a
- * function to send fetches to directly to the running service. See also {@link describeService},
- * which uses this function.
+ * Test your service with actual Request and Response objects!
  *
- * To listen to an actual port, set `port` in the options parameter. Otherwise, a port doesn't need
- * to be used to run tests (thus allowing maximum test parallelization).
+ * The returned object includes a function to send fetches to directly to the running service. See
+ * also {@link describeService}, which uses this function.
+ *
+ * By default, this uses Fastify's request injection strategy to avoid using up real system ports.
+ * To instead listen to an actual port, set `port` in the options parameter.
  *
  * @category Testing
  * @category Package : @rest-vir/run-service
@@ -189,10 +166,40 @@ export async function testService<
     const fetchService = mapObjectValues(
         service.endpoints as GenericServiceImplementation['endpoints'],
         (endpointKey, endpoint) => {
-            return async (params: FetchTestServiceParams = {}): Promise<Response> => {
+            return async (
+                ...args: CollapsedFetchEndpointParams<NoParam, false>
+            ): Promise<Response> => {
+                const overwrittenOriginEndpoint = mergeDeep(
+                    endpoint as Endpoint,
+                    fetchOrigin
+                        ? {
+                              service: {
+                                  serviceOrigin: fetchOrigin,
+                              },
+                          }
+                        : {},
+                );
+
+                const {url, requestInit} = buildEndpointRequestInit<NoParam>(
+                    overwrittenOriginEndpoint,
+                    ...args,
+                );
+
+                const {href, fullPath} = parseUrl(url);
+
                 if (fetchOrigin == undefined) {
+                    const withPayload: Pick<InjectOptions, 'body'> = requestInit.body
+                        ? {
+                              body: requestInit.body,
+                          }
+                        : {};
+
                     const innerResponse = await server.inject({
-                        url: endpoint.endpointPath,
+                        remoteAddress: href,
+                        headers: requestInit.headers as Record<string, string>,
+                        method: requestInit.method as NonNullable<InjectOptions['method']>,
+                        url: fullPath,
+                        ...withPayload,
                     });
 
                     const response = new Response(innerResponse.rawPayload, {
@@ -203,17 +210,7 @@ export async function testService<
 
                     return response;
                 } else {
-                    const overwrittenOriginEndpoint = mergeDeep(endpoint as Endpoint, {
-                        service: {
-                            serviceOrigin: fetchOrigin,
-                        },
-                    });
-
-                    const url = buildEndpointUrl<any>(overwrittenOriginEndpoint, {
-                        pathParams: params.pathParams,
-                    });
-
-                    return globalThis.fetch(url, params.init);
+                    return globalThis.fetch(href, requestInit);
                 }
             };
         },
@@ -284,7 +281,7 @@ export function describeService<
     const fetchServiceObject = mapObjectValues(service.endpoints, (endpointPath) => {
         return async (...args: any[]) => {
             const {fetchService} = await servicePromise;
-            return await fetchService[endpointPath](...(args as [any]));
+            return await fetchService[endpointPath](...(args as any));
         };
     }) as FetchTestService<Service>;
 

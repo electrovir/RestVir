@@ -13,7 +13,10 @@ describeService({service: mockServiceImplementation}, ({fetchService}) => {
         assert.isTrue(response.ok);
     });
     it('rejects an invalid request', async () => {
-        const response = await fetchService['/test']();
+        const response = await fetchService['/test']({
+            // @ts-expect-error: invalid request data
+            requestData: undefined,
+        });
 
         assert.isFalse(response.ok);
     });

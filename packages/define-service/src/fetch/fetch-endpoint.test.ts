@@ -201,6 +201,104 @@ describe('FetchEndpointParameters', () => {
                         testValue: 4,
                     }),
                     method: HttpMethod.Post,
+                    headers: {
+                        'content-type': 'application/json',
+                    },
+                },
+            },
+        },
+        {
+            it: 'handles headers object',
+            inputs: [
+                mockService.endpoints['/test'],
+                {
+                    requestData: {
+                        somethingHere: 'hi',
+                        testValue: 4,
+                    },
+                    options: {
+                        headers: new Headers({
+                            'header-test': 'test',
+                        }),
+                    },
+                },
+            ],
+            expect: {
+                url: 'https://example.com/test',
+                requestInit: {
+                    body: JSON.stringify({
+                        somethingHere: 'hi',
+                        testValue: 4,
+                    }),
+                    method: HttpMethod.Post,
+                    headers: {
+                        'content-type': 'application/json',
+                        'header-test': 'test',
+                    },
+                },
+            },
+        },
+        {
+            it: 'handles array headers init',
+            inputs: [
+                mockService.endpoints['/test'],
+                {
+                    requestData: {
+                        somethingHere: 'hi',
+                        testValue: 4,
+                    },
+                    options: {
+                        headers: [
+                            [
+                                'header-test',
+                                'test',
+                            ],
+                        ],
+                    },
+                },
+            ],
+            expect: {
+                url: 'https://example.com/test',
+                requestInit: {
+                    body: JSON.stringify({
+                        somethingHere: 'hi',
+                        testValue: 4,
+                    }),
+                    method: HttpMethod.Post,
+                    headers: {
+                        'content-type': 'application/json',
+                        'header-test': 'test',
+                    },
+                },
+            },
+        },
+        {
+            it: 'does not override existing content type header',
+            inputs: [
+                mockService.endpoints['/test'],
+                {
+                    requestData: {
+                        somethingHere: 'hi',
+                        testValue: 4,
+                    },
+                    options: {
+                        headers: {
+                            'content-type': 'derp',
+                        },
+                    },
+                },
+            ],
+            expect: {
+                url: 'https://example.com/test',
+                requestInit: {
+                    body: JSON.stringify({
+                        somethingHere: 'hi',
+                        testValue: 4,
+                    }),
+                    method: HttpMethod.Post,
+                    headers: {
+                        'content-type': 'derp',
+                    },
                 },
             },
         },
@@ -220,6 +318,7 @@ describe('FetchEndpointParameters', () => {
                 url: 'https://example.com/with/hi/bye',
                 requestInit: {
                     method: HttpMethod.Head,
+                    headers: {},
                 },
             },
         },
