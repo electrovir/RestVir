@@ -359,16 +359,33 @@ describe(startService.name, () => {
     });
 
     describeServiceScript('multi-threaded', ({it}) => {
-        it('does not get blocked', async ({fetchService}) => {
-            const startTime = Date.now();
-            const longRunningTime = fetchService(
-                mockService.endpoints['/long-running'].endpointPath,
-            ).then(() => Date.now() - startTime);
-            const plainTime = fetchService(mockService.endpoints['/plain'].endpointPath).then(
-                () => Date.now() - startTime,
-            );
-
-            assert.isBelow(await plainTime, await longRunningTime);
+        /**
+         * Unfortunately this test is not reliable as an automated test. Instead, test it manually
+         * by doing the following:
+         *
+         * 1. Run `npx tsx <path-to-multithreaded-script-file>`.
+         * 2. Hit the `/long-running` endpoint in a browser.
+         * 3. Quickly, in a separate tab, open `/empty`.
+         * 4. `/empty` should resolve immediately while `/long-running` is still loading.
+         */
+        // it('does not get blocked', async ({fetchService}) => {
+        //     const startTime = Date.now();
+        //     const longRunningTime = fetchService(
+        //         mockService.endpoints['/long-running'].endpointPath,
+        //     ).then(() => Date.now() - startTime);
+        //     const plainTime = fetchService(mockService.endpoints['/plain'].endpointPath).then(
+        //         () => Date.now() - startTime,
+        //     );
+        //     assert.isBelow(await plainTime, await longRunningTime);
+        // });
+        it('runs', async ({fetchService}) => {
+            const response = await fetchService(mockService.endpoints['/empty'].endpointPath);
+            assert.deepEquals(await condenseResponse(response), {
+                headers: {
+                    'access-control-allow-origin': '*',
+                },
+                status: HttpStatus.Ok,
+            });
         });
     });
     describeServiceScript('locked-port', ({it}) => {

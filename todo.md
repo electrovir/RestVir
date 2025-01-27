@@ -1,5 +1,13 @@
+## Required
+
 -   add typed web sockets
--   replace `undefined` `requiredAuth` functionality with a new `NoAuth` export, similar to how `AnyOrigin` is used
 -   add typed search params
--   omit `HttpMethod.Options` from an endpoint init's methods object because it is always allowed anyway
 -   fill in mono-repo README
+
+## Less required
+
+-   replace `undefined` `requiredAuth` functionality with a new `NoAuth` export, similar to how `AnyOrigin` is used
+
+## Not required
+
+-   omit `HttpMethod.Options` from an endpoint init's methods object because it is always allowed anyway
