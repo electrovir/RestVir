@@ -7,16 +7,24 @@ import {
     stringify,
 } from '@augment-vir/common';
 import {assertValidShape, defineShape} from 'object-shape-tester';
-import {type IsEqual} from 'type-fest';
+import {type IsEqual, type SetRequired} from 'type-fest';
 import {type EndpointPathBase} from '../endpoint/endpoint-path.js';
 import {
-    type Endpoint,
-    type EndpointInit,
-    type WithFinalEndpointProps,
     assertValidEndpoint,
     attachEndpointShapeTypeGetters,
     endpointInitShape,
+    type Endpoint,
+    type EndpointInit,
+    type WithFinalEndpointProps,
 } from '../endpoint/endpoint.js';
+import {
+    Socket,
+    SocketInit,
+    WithFinalSocketProps,
+    assertValidSocket,
+    attachSocketShapeTypeGetters,
+    socketInitShape,
+} from '../socket/socket.js';
 import {type NoParam} from '../util/no-param.js';
 import {type OriginRequirement} from '../util/origin.js';
 import {MinimalService} from './minimal-service.js';
@@ -43,6 +51,16 @@ export type BaseServiceEndpointsInit<AllowedAuth extends ReadonlyArray<any> | un
     Record<EndpointPathBase, EndpointInit<AllowedAuth>>;
 
 /**
+ * Base type used for the right side of "extends" in type parameters for generic endpoint
+ * definitions.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
+ */
+export type BaseServiceSocketsInit = Record<EndpointPathBase, SocketInit>;
+
+/**
  * Init for a service. This is used as an input to {@link defineService}.
  *
  * @category Internal
@@ -53,10 +71,21 @@ export type ServiceInit<
     ServiceName extends string,
     AllowedAuth extends ReadonlyArray<any> | undefined,
     EndpointsInit extends BaseServiceEndpointsInit<NoInfer<AllowedAuth>> | NoParam,
+    SocketsInit extends BaseServiceSocketsInit | NoParam,
 > = MinimalService<ServiceName> & {
     allowedAuth?: AllowedAuth;
     requiredOrigin: NonNullable<OriginRequirement>;
-    endpoints: IsEqual<EndpointsInit, NoParam> extends true
+    sockets?: IsEqual<SocketsInit, NoParam> extends true
+        ? Record<EndpointPathBase, SocketInit>
+        : {
+              [SocketPath in keyof SocketsInit]: SocketPath extends EndpointPathBase
+                  ? SocketsInit[SocketPath]
+                  : SocketPath extends EndpointMustStartWithSlashTypeError
+                    ? /** Prevent EndpointMustStartWithSlashTypeError from being used as an endpoint path. */
+                      never
+                    : EndpointMustStartWithSlashTypeError;
+          };
+    endpoints?: IsEqual<EndpointsInit, NoParam> extends true
         ? Record<EndpointPathBase, EndpointInit>
         : {
               [EndpointPath in keyof EndpointsInit]: EndpointPath extends EndpointPathBase
@@ -79,11 +108,24 @@ export type ServiceDefinition<
     ServiceName extends string = any,
     AllowedAuth extends ReadonlyArray<any> | undefined = any,
     EndpointsInit extends BaseServiceEndpointsInit<NoInfer<AllowedAuth>> | NoParam = NoParam,
+    SocketsInit extends BaseServiceSocketsInit | NoParam = NoParam,
 > = MinimalService<ServiceName> & {
     allowedAuth: AllowedAuth;
     requiredOrigin: NonNullable<OriginRequirement>;
     /** Include the initial init object so a service can be composed. */
-    init: ServiceInit<ServiceName, AllowedAuth, EndpointsInit>;
+    init: SetRequired<
+        ServiceInit<ServiceName, AllowedAuth, EndpointsInit, SocketsInit>,
+        'endpoints' | 'sockets'
+    >;
+    sockets: SocketsInit extends NoParam
+        ? {
+              [SocketPath in EndpointPathBase]: Socket;
+          }
+        : {
+              [SocketPath in keyof SocketsInit]: SocketPath extends EndpointPathBase
+                  ? WithFinalSocketProps<SocketsInit[SocketPath], SocketPath>
+                  : EndpointMustStartWithSlashTypeError;
+          };
     endpoints: EndpointsInit extends NoParam
         ? {
               [EndpointPath in EndpointPathBase]: Endpoint;
@@ -106,10 +148,11 @@ export type ServiceDefinition<
 export function defineService<
     const ServiceName extends string,
     const EndpointsInit extends BaseServiceEndpointsInit<AllowedAuth>,
+    const SocketsInit extends BaseServiceSocketsInit,
     const AllowedAuth extends ReadonlyArray<any> | undefined = undefined,
 >(
-    serviceInit: ServiceInit<ServiceName, AllowedAuth, EndpointsInit>,
-): ServiceDefinition<ServiceName, AllowedAuth, EndpointsInit> {
+    serviceInit: ServiceInit<ServiceName, AllowedAuth, EndpointsInit, SocketsInit>,
+): ServiceDefinition<ServiceName, AllowedAuth, EndpointsInit, SocketsInit> {
     const serviceDefinition = finalizeServiceDefinition(serviceInit);
     assertValidServiceDefinition(serviceDefinition);
     return serviceDefinition;
@@ -119,15 +162,23 @@ function finalizeServiceDefinition<
     const ServiceName extends string,
     const AllowedAuth extends ReadonlyArray<any> | undefined,
     const EndpointsInit extends BaseServiceEndpointsInit<AllowedAuth>,
+    const SocketsInit extends BaseServiceSocketsInit,
 >(
-    serviceInit: ServiceInit<ServiceName, AllowedAuth, EndpointsInit>,
-): ServiceDefinition<ServiceName, AllowedAuth, EndpointsInit> {
+    serviceInit: ServiceInit<ServiceName, AllowedAuth, EndpointsInit, SocketsInit>,
+): ServiceDefinition<ServiceName, AllowedAuth, EndpointsInit, SocketsInit> {
     try {
+        const minimalService: MinimalService<ServiceName> = {
+            serviceName: serviceInit.serviceName,
+            serviceOrigin: serviceInit.serviceOrigin,
+            requiredOrigin: serviceInit.requiredOrigin,
+        };
+
         /**
          * Make the types less strict because we don't care what they are inside of this function's
          * implementation. Just the return type is what matters.
          */
-        const genericEndpoints = serviceInit.endpoints as BaseServiceEndpointsInit<AllowedAuth>;
+        const genericEndpoints = (serviceInit.endpoints ||
+            {}) as BaseServiceEndpointsInit<AllowedAuth>;
 
         const endpoints = mapObjectValues(genericEndpoints, (endpointPath, endpointInit) => {
             assertValidShape(endpointInit, endpointInitShape);
@@ -140,29 +191,62 @@ function finalizeServiceDefinition<
                     ? defineShape<any, true>(endpointInit.responseDataShape, true)
                     : undefined,
                 endpointPath,
-                service: {
-                    serviceName: serviceInit.serviceName,
-                    serviceOrigin: serviceInit.serviceOrigin,
-                    requiredOrigin: serviceInit.requiredOrigin,
-                } satisfies MinimalService<ServiceName>,
-            };
+                service: minimalService,
+            } satisfies Omit<Endpoint, 'ResponseType' | 'RequestType'>;
 
             attachEndpointShapeTypeGetters(endpoint);
 
             return endpoint;
         });
 
+        const genericSockets = (serviceInit.sockets || {}) as BaseServiceSocketsInit;
+
+        const sockets = mapObjectValues(genericSockets, (socketPath, socketInit) => {
+            assertValidShape(socketInit, socketInitShape);
+            const socket = {
+                ...socketInit,
+                messageDataShape: defineShape(socketInit.messageDataShape),
+                service: minimalService,
+                socketPath,
+            } satisfies Omit<Socket, 'MessageType'>;
+
+            attachSocketShapeTypeGetters(socket);
+
+            return socket;
+        });
+
         return {
             allowedAuth: serviceInit.allowedAuth as AllowedAuth,
             serviceName: serviceInit.serviceName,
             serviceOrigin: serviceInit.serviceOrigin,
-            init: serviceInit,
+            init: {
+                ...serviceInit,
+                sockets: (serviceInit.sockets || {}) as ServiceDefinition<
+                    ServiceName,
+                    AllowedAuth,
+                    EndpointsInit,
+                    SocketsInit
+                >['init']['sockets'],
+                endpoints: (serviceInit.endpoints || {}) as ServiceDefinition<
+                    ServiceName,
+                    AllowedAuth,
+                    EndpointsInit,
+                    SocketsInit
+                >['init']['endpoints'],
+            },
+            sockets: sockets as AnyObject as ServiceDefinition<
+                ServiceName,
+                AllowedAuth,
+                EndpointsInit,
+                SocketsInit
+            >['sockets'],
             requiredOrigin: serviceInit.requiredOrigin,
             /** As cast needed again to narrow the type (for the return value) after broadening it. */
             endpoints: endpoints as AnyObject as ServiceDefinition<
                 ServiceName,
                 AllowedAuth,
-                EndpointsInit
+                EndpointsInit,
+                SocketsInit
             >['endpoints'],
         };
     } catch (error) {
@@ -171,9 +255,10 @@ function finalizeServiceDefinition<
             throw error;
         } else {
             throw new ServiceDefinitionError({
-                endpointPath: undefined,
+                path: undefined,
                 errorMessage: extractErrorMessage(error),
                 serviceName: serviceInit.serviceName,
+                routeType: undefined,
             });
         }
     }
@@ -213,14 +298,26 @@ export function assertValidServiceDefinition(
                 });
             },
         );
+
+        getObjectTypedEntries(serviceDefinition.sockets).forEach(
+            ([
+                ,
+                socket,
+            ]) => {
+                assertValidSocket(socket, {
+                    serviceName: serviceDefinition.serviceName,
+                });
+            },
+        );
     } catch (error) {
         if (error instanceof ServiceDefinitionError) {
             throw error;
         } else {
             throw new ServiceDefinitionError({
-                endpointPath: undefined,
+                path: undefined,
                 serviceName: serviceDefinition.serviceName,
                 errorMessage: extractErrorMessage(error),
+                routeType: undefined,
             });
         }
     }

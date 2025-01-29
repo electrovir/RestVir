@@ -6,6 +6,8 @@ import {
     type ArrayElement,
 } from '@augment-vir/common';
 import {describe, it, itCases} from '@augment-vir/test';
+import {assertValidShape, exact, or} from 'object-shape-tester';
+import type {EndpointPathBase} from '../endpoint/endpoint-path.js';
 import {AnyOrigin} from '../util/origin.js';
 import {
     assertValidServiceDefinition,
@@ -483,8 +485,85 @@ describe(defineService.name, () => {
                     },
                 }),
             {
-                matchMessage: 'Endpoint path cannot end with /',
+                matchMessage: 'Path cannot end with /',
             },
+        );
+    });
+    it('can define sockets without endpoints', () => {
+        const service = defineService({
+            serviceName: 'test-endpoint-service',
+            allowedAuth: undefined,
+            requiredOrigin: AnyOrigin,
+            serviceOrigin: '',
+            sockets: {
+                '/my-socket': {
+                    messageDataShape: or(
+                        {
+                            code: exact(1),
+                        },
+                        {
+                            code: exact(2),
+                        },
+                    ),
+                    requiredOrigin: 'http://example.com',
+                },
+            },
+        });
+
+        assert.throws(
+            () => service.sockets['/my-socket'].MessageType,
+            undefined,
+            'Should not be able to access socket.MessageType',
+        );
+
+        assertValidShape(
+            {
+                code: 1,
+            },
+            service.sockets['/my-socket'].messageDataShape,
+        );
+        assert.throws(() =>
+            assertValidShape(
+                {
+                    code: 3,
+                },
+                service.sockets['/my-socket'].messageDataShape,
+            ),
+        );
+
+        assert.tsType<(typeof service.sockets)['/my-socket']['MessageType']>().equals<
+            | {
+                  code: 1;
+              }
+            | {
+                  code: 2;
+              }
+        >();
+    });
+    it('can define no sockets or endpoints', () => {
+        const service = defineService({
+            serviceName: 'test-endpoint-service',
+            allowedAuth: undefined,
+            requiredOrigin: AnyOrigin,
+            serviceOrigin: '',
+        });
+
+        assert.tsType<keyof typeof service.endpoints>().equals<EndpointPathBase>();
+        assert.tsType<keyof typeof service.sockets>().equals<EndpointPathBase>();
+    });
+    it('rejects a socket with an invalid path', () => {
+        assert.throws(() =>
+            defineService({
+                serviceName: 'test-endpoint-service',
+                allowedAuth: undefined,
+                requiredOrigin: AnyOrigin,
+                serviceOrigin: '',
+                sockets: {
+                    '/invalid/': {
+                        messageDataShape: {},
+                    },
+                },
+            }),
         );
     });
 });
@@ -510,9 +589,11 @@ describe(assertValidServiceDefinition.name, () => {
                 endpoints: {},
                 serviceName: 'test-service',
                 serviceOrigin: '',
+                sockets: {},
                 allowedAuth: undefined,
                 requiredOrigin: AnyOrigin,
                 init: {
+                    sockets: {},
                     endpoints: {},
                     allowedAuth: undefined,
                     serviceName: 'test-service',
@@ -530,6 +611,7 @@ describe(assertValidServiceDefinition.name, () => {
                 allowedAuth: undefined,
                 requiredOrigin: AnyOrigin,
                 init: {
+                    sockets: {},
                     endpoints: {},
                     allowedAuth: undefined,
                     serviceName: 'test-service',
@@ -576,6 +658,7 @@ describe(assertValidServiceDefinition.name, () => {
                 serviceOrigin: '',
                 allowedAuth: undefined,
                 init: {
+                    sockets: {},
                     serviceName: 'test-service',
                     serviceOrigin: '',
                     allowedAuth: undefined,

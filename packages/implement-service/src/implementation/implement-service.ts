@@ -187,11 +187,12 @@ function assertValidEndpointImplementations<
 
     if (nonFunctionImplementations.length) {
         throw new ServiceDefinitionError({
-            endpointPath: undefined,
+            path: undefined,
             errorMessage: `Endpoint implementations are not functions for endpoints: '${nonFunctionImplementations
                 .map(([endpointPath]) => endpointPath)
                 .join(',')}'`,
             serviceName: service.serviceName,
+            routeType: undefined,
         });
     }
 
@@ -212,21 +213,23 @@ function assertValidEndpointImplementations<
 
     if (missingEndpointImplementationPaths.length) {
         throw new ServiceDefinitionError({
-            endpointPath: undefined,
+            path: undefined,
             errorMessage: `Endpoints are missing implementations: '${missingEndpointImplementationPaths.join(
                 ',',
             )}'`,
             serviceName: service.serviceName,
+            routeType: undefined,
         });
     }
 
     if (extraEndpointImplementationPaths.length) {
         throw new ServiceDefinitionError({
-            endpointPath: undefined,
+            path: undefined,
             errorMessage: `Endpoint implementations have extra endpoints: '${extraEndpointImplementationPaths.join(
                 ',',
             )}'`,
             serviceName: service.serviceName,
+            routeType: undefined,
         });
     }
 }

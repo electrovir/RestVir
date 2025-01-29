@@ -12,18 +12,21 @@ export class ServiceDefinitionError extends Error {
     public override name = 'ServiceDefinitionError';
     constructor({
         serviceName,
-        endpointPath,
+        path,
         errorMessage,
+        routeType,
     }: {
         serviceName: string | NoParam;
-        endpointPath: unknown;
+        path: string | undefined;
         errorMessage: string;
+        routeType: 'endpoint' | 'socket' | undefined;
     }) {
         const serviceNameMessage = `service '${String(serviceName)}'`;
 
-        const nameMessage = endpointPath
-            ? `endpoint '${stringify(endpointPath)}' on ${serviceNameMessage}`
-            : serviceNameMessage;
+        const nameMessage =
+            path && routeType
+                ? `${routeType} '${stringify(path)}' on ${serviceNameMessage}`
+                : serviceNameMessage;
 
         const fullErrorMessage = `Failed to define ${nameMessage}: ${errorMessage}`;
 

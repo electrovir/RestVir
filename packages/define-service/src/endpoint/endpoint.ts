@@ -1,4 +1,3 @@
-import {assert} from '@augment-vir/assert';
 import {
     AnyObject,
     AtLeastTuple,
@@ -9,7 +8,6 @@ import {
     type MaybePromise,
 } from '@augment-vir/common';
 import {
-    classShape,
     defineShape,
     enumShape,
     indexedKeys,
@@ -22,9 +20,9 @@ import {IsEqual, type RequireAtLeastOne} from 'type-fest';
 import {type MinimalService} from '../service/minimal-service.js';
 import {ServiceDefinitionError} from '../service/service-definition.error.js';
 import {type NoParam} from '../util/no-param.js';
-import {type OriginRequirement} from '../util/origin.js';
+import {originRequirementShape, type OriginRequirement} from '../util/origin.js';
 import {assertValidEndpointAuth} from './endpoint-auth.js';
-import {type EndpointPathBase} from './endpoint-path.js';
+import {assertValidEndpointPath, type EndpointPathBase} from './endpoint-path.js';
 
 /**
  * Base Endpoint request/response shape type.
@@ -123,10 +121,15 @@ export const endpointInitShape = defineShape({
     requiredAuth: or(undefined, [unknownShape()]),
     requestDataShape: unknownShape(),
     responseDataShape: unknownShape(),
-    /** Possible required origin shapes. */
-    requiredOrigin: or(undefined, '', classShape(RegExp), () => {}, [
-        or('', classShape(RegExp), () => {}),
-    ]),
+    /**
+     * Set a required client origin for this endpoint.
+     *
+     * - If this is omitted, the service's origin requirement is used instead.
+     * - If this is explicitly set to `undefined`, this endpoint allows any origins (regardless of the
+     *   service's origin requirement).
+     * - Any other set value overrides the service's origin requirement (if it has any).
+     */
+    requiredOrigin: originRequirementShape,
     methods: indexedKeys({
         keys: enumShape(HttpMethod),
         values: false,
@@ -263,7 +266,7 @@ export function assertValidEndpoint<
         allowedAuth,
     }: {
         /**
-         * ServiceName is used purely for error messaging purposes, so that it's possible to
+         * `serviceName` is used purely for error messaging purposes, so that it's possible to
          * understand which service the endpoint is coming from.
          */
         serviceName: string | NoParam;
@@ -277,10 +280,7 @@ export function assertValidEndpoint<
             endpointPath: endpoint.endpointPath,
             serviceName,
         });
-        if (endpoint.endpointPath !== '/') {
-            assert.startsWith(endpoint.endpointPath, '/', 'Endpoint path does not start with /');
-            assert.endsWithout(endpoint.endpointPath, '/', 'Endpoint path cannot end with /');
-        }
+        assertValidEndpointPath(endpoint.endpointPath);
         if (!Object.values(endpoint.methods).some((value) => value)) {
             throw new Error('Endpoint has no allowed HTTP methods.');
         }
@@ -289,9 +289,10 @@ export function assertValidEndpoint<
             throw caught;
         } else {
             throw new ServiceDefinitionError({
-                endpointPath: endpoint.endpointPath,
+                path: endpoint.endpointPath,
                 serviceName,
                 errorMessage: extractErrorMessage(caught),
+                routeType: 'endpoint',
             });
         }
     }

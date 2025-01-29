@@ -1,4 +1,5 @@
 import {MaybePromise} from '@augment-vir/common';
+import {classShape, or} from 'object-shape-tester';
 
 /**
  * Explicity denotes that any origin is allowed.
@@ -42,3 +43,14 @@ export type OriginRequirement =
     | AnyOrigin
     | (((origin: string | undefined) => MaybePromise<boolean>) | string | RegExp)[]
     | ((origin: string | undefined) => MaybePromise<boolean>);
+
+/**
+ * Shape definition for {@link OriginRequirement}.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
+ */
+export const originRequirementShape = or(undefined, '', classShape(RegExp), () => {}, [
+    or('', classShape(RegExp), () => {}),
+]);

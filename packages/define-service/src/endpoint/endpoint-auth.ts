@@ -43,16 +43,18 @@ export function assertValidEndpointAuth<
         return;
     } else if (!allowedAuth) {
         throw new ServiceDefinitionError({
-            endpointPath,
+            path: endpointPath,
             serviceName,
             errorMessage:
                 'Cannot define an endpoint with required auth with no allowed service auth.',
+            routeType: 'endpoint',
         });
     } else if (!requiredEndpointAuth.length) {
         throw new ServiceDefinitionError({
-            endpointPath,
+            path: endpointPath,
             serviceName,
             errorMessage: 'Cannot define an endpoint with an empty required auth array.',
+            routeType: 'endpoint',
         });
     }
 
@@ -65,9 +67,10 @@ export function assertValidEndpointAuth<
 
     if (invalidAuthRoles.length) {
         throw new ServiceDefinitionError({
-            endpointPath,
+            path: endpointPath,
             serviceName,
             errorMessage: `Invalid required endpoint auth: ${stringify(invalidAuthRoles)}`,
+            routeType: 'endpoint',
         });
     }
 }

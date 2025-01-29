@@ -10,18 +10,40 @@ describe(ServiceDefinitionError.name, () => {
             {
                 it: 'includes endpoint path',
                 input: {
-                    endpointPath: '/endpoint-path',
+                    path: '/endpoint-path',
                     serviceName: 'service-name',
                     errorMessage: 'failed to something',
+                    routeType: 'endpoint',
                 },
                 expect: "Failed to define endpoint ''/endpoint-path'' on service 'service-name': failed to something",
             },
             {
-                it: 'excludes an empty endpoint path',
+                it: 'includes socket path',
                 input: {
-                    endpointPath: undefined,
+                    path: '/socket-path',
                     serviceName: 'service-name',
                     errorMessage: 'failed to something',
+                    routeType: 'socket',
+                },
+                expect: "Failed to define socket ''/socket-path'' on service 'service-name': failed to something",
+            },
+            {
+                it: 'excludes empty route type',
+                input: {
+                    path: '/endpoint-path',
+                    serviceName: 'service-name',
+                    errorMessage: 'failed to something',
+                    routeType: undefined,
+                },
+                expect: "Failed to define service 'service-name': failed to something",
+            },
+            {
+                it: 'excludes an empty endpoint path',
+                input: {
+                    path: undefined,
+                    serviceName: 'service-name',
+                    errorMessage: 'failed to something',
+                    routeType: 'endpoint',
                 },
                 expect: "Failed to define service 'service-name': failed to something",
             },
