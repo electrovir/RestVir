@@ -38,14 +38,16 @@ const serviceWithNoAuth = implementService(
         serviceOrigin: 'https://example.com',
     }),
     {
-        '/health'() {
-            return {
-                statusCode: HttpStatus.Ok,
-            };
-        },
+        context: undefined,
     },
     {
-        context: undefined,
+        endpoints: {
+            '/health'() {
+                return {
+                    statusCode: HttpStatus.Ok,
+                };
+            },
+        },
     },
 );
 

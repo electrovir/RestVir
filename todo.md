@@ -5,6 +5,10 @@
 -   make both endpoints and sockets optional
 -   add typed search params
 -   fill in mono-repo README
+-   remove all the auth stuff, that can happen in context
+    -   allow context to reject a request (like, change the return type to `{context: Context}|{reject: {status: HttpStatus, statusMessage: string}}`)
+    -   allow defining arbitrary properties on endpoints and sockets so that they can define their own auth
+        -   if we can't get this to work, we can't remove the auth stuff
 
 ## Less required
 

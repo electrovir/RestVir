@@ -1,25 +1,30 @@
-import {check} from '@augment-vir/assert';
-import {getObjectTypedEntries, mapObjectValues, type MaybePromise} from '@augment-vir/common';
+import {assert} from '@augment-vir/assert';
+import {
+    mapObjectValues,
+    type AnyObject,
+    type KeyCount,
+    type MaybePromise,
+} from '@augment-vir/common';
 import {
     BaseServiceEndpointsInit,
     EndpointPathBase,
     NoParam,
     ServiceDefinition,
-    ServiceDefinitionError,
+    type BaseServiceSocketsInit,
+    type Endpoint,
+    type Socket,
 } from '@rest-vir/define-service';
-import type {IsEqual} from 'type-fest';
+import type {IsEqual, OmitIndexSignature} from 'type-fest';
 import {
     createServiceLogger,
     ServiceLoggerOption,
     silentServiceLogger,
     type ServiceLogger,
 } from '../util/service-logger.js';
-import type {
-    ContextInit,
-    EndpointImplementations,
-    ExtractAuth,
-    ImplementedEndpoint,
-} from './implement-endpoint.js';
+import type {ImplementedEndpoint, ImplementedSocket} from './generic-service-implementation.js';
+import type {ContextInit, EndpointImplementations, ExtractAuth} from './implement-endpoint.js';
+import {assertValidEndpointImplementations} from './implement-endpoint.js';
+import {assertValidSocketImplementations, SocketImplementations} from './implement-socket.js';
 
 /**
  * A user-defined endpoint error handler for service (and its endpoints) errors.
@@ -52,7 +57,43 @@ export type ServiceImplementationInit<
     : {context: ContextInit<Context>}) &
     (IsEqual<AllowedAuth, undefined> extends true
         ? {extractAuth?: undefined}
-        : {extractAuth: ExtractAuth<Context, AllowedAuth>});
+        : {extractAuth: ExtractAuth<NoInfer<Context>, AllowedAuth>});
+
+/**
+ * Parameters for implementations for {@link implementService}.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/implement-service
+ * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
+ */
+export type ServiceImplementationsParams<
+    Context,
+    ServiceName extends string,
+    AllowedAuth extends ReadonlyArray<any> | undefined,
+    EndpointsInit extends BaseServiceEndpointsInit<AllowedAuth>,
+    SocketsInit extends BaseServiceSocketsInit,
+> = (KeyCount<OmitIndexSignature<EndpointsInit>> extends 0
+    ? {
+          endpoints?: never;
+      }
+    : {
+          endpoints: EndpointImplementations<
+              NoInfer<Context>,
+              NoInfer<ServiceName>,
+              NoInfer<EndpointsInit>
+          >;
+      }) &
+    (KeyCount<OmitIndexSignature<SocketsInit>> extends 0
+        ? {
+              sockets?: never;
+          }
+        : {
+              sockets: SocketImplementations<
+                  NoInfer<Context>,
+                  NoInfer<ServiceName>,
+                  NoInfer<SocketsInit>
+              >;
+          });
 
 /**
  * Creates an implemented service that is fully ready to be run as a server by attaching endpoint
@@ -69,19 +110,30 @@ export function implementService<
     const ServiceName extends string,
     const AllowedAuth extends ReadonlyArray<any> | undefined,
     const EndpointsInit extends BaseServiceEndpointsInit<AllowedAuth>,
+    const SocketsInit extends BaseServiceSocketsInit,
 >(
-    service: ServiceDefinition<ServiceName, AllowedAuth, EndpointsInit>,
-    endpointImplementations: EndpointImplementations<
-        Context,
-        NoInfer<ServiceName>,
-        NoInfer<EndpointsInit>
-    >,
+    service: ServiceDefinition<ServiceName, AllowedAuth, EndpointsInit, SocketsInit>,
+    /** Init must be first so that TypeScript can infer the type for `Context`. */
     init: ServiceImplementationInit<Context, NoInfer<AllowedAuth>>,
+    {
+        endpoints: endpointImplementations,
+        sockets: socketImplementations,
+    }: ServiceImplementationsParams<
+        NoInfer<Context>,
+        NoInfer<ServiceName>,
+        NoInfer<AllowedAuth>,
+        NoInfer<EndpointsInit>,
+        NoInfer<SocketsInit>
+    >,
 ): ServiceImplementation<Context, ServiceName, AllowedAuth, EndpointsInit> {
-    assertValidEndpointImplementations(service, endpointImplementations);
+    assertValidEndpointImplementations(service, endpointImplementations || {});
+    assertValidSocketImplementations(service, socketImplementations || {});
 
     const endpoints = mapObjectValues(service.endpoints, (endpointPath, endpoint) => {
-        const implementation = endpointImplementations[endpointPath as EndpointPathBase];
+        const implementation = endpointImplementations?.[endpointPath as EndpointPathBase];
+
+        assert.isDefined(implementation);
+        assert.isNotString(implementation);
 
         /**
          * Note: this return object is actually wrong. The service property will not be correct as
@@ -89,10 +141,39 @@ export function implementService<
          * created, we attach the correct service to all endpoints.
          */
         return {
-            ...endpoint,
+            ...(endpoint as Endpoint),
             implementation,
-        };
-    }) as ServiceImplementation<Context, ServiceName, AllowedAuth, EndpointsInit>['endpoints'];
+        } satisfies Omit<ImplementedEndpoint, 'service'>;
+    }) as AnyObject as ServiceImplementation<
+        Context,
+        ServiceName,
+        AllowedAuth,
+        EndpointsInit,
+        SocketsInit
+    >['endpoints'];
+
+    const sockets = mapObjectValues(service.sockets, (socketPath, socket) => {
+        const implementation = socketImplementations?.[socketPath as EndpointPathBase];
+
+        assert.isDefined(implementation);
+        assert.isNotString(socket);
+
+        /**
+         * Note: this return object is actually wrong. The service property will not be correct as
+         * the `socket` here only has the minimal service. Below, after `serviceImplementation` is
+         * created, we attach the correct service to all sockets.
+         */
+        return {
+            ...(socket as Socket),
+            implementation,
+        } satisfies Omit<ImplementedSocket, 'service'>;
+    }) as AnyObject as ServiceImplementation<
+        Context,
+        ServiceName,
+        AllowedAuth,
+        EndpointsInit,
+        SocketsInit
+    >['sockets'];
 
     const serviceImplementation: ServiceImplementation<
         Context,
@@ -102,6 +183,7 @@ export function implementService<
     > = {
         ...service,
         endpoints,
+        sockets,
         context: init.context as ContextInit<Context>,
         extractAuth: init.extractAuth,
         logger: createServiceLogger(init.logger),
@@ -109,6 +191,9 @@ export function implementService<
 
     Object.values(endpoints).forEach((endpoint) => {
         endpoint.service = serviceImplementation;
+    });
+    Object.values(sockets).forEach((socket) => {
+        socket.service = serviceImplementation;
     });
 
     return serviceImplementation;
@@ -126,7 +211,8 @@ export type ServiceImplementation<
     ServiceName extends string = any,
     AllowedAuth extends ReadonlyArray<any> | undefined = any,
     EndpointsInit extends BaseServiceEndpointsInit<AllowedAuth> | NoParam = NoParam,
-> = Omit<ServiceDefinition<ServiceName, AllowedAuth, EndpointsInit>, 'endpoints'> & {
+    SocketsInit extends BaseServiceSocketsInit | NoParam = NoParam,
+> = Omit<ServiceDefinition<ServiceName, AllowedAuth, EndpointsInit, SocketsInit>, 'endpoints'> & {
     endpoints: {
         [EndpointPath in keyof ServiceDefinition<
             ServiceName,
@@ -141,6 +227,19 @@ export type ServiceImplementation<
                       AllowedAuth,
                       EndpointsInit
                   >['endpoints'][EndpointPath]
+              >
+            : never;
+    };
+    sockets: {
+        [SocketPath in keyof ServiceDefinition<
+            ServiceName,
+            AllowedAuth,
+            EndpointsInit
+        >['sockets']]: SocketPath extends EndpointPathBase
+            ? ImplementedSocket<
+                  Context,
+                  ServiceName,
+                  ServiceDefinition<ServiceName, AllowedAuth, EndpointsInit>['sockets'][SocketPath]
               >
             : never;
     };
@@ -167,69 +266,3 @@ export type ServiceImplementationFromServiceDefinition<
     >
         ? ServiceImplementation<unknown, ServiceName, AllowedAuth, EndpointDefinitions>
         : 'ERROR: Failed to infer service definition type parameters';
-
-function assertValidEndpointImplementations<
-    const ServiceName extends string,
-    const AllowedAuth extends ReadonlyArray<any> | undefined,
-    const EndpointsInit extends BaseServiceEndpointsInit<AllowedAuth>,
->(
-    service: ServiceDefinition<ServiceName, AllowedAuth, EndpointsInit>,
-    endpointImplementations: EndpointImplementations<any, ServiceName, EndpointsInit>,
-) {
-    const nonFunctionImplementations = getObjectTypedEntries(endpointImplementations).filter(
-        ([
-            ,
-            implementation,
-        ]) => {
-            return check.isNotFunction(implementation);
-        },
-    );
-
-    if (nonFunctionImplementations.length) {
-        throw new ServiceDefinitionError({
-            path: undefined,
-            errorMessage: `Endpoint implementations are not functions for endpoints: '${nonFunctionImplementations
-                .map(([endpointPath]) => endpointPath)
-                .join(',')}'`,
-            serviceName: service.serviceName,
-            routeType: undefined,
-        });
-    }
-
-    const missingEndpointImplementationPaths: string[] = [];
-    const extraEndpointImplementationPaths: string[] = [];
-
-    Object.keys(service.endpoints).forEach((key) => {
-        if (!(key in endpointImplementations)) {
-            missingEndpointImplementationPaths.push(key);
-        }
-    });
-
-    Object.keys(endpointImplementations).forEach((key) => {
-        if (!(key in service.endpoints)) {
-            extraEndpointImplementationPaths.push(key);
-        }
-    });
-
-    if (missingEndpointImplementationPaths.length) {
-        throw new ServiceDefinitionError({
-            path: undefined,
-            errorMessage: `Endpoints are missing implementations: '${missingEndpointImplementationPaths.join(
-                ',',
-            )}'`,
-            serviceName: service.serviceName,
-            routeType: undefined,
-        });
-    }
-
-    if (extraEndpointImplementationPaths.length) {
-        throw new ServiceDefinitionError({
-            path: undefined,
-            errorMessage: `Endpoint implementations have extra endpoints: '${extraEndpointImplementationPaths.join(
-                ',',
-            )}'`,
-            serviceName: service.serviceName,
-            routeType: undefined,
-        });
-    }
-}

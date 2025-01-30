@@ -1,3 +1,4 @@
+import {check} from '@augment-vir/assert';
 import {
     ArrayElement,
     ErrorHttpStatusCategories,
@@ -5,8 +6,8 @@ import {
     HttpMethod,
     HttpStatusByCategory,
     MaybePromise,
-    Overwrite,
     SuccessHttpStatusCategories,
+    getObjectTypedEntries,
 } from '@augment-vir/common';
 import {
     BaseServiceEndpointsInit,
@@ -16,6 +17,7 @@ import {
     MinimalService,
     NoParam,
     ServiceDefinition,
+    ServiceDefinitionError,
     WithFinalEndpointProps,
 } from '@rest-vir/define-service';
 import type {IncomingHttpHeaders, OutgoingHttpHeaders} from 'node:http';
@@ -51,41 +53,6 @@ export type ExtractAuth<Context, AllowedAuth extends ReadonlyArray<any> | undefi
           ) => MaybePromise<
               (AllowedAuth extends any[] ? ArrayElement<AllowedAuth> : undefined) | undefined
           >;
-
-/**
- * A fully implemented endpoint.
- *
- * @category Internal
- * @category Package : @rest-vir/implement-service
- * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
- */
-export type ImplementedEndpoint<
-    Context = any,
-    ServiceName extends string = any,
-    SpecificEndpoint extends Endpoint = Endpoint,
-> = Overwrite<
-    SpecificEndpoint,
-    {
-        service: GenericServiceImplementation;
-    }
-> & {
-    implementation: EndpointImplementation<Context, ServiceName>;
-};
-
-/**
- * A super generic service implementation that be assigned to from any concrete service
- * implementation.
- *
- * @category Internal
- * @category Package : @rest-vir/implement-service
- * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
- */
-export type GenericServiceImplementation = Omit<ServiceDefinition, 'endpoints'> & {
-    endpoints: Record<EndpointPathBase, ImplementedEndpoint>;
-    context: ContextInit<any>;
-    extractAuth: ExtractAuth<any, any> | undefined;
-    logger: ServiceLogger;
-};
 
 /**
  * The object that all endpoint implementations should return.
@@ -156,6 +123,28 @@ export type EndpointImplementationParams<
 };
 
 /**
+ * Generic parameters for {@link EndpointImplementation} that should be compatible with _any_
+ * endpoint implementation.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/implement-service
+ * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
+ */
+export type GenericEndpointImplementationParams = {
+    context: any;
+    auth: any;
+    method: any;
+    endpoint: any;
+    service: MinimalService<any>;
+    requestHeaders: IncomingHttpHeaders;
+
+    requestData: any;
+    request: EndpointRequest;
+    response: EndpointResponse;
+    log: Readonly<ServiceLogger>;
+};
+
+/**
  * A full, type-safe endpoint implementation type.
  *
  * @category Internal
@@ -166,18 +155,21 @@ export type EndpointImplementation<
     Context = any,
     ServiceName extends string = any,
     SpecificEndpoint extends Endpoint | NoParam = NoParam,
-> = (
-    params: Readonly<EndpointImplementationParams<Context, ServiceName, SpecificEndpoint>>,
-) => IsEqual<Extract<SpecificEndpoint, NoParam>, NoParam> extends true
-    ? any
-    : MaybePromise<
-          EndpointImplementationOutput<
-              WithFinalEndpointProps<SpecificEndpoint, any>['ResponseType']
-          >
-      >;
+> =
+    IsEqual<Extract<SpecificEndpoint, NoParam>, NoParam> extends true
+        ? (params: GenericEndpointImplementationParams) => any
+        : (
+              params: Readonly<
+                  EndpointImplementationParams<Context, ServiceName, SpecificEndpoint>
+              >,
+          ) => MaybePromise<
+              EndpointImplementationOutput<
+                  WithFinalEndpointProps<SpecificEndpoint, any>['ResponseType']
+              >
+          >;
 
 /**
- * All endpoint implementations to match the given endpoint definition inits object.
+ * All endpoint implementations to match the service definition's endpoints.
  *
  * @category Internal
  * @category Package : @rest-vir/implement-service
@@ -200,3 +192,72 @@ export type EndpointImplementations<
                   : never
               : never;
       };
+
+/**
+ * Asserts that all endpoint implementations are valid.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/implement-service
+ * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
+ */
+export function assertValidEndpointImplementations(
+    service: Readonly<Pick<ServiceDefinition, 'endpoints' | 'serviceName'>>,
+    endpointImplementations: EndpointImplementations,
+) {
+    const nonFunctionImplementations = getObjectTypedEntries(endpointImplementations).filter(
+        ([
+            ,
+            implementation,
+        ]) => {
+            return check.isNotFunction(implementation);
+        },
+    );
+
+    if (nonFunctionImplementations.length) {
+        throw new ServiceDefinitionError({
+            path: undefined,
+            errorMessage: `Endpoint implementations are not functions for endpoints: '${nonFunctionImplementations
+                .map(([endpointPath]) => endpointPath)
+                .join(',')}'`,
+            serviceName: service.serviceName,
+            routeType: undefined,
+        });
+    }
+
+    const missingEndpointImplementationPaths: string[] = [];
+    const extraEndpointImplementationPaths: string[] = [];
+
+    Object.keys(service.endpoints).forEach((key) => {
+        if (!(key in endpointImplementations)) {
+            missingEndpointImplementationPaths.push(key);
+        }
+    });
+
+    Object.keys(endpointImplementations).forEach((key) => {
+        if (!(key in service.endpoints)) {
+            extraEndpointImplementationPaths.push(key);
+        }
+    });
+
+    if (missingEndpointImplementationPaths.length) {
+        throw new ServiceDefinitionError({
+            path: undefined,
+            errorMessage: `Endpoints are missing implementations: '${missingEndpointImplementationPaths.join(
+                ',',
+            )}'`,
+            serviceName: service.serviceName,
+            routeType: undefined,
+        });
+    }
+
+    if (extraEndpointImplementationPaths.length) {
+        throw new ServiceDefinitionError({
+            path: undefined,
+            errorMessage: `Endpoint implementations have extra endpoints: '${extraEndpointImplementationPaths.join(
+                ',',
+            )}'`,
+            serviceName: service.serviceName,
+            routeType: undefined,
+        });
+    }
+}

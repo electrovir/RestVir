@@ -3,12 +3,14 @@
 
 import fastifyWs from '@fastify/websocket';
 import fastify from 'fastify';
+import {WebSocket} from 'ws';
 
 const server = fastify();
 
 await server.register(fastifyWs);
-server.get('/', {websocket: true}, (socket /* WebSocket */, req /* FastifyRequest */) => {
+server.get('/', {websocket: true}, (socket: WebSocket, req /* FastifyRequest */) => {
     console.log('got web socket connection');
+
     socket.on('message', (message: any) => {
         console.log(String(message));
         // message.toString() === 'hi from client'

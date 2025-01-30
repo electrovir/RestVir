@@ -19,6 +19,24 @@ export const mockService = defineService({
     allowedAuth: getEnumValues(MyMockAuth),
     serviceOrigin: 'https://example.com',
     requiredOrigin: AnyOrigin,
+    sockets: {
+        '/origin-locked': {
+            messageDataShape: {
+                a: '',
+                b: -1,
+            },
+            requiredOrigin: mockWebsiteOrigin,
+        },
+        '/no-origin': {
+            messageDataShape: {
+                a: '',
+                b: -1,
+            },
+        },
+        '/no-data': {
+            messageDataShape: undefined,
+        },
+    },
     endpoints: {
         '/function-origin': {
             methods: {

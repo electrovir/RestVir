@@ -41,6 +41,7 @@
         "@augment-vir/assert": "^31.8.0",
         "@augment-vir/common": "^31.8.0",
         "@rest-vir/define-service": "^0.0.2",
+        "@types/ws": "^8.5.14",
         "fastify": "^5.2.1",
         "object-shape-tester": "^4.1.0",
         "path-to-regexp": "^8.2.0",
