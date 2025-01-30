@@ -10,9 +10,11 @@ export type MockServiceContext = {
 };
 
 export const mockServiceImplementation = implementService(
-    mockService,
     {
-        context(): MockServiceContext {
+        service: mockService,
+        createContext({endpoint}): MockServiceContext {
+            assert.tsType(endpoint?.customProps).equals<undefined | {somethingElse: string}>();
+
             return {
                 date: Date.now(),
             };
@@ -20,11 +22,19 @@ export const mockServiceImplementation = implementService(
     },
     {
         sockets: {
+            '/custom-props-socket': {
+                onMessage(params) {
+                    assert.tsType(params.socketDefinition.customProps).equals<{
+                        hello: string;
+                    }>();
+                },
+            },
             '/no-data': {
                 onMessage(params) {
                     assert.tsType(params.context).equals<MockServiceContext>();
                     assert.tsType(params.message).equals<undefined>();
                     assert.tsType<'message'>().matches<keyof typeof params>();
+                    assert.tsType(params.socketDefinition.customProps).equals<undefined>();
                 },
                 onClose(params) {
                     assert.tsType(params.context).equals<MockServiceContext>();
@@ -77,6 +87,11 @@ export const mockServiceImplementation = implementService(
             },
         },
         endpoints: {
+            '/custom-props'() {
+                return {
+                    statusCode: HttpStatus.Ok,
+                };
+            },
             '/array-origin'() {
                 return {
                     statusCode: HttpStatus.Ok,

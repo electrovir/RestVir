@@ -1,13 +1,9 @@
 import {type Overwrite} from '@augment-vir/common';
-import {
-    type Endpoint,
-    type EndpointPathBase,
-    type ServiceDefinition,
-    type Socket,
-} from '@rest-vir/define-service';
+import {Endpoint, EndpointPathBase, ServiceDefinition, Socket} from '@rest-vir/define-service';
 import {type ServiceLogger} from '../util/service-logger.js';
-import {type ContextInit, type EndpointImplementation} from './implement-endpoint.js';
+import {type EndpointImplementation} from './implement-endpoint.js';
 import {type SocketImplementation} from './implement-socket.js';
+import {type ContextInit} from './service-context-init.js';
 
 /**
  * A fully implemented endpoint.
@@ -40,7 +36,7 @@ export type ImplementedEndpoint<
 export type GenericServiceImplementation = Omit<ServiceDefinition, 'endpoints'> & {
     endpoints: Record<EndpointPathBase, ImplementedEndpoint>;
     sockets: Record<EndpointPathBase, ImplementedSocket>;
-    context: ContextInit<any>;
+    createContext: ContextInit<any, any, any, any> | undefined;
     logger: ServiceLogger;
 };
 

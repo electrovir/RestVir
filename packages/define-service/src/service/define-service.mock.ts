@@ -29,8 +29,24 @@ export const mockService = defineService({
         '/no-data': {
             messageDataShape: undefined,
         },
+        '/custom-props-socket': {
+            messageDataShape: undefined,
+            customProps: {
+                hello: '',
+            },
+        },
     },
     endpoints: {
+        '/custom-props': {
+            methods: {
+                [HttpMethod.Get]: true,
+            },
+            requestDataShape: undefined,
+            responseDataShape: undefined,
+            customProps: {
+                somethingElse: 'hi',
+            },
+        },
         '/function-origin': {
             methods: {
                 [HttpMethod.Get]: true,

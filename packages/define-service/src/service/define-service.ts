@@ -136,8 +136,8 @@ export type ServiceDefinition<
  */
 export function defineService<
     const ServiceName extends string,
-    const EndpointsInit extends BaseServiceEndpointsInit,
-    const SocketsInit extends BaseServiceSocketsInit,
+    EndpointsInit extends BaseServiceEndpointsInit,
+    SocketsInit extends BaseServiceSocketsInit,
 >(
     serviceInit: ServiceInit<ServiceName, EndpointsInit, SocketsInit>,
 ): ServiceDefinition<ServiceName, EndpointsInit, SocketsInit> {
@@ -148,8 +148,8 @@ export function defineService<
 
 function finalizeServiceDefinition<
     const ServiceName extends string,
-    const EndpointsInit extends BaseServiceEndpointsInit,
-    const SocketsInit extends BaseServiceSocketsInit,
+    EndpointsInit extends BaseServiceEndpointsInit,
+    SocketsInit extends BaseServiceSocketsInit,
 >(
     serviceInit: ServiceInit<ServiceName, EndpointsInit, SocketsInit>,
 ): ServiceDefinition<ServiceName, EndpointsInit, SocketsInit> {
@@ -178,6 +178,7 @@ function finalizeServiceDefinition<
                     : undefined,
                 endpointPath,
                 service: minimalService,
+                customProps: endpointInit.customProps,
             } satisfies Omit<Endpoint, 'ResponseType' | 'RequestType'>;
 
             attachEndpointShapeTypeGetters(endpoint);
@@ -194,6 +195,7 @@ function finalizeServiceDefinition<
                 messageDataShape: defineShape(socketInit.messageDataShape),
                 service: minimalService,
                 socketPath,
+                customProps: socketInit.customProps,
             } satisfies Omit<Socket, 'MessageType'>;
 
             attachSocketShapeTypeGetters(socket);

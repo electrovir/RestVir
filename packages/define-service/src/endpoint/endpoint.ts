@@ -3,6 +3,8 @@ import {
     defineShape,
     enumShape,
     indexedKeys,
+    optional,
+    or,
     unknownShape,
     type ShapeDefinition,
     type ShapeToRuntimeType,
@@ -65,6 +67,8 @@ export type EndpointInit<
      * - Any other set value overrides the service's origin requirement (if it has any).
      */
     requiredOrigin?: OriginRequirement;
+
+    customProps?: Record<PropertyKey, unknown> | undefined;
 };
 
 /**
@@ -91,6 +95,16 @@ export const endpointInitShape = defineShape({
         values: false,
         required: false,
     }),
+    customProps: optional(
+        or(
+            undefined,
+            indexedKeys({
+                keys: unknownShape(),
+                values: unknownShape(),
+                required: false,
+            }),
+        ),
+    ),
 } satisfies Record<keyof EndpointInit, any>);
 
 /**
@@ -118,7 +132,7 @@ export type WithFinalEndpointProps<T, EndpointPath extends EndpointPathBase> = (
                   ? any
                   : undefined extends T['requestDataShape']
                     ? undefined
-                    : ShapeDefinition<T['requestDataShape'], false>['runtimeType'];
+                    : ShapeToRuntimeType<ShapeDefinition<T['requestDataShape'], true>, false, true>;
               ResponseType: T['responseDataShape'] extends NoParam
                   ? any
                   : undefined extends T['responseDataShape']
@@ -128,6 +142,7 @@ export type WithFinalEndpointProps<T, EndpointPath extends EndpointPathBase> = (
                           false,
                           true
                       >;
+              customProps: 'customProps' extends keyof T ? T['customProps'] : undefined;
           }
       >
     : never) & {

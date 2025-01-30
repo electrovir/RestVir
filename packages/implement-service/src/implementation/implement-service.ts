@@ -14,17 +14,23 @@ import {
     type Endpoint,
     type Socket,
 } from '@rest-vir/define-service';
-import type {IsEqual, OmitIndexSignature} from 'type-fest';
+import {type IsEqual, type OmitIndexSignature} from 'type-fest';
 import {
     createServiceLogger,
     ServiceLoggerOption,
     silentServiceLogger,
     type ServiceLogger,
 } from '../util/service-logger.js';
-import type {ImplementedEndpoint, ImplementedSocket} from './generic-service-implementation.js';
-import type {ContextInit, EndpointImplementations} from './implement-endpoint.js';
-import {assertValidEndpointImplementations} from './implement-endpoint.js';
+import {
+    type ImplementedEndpoint,
+    type ImplementedSocket,
+} from './generic-service-implementation.js';
+import {
+    assertValidEndpointImplementations,
+    type EndpointImplementations,
+} from './implement-endpoint.js';
 import {assertValidSocketImplementations, SocketImplementations} from './implement-socket.js';
+import type {ContextInit} from './service-context-init.js';
 
 /**
  * A user-defined endpoint error handler for service (and its endpoints) errors.
@@ -42,7 +48,13 @@ export type CustomErrorHandler = (error: Error) => MaybePromise<void>;
  * @category Package : @rest-vir/implement-service
  * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
  */
-export type ServiceImplementationInit<Context> = {
+export type ServiceImplementationInit<
+    Context,
+    ServiceName extends string,
+    EndpointsInit extends BaseServiceEndpointsInit,
+    SocketsInit extends BaseServiceSocketsInit,
+> = {
+    service: ServiceDefinition<ServiceName, EndpointsInit, SocketsInit>;
     /**
      * Logger for the service. Use {@link silentServiceLogger} to disable logging entirely (even
      * errors) or simply set `undefined` to the log type that you wish to suppress. An omitted log
@@ -50,8 +62,24 @@ export type ServiceImplementationInit<Context> = {
      */
     logger?: ServiceLoggerOption;
 } & (IsEqual<Context, undefined> extends true
-    ? {context?: undefined}
-    : {context: ContextInit<Context>});
+    ? {
+          createContext?:
+              | undefined
+              | ContextInit<
+                    Context,
+                    NoInfer<ServiceName>,
+                    NoInfer<EndpointsInit>,
+                    NoInfer<SocketsInit>
+                >;
+      }
+    : {
+          createContext: ContextInit<
+              Context,
+              NoInfer<ServiceName>,
+              NoInfer<EndpointsInit>,
+              NoInfer<SocketsInit>
+          >;
+      });
 
 /**
  * Parameters for implementations for {@link implementService}.
@@ -99,14 +127,17 @@ export type ServiceImplementationsParams<
  * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
  */
 export function implementService<
-    const Context,
     const ServiceName extends string,
     const EndpointsInit extends BaseServiceEndpointsInit,
     const SocketsInit extends BaseServiceSocketsInit,
+    const Context = undefined,
 >(
-    service: ServiceDefinition<ServiceName, EndpointsInit, SocketsInit>,
     /** Init must be first so that TypeScript can infer the type for `Context`. */
-    init: ServiceImplementationInit<Context>,
+    {
+        service,
+        createContext,
+        logger,
+    }: ServiceImplementationInit<Context, ServiceName, EndpointsInit, SocketsInit>,
     {
         endpoints: endpointImplementations,
         sockets: socketImplementations,
@@ -116,7 +147,7 @@ export function implementService<
         NoInfer<EndpointsInit>,
         NoInfer<SocketsInit>
     >,
-): ServiceImplementation<Context, ServiceName, EndpointsInit> {
+): ServiceImplementation<Context, ServiceName, EndpointsInit, SocketsInit> {
     assertValidEndpointImplementations(service, endpointImplementations || {});
     assertValidSocketImplementations(service, socketImplementations || {});
 
@@ -164,12 +195,22 @@ export function implementService<
         SocketsInit
     >['sockets'];
 
-    const serviceImplementation: ServiceImplementation<Context, ServiceName, EndpointsInit> = {
+    const serviceImplementation: ServiceImplementation<
+        Context,
+        ServiceName,
+        EndpointsInit,
+        SocketsInit
+    > = {
         ...service,
         endpoints,
         sockets,
-        context: init.context as ContextInit<Context>,
-        logger: createServiceLogger(init.logger),
+        createContext: createContext as ServiceImplementation<
+            Context,
+            ServiceName,
+            EndpointsInit,
+            SocketsInit
+        >['createContext'],
+        logger: createServiceLogger(logger),
     };
 
     Object.values(endpoints).forEach((endpoint) => {
@@ -219,7 +260,7 @@ export type ServiceImplementation<
               >
             : never;
     };
-    context: ContextInit<Context>;
+    createContext: ContextInit<Context, ServiceName, EndpointsInit, SocketsInit>;
     logger: ServiceLogger;
 };
 
@@ -236,7 +277,8 @@ export type ServiceImplementationFromServiceDefinition<
 > =
     SpecificServiceDefinition extends ServiceDefinition<
         infer ServiceName,
-        infer EndpointDefinitions
+        infer EndpointInit,
+        infer SocketInit
     >
-        ? ServiceImplementation<unknown, ServiceName, EndpointDefinitions>
+        ? ServiceImplementation<unknown, ServiceName, EndpointInit, SocketInit>
         : 'ERROR: Failed to infer service definition type parameters';

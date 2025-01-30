@@ -25,17 +25,6 @@ import {EndpointRequest, type EndpointResponse} from '../util/message.js';
 import {type ServiceLogger} from '../util/service-logger.js';
 
 /**
- * User-defined service Context or Context generator.
- *
- * @category Internal
- * @category Package : @rest-vir/implement-service
- * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
- */
-export type ContextInit<Context> =
-    | Context
-    | ((params: Readonly<Omit<EndpointImplementationParams, 'context'>>) => MaybePromise<Context>);
-
-/**
  * The object that all endpoint implementations should return.
  *
  * @category Internal

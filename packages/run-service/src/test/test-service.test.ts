@@ -23,26 +23,27 @@ describeService({service: mockServiceImplementation}, ({fetchService}) => {
 });
 
 const plainService = implementService(
-    defineService({
-        endpoints: {
-            '/health': {
-                methods: {
-                    [HttpMethod.Get]: true,
-                },
-                requestDataShape: undefined,
-                responseDataShape: undefined,
-            },
-        },
-        requiredOrigin: AnyOrigin,
-        serviceName: 'plain service',
-        serviceOrigin: 'https://example.com',
-    }),
     {
-        context: undefined,
+        service: defineService({
+            endpoints: {
+                '/health': {
+                    methods: {
+                        [HttpMethod.Get]: true,
+                    },
+                    requestDataShape: undefined,
+                    responseDataShape: undefined,
+                },
+            },
+            requiredOrigin: AnyOrigin,
+            serviceName: 'plain service',
+            serviceOrigin: 'https://example.com',
+        }),
     },
     {
         endpoints: {
-            '/health'() {
+            '/health'({context}) {
+                assert.tsType(context).equals<undefined>();
+
                 return {
                     statusCode: HttpStatus.Ok,
                 };

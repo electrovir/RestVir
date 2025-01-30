@@ -25,7 +25,7 @@ describe(defineService.name, () => {
     it('allows possibly undefined endpoint message types', () => {
         assert
             .tsType<(typeof mockService.endpoints)['/long-running']['RequestType']>()
-            .equals<undefined | {count: number}>();
+            .equals<undefined | Readonly<{count: number}>>();
     });
     it('preserves methods', () => {
         const myService = defineService({
@@ -44,11 +44,9 @@ describe(defineService.name, () => {
             requiredOrigin: AnyOrigin,
         });
 
-        assert.tsType<(typeof myService.endpoints)['/path']['methods']>().equals<
-            Readonly<{
-                [HttpMethod.Get]: true;
-            }>
-        >();
+        assert.tsType<(typeof myService.endpoints)['/path']['methods']>().equals<{
+            [HttpMethod.Get]: true;
+        }>();
     });
     it('can be assigned to an empty definition', () => {
         const myService = defineService({
@@ -129,11 +127,18 @@ describe(defineService.name, () => {
                     | '/plain'
                     | '/long-running'
                     | '/function-origin'
+                    | '/custom-props'
                     | '/array-origin'
                     | '/health'
                     | '/requires-origin'
                 )[]
             >();
+    });
+
+    it('preserves custom props', () => {
+        assert.tsType(mockService.endpoints['/custom-props'].customProps).equals<{
+            somethingElse: string;
+        }>();
     });
 
     it('errors on type access', () => {
@@ -369,12 +374,14 @@ describe(defineService.name, () => {
         );
 
         assert.tsType<(typeof service.sockets)['/my-socket']['MessageType']>().equals<
-            | {
-                  code: 1;
-              }
-            | {
-                  code: 2;
-              }
+            Readonly<
+                | {
+                      code: 1;
+                  }
+                | {
+                      code: 2;
+                  }
+            >
         >();
     });
     it('can define no sockets or endpoints', () => {

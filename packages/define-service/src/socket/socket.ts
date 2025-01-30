@@ -1,5 +1,13 @@
 import {AnyObject, Overwrite} from '@augment-vir/common';
-import {defineShape, ShapeDefinition, unknownShape} from 'object-shape-tester';
+import {
+    defineShape,
+    indexedKeys,
+    optional,
+    or,
+    ShapeDefinition,
+    ShapeToRuntimeType,
+    unknownShape,
+} from 'object-shape-tester';
 import type {IsEqual} from 'type-fest';
 import {assertValidEndpointPath, EndpointPathBase} from '../endpoint/endpoint-path.js';
 import {MinimalService} from '../service/minimal-service.js';
@@ -25,6 +33,8 @@ export type SocketInit<MessageDataShape = unknown> = {
      * - Any other set value overrides the service's origin requirement (if it has any).
      */
     requiredOrigin?: OriginRequirement;
+
+    customProps?: Record<PropertyKey, unknown> | undefined;
 };
 
 /**
@@ -49,7 +59,8 @@ export type WithFinalSocketProps<T, SocketPath extends EndpointPathBase> = (T ex
                   ? any
                   : undefined extends T['messageDataShape']
                     ? undefined
-                    : ShapeDefinition<T['messageDataShape'], false>['runtimeType'];
+                    : ShapeToRuntimeType<ShapeDefinition<T['messageDataShape'], true>, false, true>;
+              customProps: 'customProps' extends keyof T ? T['customProps'] : undefined;
           }
       >
     : never) & {
@@ -87,6 +98,16 @@ export const socketInitShape = defineShape({
      * - Any other set value overrides the service's origin requirement (if it has any).
      */
     requiredOrigin: originRequirementShape,
+    customProps: optional(
+        or(
+            undefined,
+            indexedKeys({
+                keys: unknownShape(),
+                values: unknownShape(),
+                required: false,
+            }),
+        ),
+    ),
 } satisfies Record<keyof SocketInit, any>);
 
 /**
