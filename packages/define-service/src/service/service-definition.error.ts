@@ -1,5 +1,19 @@
-import {stringify} from '@augment-vir/common';
+import {extractErrorMessage, stringify} from '@augment-vir/common';
 import type {NoParam} from '../util/no-param.js';
+
+/**
+ * Parameters for {@link ServiceDefinitionError}
+ *
+ * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
+ */
+export type ServiceDefinitionErrorParams = {
+    serviceName: string | NoParam;
+    path: string | undefined;
+    errorMessage: string;
+    routeType: 'endpoint' | 'socket' | undefined;
+};
 
 /**
  * An error thrown by endpoint and service validation assertions.
@@ -10,17 +24,7 @@ import type {NoParam} from '../util/no-param.js';
  */
 export class ServiceDefinitionError extends Error {
     public override name = 'ServiceDefinitionError';
-    constructor({
-        serviceName,
-        path,
-        errorMessage,
-        routeType,
-    }: {
-        serviceName: string | NoParam;
-        path: string | undefined;
-        errorMessage: string;
-        routeType: 'endpoint' | 'socket' | undefined;
-    }) {
+    constructor({serviceName, path, errorMessage, routeType}: ServiceDefinitionErrorParams) {
         const serviceNameMessage = `service '${String(serviceName)}'`;
 
         const nameMessage =
@@ -31,5 +35,27 @@ export class ServiceDefinitionError extends Error {
         const fullErrorMessage = `Failed to define ${nameMessage}: ${errorMessage}`;
 
         super(fullErrorMessage);
+    }
+}
+
+/**
+ * Ensures that the given error is a {@link ServiceDefinitionError} instance. If it's not, then a new
+ * {@link ServiceDefinitionError} is created with the given params.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
+ */
+export function ensureServiceDefinitionError(
+    error: unknown,
+    params: Omit<ServiceDefinitionErrorParams, 'errorMessage'>,
+) {
+    if (error instanceof ServiceDefinitionError) {
+        return error;
+    } else {
+        throw new ServiceDefinitionError({
+            ...params,
+            errorMessage: extractErrorMessage(error),
+        });
     }
 }

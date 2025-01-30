@@ -1,27 +1,17 @@
-import {
-    AnyObject,
-    AtLeastTuple,
-    extractErrorMessage,
-    HttpMethod,
-    JsonCompatibleValue,
-    Overwrite,
-    type MaybePromise,
-} from '@augment-vir/common';
+import {AnyObject, HttpMethod, JsonCompatibleValue, Overwrite} from '@augment-vir/common';
 import {
     defineShape,
     enumShape,
     indexedKeys,
-    or,
     unknownShape,
     type ShapeDefinition,
     type ShapeToRuntimeType,
 } from 'object-shape-tester';
-import {IsEqual, type RequireAtLeastOne} from 'type-fest';
+import {type RequireAtLeastOne} from 'type-fest';
 import {type MinimalService} from '../service/minimal-service.js';
-import {ServiceDefinitionError} from '../service/service-definition.error.js';
+import {ensureServiceDefinitionError} from '../service/service-definition.error.js';
 import {type NoParam} from '../util/no-param.js';
 import {originRequirementShape, type OriginRequirement} from '../util/origin.js';
-import {assertValidEndpointAuth} from './endpoint-auth.js';
 import {assertValidEndpointPath, type EndpointPathBase} from './endpoint-path.js';
 
 /**
@@ -34,24 +24,6 @@ import {assertValidEndpointPath, type EndpointPathBase} from './endpoint-path.js
 export type EndpointDataShapeBase = JsonCompatibleValue;
 
 /**
- * Expands the given `AllowedAuth` type to the allowed `requiredAuth` input type for
- * {@link EndpointInit}.
- *
- * @category Internal
- * @category Package : @rest-vir/define-service
- * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
- */
-export type RequiredAuth<AllowedAuth extends ReadonlyArray<any> | undefined | NoParam> =
-    IsEqual<AllowedAuth, undefined> extends true
-        ? undefined
-        : AllowedAuth extends ReadonlyArray<infer AuthElement>
-          ?
-                | AtLeastTuple<AuthElement, 1>
-                | ((currentAuth: AuthElement) => MaybePromise<boolean>)
-                | undefined
-          : any;
-
-/**
  * The type for setting up an individual endpoint, used in `defineService`.
  *
  * @category Internal
@@ -59,27 +31,12 @@ export type RequiredAuth<AllowedAuth extends ReadonlyArray<any> | undefined | No
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export type EndpointInit<
-    AllowedAuth extends ReadonlyArray<any> | undefined = any,
     AllowedMethods extends RequireAtLeastOne<Record<HttpMethod, boolean>> = RequireAtLeastOne<
         Record<HttpMethod, boolean>
     >,
     RequestDataShape extends EndpointDataShapeBase | NoParam = EndpointDataShapeBase | NoParam,
     ResponseDataShape = unknown,
-> = (AllowedAuth extends undefined
-    ? {
-          /**
-           * Set to `undefined` to allow any auth. Otherwise set this to a subset of the service
-           * definition's allowed auth.
-           */
-          requiredAuth?: RequiredAuth<NoInfer<AllowedAuth>>;
-      }
-    : {
-          /**
-           * Set to `undefined` to allow any auth. Otherwise set this to a subset of the service
-           * definition's allowed auth.
-           */
-          requiredAuth: RequiredAuth<NoInfer<AllowedAuth>>;
-      }) & {
+> = {
     /**
      * Shape definition for request data. Set to `undefined` for no request data.
      *
@@ -118,7 +75,6 @@ export type EndpointInit<
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export const endpointInitShape = defineShape({
-    requiredAuth: or(undefined, [unknownShape()]),
     requestDataShape: unknownShape(),
     responseDataShape: unknownShape(),
     /**
@@ -187,7 +143,6 @@ export type WithFinalEndpointProps<T, EndpointPath extends EndpointPathBase> = (
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export type Endpoint<
-    AllowedAuth extends ReadonlyArray<any> | undefined = any,
     AllowedMethods extends RequireAtLeastOne<Record<HttpMethod, boolean>> = RequireAtLeastOne<
         Record<HttpMethod, boolean>
     >,
@@ -195,7 +150,7 @@ export type Endpoint<
     ResponseDataShape extends EndpointDataShapeBase | NoParam = NoParam,
     EndpointPath extends EndpointPathBase = EndpointPathBase,
 > = WithFinalEndpointProps<
-    EndpointInit<AllowedAuth, AllowedMethods, RequestDataShape, ResponseDataShape>,
+    EndpointInit<AllowedMethods, RequestDataShape, ResponseDataShape>,
     EndpointPath
 >;
 
@@ -253,47 +208,28 @@ export function attachEndpointShapeTypeGetters<const T extends AnyObject>(
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export function assertValidEndpoint<
-    /**
-     * This will be provided from the user for the endpoint as a whole. This is a union or enum of
-     * all possible auth values, which `requiredEndpointAuth` must be a subset of.
-     */
-    AllowedAuthEntries,
->(
-    endpoint: Readonly<Pick<Endpoint, 'endpointPath' | 'requiredAuth' | 'methods'>>,
+export function assertValidEndpoint(
+    endpoint: Readonly<Pick<Endpoint, 'endpointPath' | 'methods'>>,
     {
         serviceName,
-        allowedAuth,
     }: {
         /**
          * `serviceName` is used purely for error messaging purposes, so that it's possible to
          * understand which service the endpoint is coming from.
          */
         serviceName: string | NoParam;
-        allowedAuth: Readonly<AtLeastTuple<AllowedAuthEntries, 1>> | undefined;
     },
 ) {
     try {
-        assertValidEndpointAuth({
-            allowedAuth,
-            requiredEndpointAuth: endpoint.requiredAuth,
-            endpointPath: endpoint.endpointPath,
-            serviceName,
-        });
         assertValidEndpointPath(endpoint.endpointPath);
         if (!Object.values(endpoint.methods).some((value) => value)) {
             throw new Error('Endpoint has no allowed HTTP methods.');
         }
-    } catch (caught) {
-        if (caught instanceof ServiceDefinitionError) {
-            throw caught;
-        } else {
-            throw new ServiceDefinitionError({
-                path: endpoint.endpointPath,
-                serviceName,
-                errorMessage: extractErrorMessage(caught),
-                routeType: 'endpoint',
-            });
-        }
+    } catch (error) {
+        throw ensureServiceDefinitionError(error, {
+            path: endpoint.endpointPath,
+            serviceName,
+            routeType: 'endpoint',
+        });
     }
 }

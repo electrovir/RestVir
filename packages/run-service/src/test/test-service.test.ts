@@ -22,7 +22,7 @@ describeService({service: mockServiceImplementation}, ({fetchService}) => {
     });
 });
 
-const serviceWithNoAuth = implementService(
+const plainService = implementService(
     defineService({
         endpoints: {
             '/health': {
@@ -34,7 +34,7 @@ const serviceWithNoAuth = implementService(
             },
         },
         requiredOrigin: AnyOrigin,
-        serviceName: 'no auth',
+        serviceName: 'plain service',
         serviceOrigin: 'https://example.com',
     }),
     {
@@ -51,7 +51,7 @@ const serviceWithNoAuth = implementService(
     },
 );
 
-describeService({service: serviceWithNoAuth, options: {}}, ({fetchService}) => {
+describeService({service: plainService, options: {}}, ({fetchService}) => {
     it('responds to a request', async () => {
         const response = await fetchService['/health']();
 
@@ -71,7 +71,7 @@ describeService({service: serviceWithNoAuth, options: {}}, ({fetchService}) => {
 
 describe(testService.name, () => {
     it('works with an actual port', async () => {
-        const {fetchService, kill} = await testService(serviceWithNoAuth, {
+        const {fetchService, kill} = await testService(plainService, {
             port: 4500 + randomInteger({min: 0, max: 4000}),
         });
 

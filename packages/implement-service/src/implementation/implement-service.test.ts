@@ -6,39 +6,6 @@ import {or} from 'object-shape-tester';
 import {implementService} from './implement-service.js';
 
 describe(implementService.name, () => {
-    it('does not require allowedAuth', () => {
-        implementService(
-            defineService({
-                endpoints: {
-                    '/test': {
-                        methods: {
-                            GET: true,
-                        },
-                        requestDataShape: undefined,
-                        responseDataShape: undefined,
-                    },
-                },
-                requiredOrigin: AnyOrigin,
-                serviceName: 'test',
-                serviceOrigin: '',
-            }),
-            {
-                context() {
-                    return 'hi';
-                },
-            },
-            {
-                endpoints: {
-                    '/test'() {
-                        return {
-                            statusCode: HttpStatus.Ok,
-                            responseData: undefined,
-                        };
-                    },
-                },
-            },
-        );
-    });
     it('handles shape definitions', () => {
         implementService(
             defineService({
@@ -73,45 +40,6 @@ describe(implementService.name, () => {
                             }>
                         >();
 
-                        return {
-                            statusCode: HttpStatus.Ok,
-                            responseData: undefined,
-                        };
-                    },
-                },
-            },
-        );
-    });
-    it('requires extractAuth if the definition requires it', () => {
-        implementService(
-            defineService({
-                endpoints: {
-                    '/test': {
-                        methods: {
-                            GET: true,
-                        },
-                        requestDataShape: undefined,
-                        responseDataShape: undefined,
-                        requiredAuth: ['a'],
-                    },
-                },
-                requiredOrigin: AnyOrigin,
-                serviceName: 'test',
-                serviceOrigin: '',
-                allowedAuth: [
-                    'a',
-                    'b',
-                ],
-            }),
-            // @ts-expect-error: missing `extractAuth`
-            {
-                context() {
-                    return 'hi';
-                },
-            },
-            {
-                endpoints: {
-                    '/test'() {
                         return {
                             statusCode: HttpStatus.Ok,
                             responseData: undefined,

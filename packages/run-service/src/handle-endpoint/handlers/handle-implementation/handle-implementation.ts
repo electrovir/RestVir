@@ -14,7 +14,6 @@ import {
 } from '@rest-vir/implement-service';
 import {assertValidShape} from 'object-shape-tester';
 import {EndpointHandlerParams, type HandledOutput} from '../../endpoint-handler.js';
-import {extractAuth} from './request-auth.js';
 import {createContext} from './request-context.js';
 import {extractRequestData} from './request-data.js';
 
@@ -39,7 +38,7 @@ export async function handleImplementation(
             };
         }
 
-        const contextParams: Omit<EndpointImplementationParams, 'context' | 'auth'> = {
+        const contextParams: Omit<EndpointImplementationParams, 'context'> = {
             endpoint,
             log: endpoint.service.logger,
             method: assertWrap.isEnumValue(request.method, HttpMethod),
@@ -52,16 +51,9 @@ export async function handleImplementation(
 
         const context = await createContext(contextParams, endpoint.service);
 
-        const authParams: Omit<EndpointImplementationParams, 'auth'> = {
+        const endpointParams: EndpointImplementationParams = {
             ...contextParams,
             context,
-        };
-
-        const auth = await extractAuth(authParams, endpoint.service);
-
-        const endpointParams: EndpointImplementationParams = {
-            ...authParams,
-            auth,
         };
 
         const endpointResult = (await endpoint.implementation(

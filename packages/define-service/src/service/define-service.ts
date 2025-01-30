@@ -1,11 +1,5 @@
 import {assert, check} from '@augment-vir/assert';
-import {
-    AnyObject,
-    extractErrorMessage,
-    getObjectTypedEntries,
-    mapObjectValues,
-    stringify,
-} from '@augment-vir/common';
+import {AnyObject, getObjectTypedEntries, mapObjectValues, stringify} from '@augment-vir/common';
 import {assertValidShape, defineShape} from 'object-shape-tester';
 import {type IsEqual, type SetRequired} from 'type-fest';
 import {type EndpointPathBase} from '../endpoint/endpoint-path.js';
@@ -28,7 +22,7 @@ import {
 import {type NoParam} from '../util/no-param.js';
 import {type OriginRequirement} from '../util/origin.js';
 import {MinimalService} from './minimal-service.js';
-import {ServiceDefinitionError} from './service-definition.error.js';
+import {ensureServiceDefinitionError} from './service-definition.error.js';
 
 /**
  * A string used for type errors triggered when an endpoint path is defined without a leading slash.
@@ -47,8 +41,7 @@ export type EndpointMustStartWithSlashTypeError = 'ERROR: endpoint must start wi
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export type BaseServiceEndpointsInit<AllowedAuth extends ReadonlyArray<any> | undefined = any> =
-    Record<EndpointPathBase, EndpointInit<AllowedAuth>>;
+export type BaseServiceEndpointsInit = Record<EndpointPathBase, EndpointInit>;
 
 /**
  * Base type used for the right side of "extends" in type parameters for generic endpoint
@@ -69,11 +62,9 @@ export type BaseServiceSocketsInit = Record<EndpointPathBase, SocketInit>;
  */
 export type ServiceInit<
     ServiceName extends string,
-    AllowedAuth extends ReadonlyArray<any> | undefined,
-    EndpointsInit extends BaseServiceEndpointsInit<NoInfer<AllowedAuth>> | NoParam,
+    EndpointsInit extends BaseServiceEndpointsInit | NoParam,
     SocketsInit extends BaseServiceSocketsInit | NoParam,
 > = MinimalService<ServiceName> & {
-    allowedAuth?: AllowedAuth;
     requiredOrigin: NonNullable<OriginRequirement>;
     sockets?: IsEqual<SocketsInit, NoParam> extends true
         ? Record<EndpointPathBase, SocketInit>
@@ -106,15 +97,13 @@ export type ServiceInit<
  */
 export type ServiceDefinition<
     ServiceName extends string = any,
-    AllowedAuth extends ReadonlyArray<any> | undefined = any,
-    EndpointsInit extends BaseServiceEndpointsInit<NoInfer<AllowedAuth>> | NoParam = NoParam,
+    EndpointsInit extends BaseServiceEndpointsInit | NoParam = NoParam,
     SocketsInit extends BaseServiceSocketsInit | NoParam = NoParam,
 > = MinimalService<ServiceName> & {
-    allowedAuth: AllowedAuth;
     requiredOrigin: NonNullable<OriginRequirement>;
     /** Include the initial init object so a service can be composed. */
     init: SetRequired<
-        ServiceInit<ServiceName, AllowedAuth, EndpointsInit, SocketsInit>,
+        ServiceInit<ServiceName, EndpointsInit, SocketsInit>,
         'endpoints' | 'sockets'
     >;
     sockets: SocketsInit extends NoParam
@@ -147,12 +136,11 @@ export type ServiceDefinition<
  */
 export function defineService<
     const ServiceName extends string,
-    const EndpointsInit extends BaseServiceEndpointsInit<AllowedAuth>,
+    const EndpointsInit extends BaseServiceEndpointsInit,
     const SocketsInit extends BaseServiceSocketsInit,
-    const AllowedAuth extends ReadonlyArray<any> | undefined = undefined,
 >(
-    serviceInit: ServiceInit<ServiceName, AllowedAuth, EndpointsInit, SocketsInit>,
-): ServiceDefinition<ServiceName, AllowedAuth, EndpointsInit, SocketsInit> {
+    serviceInit: ServiceInit<ServiceName, EndpointsInit, SocketsInit>,
+): ServiceDefinition<ServiceName, EndpointsInit, SocketsInit> {
     const serviceDefinition = finalizeServiceDefinition(serviceInit);
     assertValidServiceDefinition(serviceDefinition);
     return serviceDefinition;
@@ -160,12 +148,11 @@ export function defineService<
 
 function finalizeServiceDefinition<
     const ServiceName extends string,
-    const AllowedAuth extends ReadonlyArray<any> | undefined,
-    const EndpointsInit extends BaseServiceEndpointsInit<AllowedAuth>,
+    const EndpointsInit extends BaseServiceEndpointsInit,
     const SocketsInit extends BaseServiceSocketsInit,
 >(
-    serviceInit: ServiceInit<ServiceName, AllowedAuth, EndpointsInit, SocketsInit>,
-): ServiceDefinition<ServiceName, AllowedAuth, EndpointsInit, SocketsInit> {
+    serviceInit: ServiceInit<ServiceName, EndpointsInit, SocketsInit>,
+): ServiceDefinition<ServiceName, EndpointsInit, SocketsInit> {
     try {
         const minimalService: MinimalService<ServiceName> = {
             serviceName: serviceInit.serviceName,
@@ -177,8 +164,7 @@ function finalizeServiceDefinition<
          * Make the types less strict because we don't care what they are inside of this function's
          * implementation. Just the return type is what matters.
          */
-        const genericEndpoints = (serviceInit.endpoints ||
-            {}) as BaseServiceEndpointsInit<AllowedAuth>;
+        const genericEndpoints = (serviceInit.endpoints || {}) as BaseServiceEndpointsInit;
 
         const endpoints = mapObjectValues(genericEndpoints, (endpointPath, endpointInit) => {
             assertValidShape(endpointInit, endpointInitShape);
@@ -216,27 +202,23 @@ function finalizeServiceDefinition<
         });
 
         return {
-            allowedAuth: serviceInit.allowedAuth as AllowedAuth,
             serviceName: serviceInit.serviceName,
             serviceOrigin: serviceInit.serviceOrigin,
             init: {
                 ...serviceInit,
                 sockets: (serviceInit.sockets || {}) as ServiceDefinition<
                     ServiceName,
-                    AllowedAuth,
                     EndpointsInit,
                     SocketsInit
                 >['init']['sockets'],
                 endpoints: (serviceInit.endpoints || {}) as ServiceDefinition<
                     ServiceName,
-                    AllowedAuth,
                     EndpointsInit,
                     SocketsInit
                 >['init']['endpoints'],
             },
             sockets: sockets as AnyObject as ServiceDefinition<
                 ServiceName,
-                AllowedAuth,
                 EndpointsInit,
                 SocketsInit
             >['sockets'],
@@ -244,23 +226,16 @@ function finalizeServiceDefinition<
             /** As cast needed again to narrow the type (for the return value) after broadening it. */
             endpoints: endpoints as AnyObject as ServiceDefinition<
                 ServiceName,
-                AllowedAuth,
                 EndpointsInit,
                 SocketsInit
             >['endpoints'],
         };
     } catch (error) {
-        /* node:coverage ignore next 3: just covering an edge case */
-        if (error instanceof ServiceDefinitionError) {
-            throw error;
-        } else {
-            throw new ServiceDefinitionError({
-                path: undefined,
-                errorMessage: extractErrorMessage(error),
-                serviceName: serviceInit.serviceName,
-                routeType: undefined,
-            });
-        }
+        throw ensureServiceDefinitionError(error, {
+            path: undefined,
+            serviceName: serviceInit.serviceName,
+            routeType: undefined,
+        });
     }
 }
 
@@ -282,9 +257,6 @@ export function assertValidServiceDefinition(
             );
         }
 
-        if (serviceDefinition.allowedAuth) {
-            assert.isLengthAtLeast(serviceDefinition.allowedAuth, 1);
-        }
         assert.isDefined(serviceDefinition.requiredOrigin);
 
         getObjectTypedEntries(serviceDefinition.endpoints).forEach(
@@ -293,7 +265,6 @@ export function assertValidServiceDefinition(
                 endpoint,
             ]) => {
                 assertValidEndpoint(endpoint, {
-                    allowedAuth: serviceDefinition.allowedAuth,
                     serviceName: serviceDefinition.serviceName,
                 });
             },
@@ -310,15 +281,10 @@ export function assertValidServiceDefinition(
             },
         );
     } catch (error) {
-        if (error instanceof ServiceDefinitionError) {
-            throw error;
-        } else {
-            throw new ServiceDefinitionError({
-                path: undefined,
-                serviceName: serviceDefinition.serviceName,
-                errorMessage: extractErrorMessage(error),
-                routeType: undefined,
-            });
-        }
+        throw ensureServiceDefinitionError(error, {
+            path: undefined,
+            serviceName: serviceDefinition.serviceName,
+            routeType: undefined,
+        });
     }
 }

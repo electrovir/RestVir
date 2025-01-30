@@ -14,7 +14,7 @@ import {
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
 export async function createContext(
-    params: Omit<EndpointImplementationParams, 'context' | 'auth'>,
+    params: Omit<EndpointImplementationParams, 'context'>,
     service: Readonly<GenericServiceImplementation>,
 ) {
     const contextInput: ContextInit<AnyObject> = service.context;

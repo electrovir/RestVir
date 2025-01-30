@@ -5,7 +5,6 @@ export * from './handle-endpoint/endpoint-handler.js';
 export * from './handle-endpoint/handle-endpoint.js';
 export * from './handle-endpoint/handlers/handle-cors.js';
 export * from './handle-endpoint/handlers/handle-implementation/handle-implementation.js';
-export * from './handle-endpoint/handlers/handle-implementation/request-auth.js';
 export * from './handle-endpoint/handlers/handle-implementation/request-context.js';
 export * from './handle-endpoint/handlers/handle-implementation/request-data.js';
 export * from './handle-endpoint/handlers/handle-request-method.js';

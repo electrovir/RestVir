@@ -6,11 +6,7 @@ import {
     type Socket,
 } from '@rest-vir/define-service';
 import {type ServiceLogger} from '../util/service-logger.js';
-import {
-    type ContextInit,
-    type EndpointImplementation,
-    type ExtractAuth,
-} from './implement-endpoint.js';
+import {type ContextInit, type EndpointImplementation} from './implement-endpoint.js';
 import {type SocketImplementation} from './implement-socket.js';
 
 /**
@@ -45,7 +41,6 @@ export type GenericServiceImplementation = Omit<ServiceDefinition, 'endpoints'> 
     endpoints: Record<EndpointPathBase, ImplementedEndpoint>;
     sockets: Record<EndpointPathBase, ImplementedSocket>;
     context: ContextInit<any>;
-    extractAuth: ExtractAuth<any, any> | undefined;
     logger: ServiceLogger;
 };
 

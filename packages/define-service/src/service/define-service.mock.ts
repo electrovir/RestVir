@@ -1,22 +1,15 @@
 /* node:coverage disable */
 /** This is just a mock file. */
 
-import {getEnumValues, HttpMethod, wait} from '@augment-vir/common';
+import {HttpMethod, wait} from '@augment-vir/common';
 import {or} from 'object-shape-tester';
 import {AnyOrigin} from '../util/origin.js';
 import {defineService} from './define-service.js';
-
-export enum MyMockAuth {
-    Admin = 'admin',
-    Manager = 'manager',
-    User = 'user',
-}
 
 export const mockWebsiteOrigin = 'https://example.com';
 
 export const mockService = defineService({
     serviceName: 'mock-service',
-    allowedAuth: getEnumValues(MyMockAuth),
     serviceOrigin: 'https://example.com',
     requiredOrigin: AnyOrigin,
     sockets: {
@@ -43,7 +36,6 @@ export const mockService = defineService({
                 [HttpMethod.Get]: true,
             },
             requestDataShape: undefined,
-            requiredAuth: undefined,
             responseDataShape: undefined,
             async requiredOrigin(origin) {
                 await wait({milliseconds: 1});
@@ -55,7 +47,6 @@ export const mockService = defineService({
                 [HttpMethod.Get]: true,
             },
             requestDataShape: undefined,
-            requiredAuth: undefined,
             responseDataShape: undefined,
             requiredOrigin: [
                 'http://example.com',
@@ -70,11 +61,9 @@ export const mockService = defineService({
                 [HttpMethod.Get]: true,
             },
             requestDataShape: undefined,
-            requiredAuth: undefined,
             responseDataShape: undefined,
         },
         '/test': {
-            requiredAuth: [MyMockAuth.Admin],
             requestDataShape: {
                 somethingHere: '',
                 testValue: 5,
@@ -91,7 +80,6 @@ export const mockService = defineService({
             },
         },
         '/plain': {
-            requiredAuth: undefined,
             requestDataShape: undefined,
             methods: {
                 [HttpMethod.Get]: true,
@@ -102,7 +90,6 @@ export const mockService = defineService({
             },
         },
         '/requires-origin': {
-            requiredAuth: undefined,
             requestDataShape: undefined,
             methods: {
                 [HttpMethod.Get]: true,
@@ -111,7 +98,6 @@ export const mockService = defineService({
             requiredOrigin: mockWebsiteOrigin,
         },
         '/long-running': {
-            requiredAuth: undefined,
             requestDataShape: or(undefined, {count: -1}),
             methods: {
                 [HttpMethod.Get]: true,
@@ -126,11 +112,9 @@ export const mockService = defineService({
                 [HttpMethod.Get]: true,
             },
             requestDataShape: undefined,
-            requiredAuth: undefined,
             responseDataShape: undefined,
         },
         '/empty': {
-            requiredAuth: undefined,
             requestDataShape: undefined,
             responseDataShape: undefined,
             methods: {
@@ -138,7 +122,6 @@ export const mockService = defineService({
             },
         },
         '/requires-admin': {
-            requiredAuth: [MyMockAuth.Admin],
             requestDataShape: undefined,
             responseDataShape: undefined,
             methods: {
@@ -147,7 +130,6 @@ export const mockService = defineService({
         },
         /** This endpoint is missing its implementation in the mock service implementation. */
         '/missing': {
-            requiredAuth: undefined,
             requestDataShape: undefined,
             responseDataShape: undefined,
             methods: {
@@ -156,7 +138,6 @@ export const mockService = defineService({
         },
         /** Throws an error. */
         '/throws-error': {
-            requiredAuth: undefined,
             requestDataShape: undefined,
             responseDataShape: undefined,
             methods: {
@@ -165,7 +146,6 @@ export const mockService = defineService({
         },
         /** Returns an error status code with an error response message. */
         '/returns-response-error': {
-            requiredAuth: undefined,
             requestDataShape: undefined,
             responseDataShape: undefined,
             methods: {
@@ -174,7 +154,6 @@ export const mockService = defineService({
         },
         /** Returns an error status code without an error response message. */
         '/returns-error-status': {
-            requiredAuth: undefined,
             requestDataShape: undefined,
             responseDataShape: undefined,
             requiredOrigin: mockWebsiteOrigin,

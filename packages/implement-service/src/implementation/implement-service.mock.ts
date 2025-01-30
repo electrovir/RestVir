@@ -1,8 +1,8 @@
 /* node:coverage disable */
 
-import {assert, check} from '@augment-vir/assert';
+import {assert} from '@augment-vir/assert';
 import {HttpStatus, wait, type AnyObject} from '@augment-vir/common';
-import {mockService, MyMockAuth} from '@rest-vir/define-service/src/service/define-service.mock';
+import {mockService} from '@rest-vir/define-service/src/service/define-service.mock';
 import {implementService} from './implement-service.js';
 
 export type MockServiceContext = {
@@ -16,15 +16,6 @@ export const mockServiceImplementation = implementService(
             return {
                 date: Date.now(),
             };
-        },
-        extractAuth({request}) {
-            const naiveAuth = request.headers.authorization;
-
-            if (check.isEnumValue(naiveAuth, MyMockAuth)) {
-                return naiveAuth;
-            } else {
-                return undefined;
-            }
         },
     },
     {

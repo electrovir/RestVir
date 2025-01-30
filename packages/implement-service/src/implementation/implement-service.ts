@@ -22,7 +22,7 @@ import {
     type ServiceLogger,
 } from '../util/service-logger.js';
 import type {ImplementedEndpoint, ImplementedSocket} from './generic-service-implementation.js';
-import type {ContextInit, EndpointImplementations, ExtractAuth} from './implement-endpoint.js';
+import type {ContextInit, EndpointImplementations} from './implement-endpoint.js';
 import {assertValidEndpointImplementations} from './implement-endpoint.js';
 import {assertValidSocketImplementations, SocketImplementations} from './implement-socket.js';
 
@@ -42,10 +42,7 @@ export type CustomErrorHandler = (error: Error) => MaybePromise<void>;
  * @category Package : @rest-vir/implement-service
  * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
  */
-export type ServiceImplementationInit<
-    Context,
-    AllowedAuth extends ReadonlyArray<any> | undefined,
-> = {
+export type ServiceImplementationInit<Context> = {
     /**
      * Logger for the service. Use {@link silentServiceLogger} to disable logging entirely (even
      * errors) or simply set `undefined` to the log type that you wish to suppress. An omitted log
@@ -54,10 +51,7 @@ export type ServiceImplementationInit<
     logger?: ServiceLoggerOption;
 } & (IsEqual<Context, undefined> extends true
     ? {context?: undefined}
-    : {context: ContextInit<Context>}) &
-    (IsEqual<AllowedAuth, undefined> extends true
-        ? {extractAuth?: undefined}
-        : {extractAuth: ExtractAuth<NoInfer<Context>, AllowedAuth>});
+    : {context: ContextInit<Context>});
 
 /**
  * Parameters for implementations for {@link implementService}.
@@ -69,8 +63,7 @@ export type ServiceImplementationInit<
 export type ServiceImplementationsParams<
     Context,
     ServiceName extends string,
-    AllowedAuth extends ReadonlyArray<any> | undefined,
-    EndpointsInit extends BaseServiceEndpointsInit<AllowedAuth>,
+    EndpointsInit extends BaseServiceEndpointsInit,
     SocketsInit extends BaseServiceSocketsInit,
 > = (KeyCount<OmitIndexSignature<EndpointsInit>> extends 0
     ? {
@@ -108,24 +101,22 @@ export type ServiceImplementationsParams<
 export function implementService<
     const Context,
     const ServiceName extends string,
-    const AllowedAuth extends ReadonlyArray<any> | undefined,
-    const EndpointsInit extends BaseServiceEndpointsInit<AllowedAuth>,
+    const EndpointsInit extends BaseServiceEndpointsInit,
     const SocketsInit extends BaseServiceSocketsInit,
 >(
-    service: ServiceDefinition<ServiceName, AllowedAuth, EndpointsInit, SocketsInit>,
+    service: ServiceDefinition<ServiceName, EndpointsInit, SocketsInit>,
     /** Init must be first so that TypeScript can infer the type for `Context`. */
-    init: ServiceImplementationInit<Context, NoInfer<AllowedAuth>>,
+    init: ServiceImplementationInit<Context>,
     {
         endpoints: endpointImplementations,
         sockets: socketImplementations,
     }: ServiceImplementationsParams<
         NoInfer<Context>,
         NoInfer<ServiceName>,
-        NoInfer<AllowedAuth>,
         NoInfer<EndpointsInit>,
         NoInfer<SocketsInit>
     >,
-): ServiceImplementation<Context, ServiceName, AllowedAuth, EndpointsInit> {
+): ServiceImplementation<Context, ServiceName, EndpointsInit> {
     assertValidEndpointImplementations(service, endpointImplementations || {});
     assertValidSocketImplementations(service, socketImplementations || {});
 
@@ -147,7 +138,6 @@ export function implementService<
     }) as AnyObject as ServiceImplementation<
         Context,
         ServiceName,
-        AllowedAuth,
         EndpointsInit,
         SocketsInit
     >['endpoints'];
@@ -170,22 +160,15 @@ export function implementService<
     }) as AnyObject as ServiceImplementation<
         Context,
         ServiceName,
-        AllowedAuth,
         EndpointsInit,
         SocketsInit
     >['sockets'];
 
-    const serviceImplementation: ServiceImplementation<
-        Context,
-        ServiceName,
-        AllowedAuth,
-        EndpointsInit
-    > = {
+    const serviceImplementation: ServiceImplementation<Context, ServiceName, EndpointsInit> = {
         ...service,
         endpoints,
         sockets,
         context: init.context as ContextInit<Context>,
-        extractAuth: init.extractAuth,
         logger: createServiceLogger(init.logger),
     };
 
@@ -209,42 +192,34 @@ export function implementService<
 export type ServiceImplementation<
     Context = any,
     ServiceName extends string = any,
-    AllowedAuth extends ReadonlyArray<any> | undefined = any,
-    EndpointsInit extends BaseServiceEndpointsInit<AllowedAuth> | NoParam = NoParam,
+    EndpointsInit extends BaseServiceEndpointsInit | NoParam = NoParam,
     SocketsInit extends BaseServiceSocketsInit | NoParam = NoParam,
-> = Omit<ServiceDefinition<ServiceName, AllowedAuth, EndpointsInit, SocketsInit>, 'endpoints'> & {
+> = Omit<ServiceDefinition<ServiceName, EndpointsInit, SocketsInit>, 'endpoints'> & {
     endpoints: {
         [EndpointPath in keyof ServiceDefinition<
             ServiceName,
-            AllowedAuth,
             EndpointsInit
         >['endpoints']]: EndpointPath extends EndpointPathBase
             ? ImplementedEndpoint<
                   Context,
                   ServiceName,
-                  ServiceDefinition<
-                      ServiceName,
-                      AllowedAuth,
-                      EndpointsInit
-                  >['endpoints'][EndpointPath]
+                  ServiceDefinition<ServiceName, EndpointsInit>['endpoints'][EndpointPath]
               >
             : never;
     };
     sockets: {
         [SocketPath in keyof ServiceDefinition<
             ServiceName,
-            AllowedAuth,
             EndpointsInit
         >['sockets']]: SocketPath extends EndpointPathBase
             ? ImplementedSocket<
                   Context,
                   ServiceName,
-                  ServiceDefinition<ServiceName, AllowedAuth, EndpointsInit>['sockets'][SocketPath]
+                  ServiceDefinition<ServiceName, EndpointsInit>['sockets'][SocketPath]
               >
             : never;
     };
     context: ContextInit<Context>;
-    extractAuth: ExtractAuth<Context, AllowedAuth> | undefined;
     logger: ServiceLogger;
 };
 
@@ -261,8 +236,7 @@ export type ServiceImplementationFromServiceDefinition<
 > =
     SpecificServiceDefinition extends ServiceDefinition<
         infer ServiceName,
-        infer AllowedAuth,
         infer EndpointDefinitions
     >
-        ? ServiceImplementation<unknown, ServiceName, AllowedAuth, EndpointDefinitions>
+        ? ServiceImplementation<unknown, ServiceName, EndpointDefinitions>
         : 'ERROR: Failed to infer service definition type parameters';

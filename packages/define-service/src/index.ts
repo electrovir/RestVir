@@ -1,6 +1,5 @@
 export {HttpMethod, HttpStatus} from '@augment-vir/common';
 
-export * from './endpoint/endpoint-auth.js';
 export * from './endpoint/endpoint-path.js';
 export * from './endpoint/endpoint.js';
 export * from './fetch/fetch-endpoint.js';

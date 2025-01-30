@@ -1,6 +1,5 @@
 import {check} from '@augment-vir/assert';
 import {
-    ArrayElement,
     ErrorHttpStatusCategories,
     ExtractKeysWithMatchingValues,
     HttpMethod,
@@ -21,7 +20,7 @@ import {
     WithFinalEndpointProps,
 } from '@rest-vir/define-service';
 import type {IncomingHttpHeaders, OutgoingHttpHeaders} from 'node:http';
-import {type IsEqual} from 'type-fest';
+import {type IsEqual, type IsNever} from 'type-fest';
 import {EndpointRequest, type EndpointResponse} from '../util/message.js';
 import {type ServiceLogger} from '../util/service-logger.js';
 
@@ -34,25 +33,7 @@ import {type ServiceLogger} from '../util/service-logger.js';
  */
 export type ContextInit<Context> =
     | Context
-    | ((
-          params: Readonly<Omit<EndpointImplementationParams, 'context' | 'auth'>>,
-      ) => MaybePromise<Context>);
-
-/**
- * User-defined function that extracts the current auth of an individual request.
- *
- * @category Internal
- * @category Package : @rest-vir/implement-service
- * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
- */
-export type ExtractAuth<Context, AllowedAuth extends ReadonlyArray<any> | undefined> =
-    Exclude<AllowedAuth, undefined> extends never
-        ? undefined
-        : (
-              params: Readonly<Omit<EndpointImplementationParams<Context>, 'auth'>>,
-          ) => MaybePromise<
-              (AllowedAuth extends any[] ? ArrayElement<AllowedAuth> : undefined) | undefined
-          >;
+    | ((params: Readonly<Omit<EndpointImplementationParams, 'context'>>) => MaybePromise<Context>);
 
 /**
  * The object that all endpoint implementations should return.
@@ -102,12 +83,16 @@ export type EndpointImplementationParams<
     SpecificEndpoint extends Endpoint | NoParam = NoParam,
 > = {
     context: Context;
-    auth: IsEqual<Extract<SpecificEndpoint, NoParam>, NoParam> extends true
-        ? unknown
-        : ArrayElement<Exclude<SpecificEndpoint, NoParam>['requiredAuth']>;
     method: IsEqual<Extract<SpecificEndpoint, NoParam>, NoParam> extends true
         ? HttpMethod
-        : ExtractKeysWithMatchingValues<Exclude<SpecificEndpoint, NoParam>['methods'], true>;
+        : ExtractKeysWithMatchingValues<
+                Exclude<SpecificEndpoint, NoParam>['methods'],
+                true
+            > extends infer AvailableMethod
+          ? IsNever<AvailableMethod> extends true
+              ? HttpMethod
+              : AvailableMethod
+          : never;
     endpoint: IsEqual<Extract<SpecificEndpoint, NoParam>, NoParam> extends true
         ? Endpoint
         : SpecificEndpoint;
@@ -132,7 +117,6 @@ export type EndpointImplementationParams<
  */
 export type GenericEndpointImplementationParams = {
     context: any;
-    auth: any;
     method: any;
     endpoint: any;
     service: MinimalService<any>;
@@ -203,7 +187,7 @@ export type EndpointImplementations<
 export function assertValidEndpointImplementations(
     service: Readonly<Pick<ServiceDefinition, 'endpoints' | 'serviceName'>>,
     endpointImplementations: EndpointImplementations,
-) {
+): asserts endpointImplementations is Record<EndpointPathBase, EndpointImplementation> {
     const nonFunctionImplementations = getObjectTypedEntries(endpointImplementations).filter(
         ([
             ,

@@ -1,9 +1,9 @@
-import {AnyObject, extractErrorMessage, Overwrite} from '@augment-vir/common';
+import {AnyObject, Overwrite} from '@augment-vir/common';
 import {defineShape, ShapeDefinition, unknownShape} from 'object-shape-tester';
 import type {IsEqual} from 'type-fest';
 import {assertValidEndpointPath, EndpointPathBase} from '../endpoint/endpoint-path.js';
 import {MinimalService} from '../service/minimal-service.js';
-import {ServiceDefinitionError} from '../service/service-definition.error.js';
+import {ensureServiceDefinitionError} from '../service/service-definition.error.js';
 import {NoParam} from '../util/no-param.js';
 import {OriginRequirement, originRequirementShape} from '../util/origin.js';
 
@@ -130,17 +130,11 @@ export function assertValidSocket(
 ) {
     try {
         assertValidEndpointPath(socket.socketPath);
-    } catch (caught) {
-        /* node:coverage ignore next 3: just covering an edge case */
-        if (caught instanceof ServiceDefinitionError) {
-            throw caught;
-        } else {
-            throw new ServiceDefinitionError({
-                path: socket.socketPath,
-                serviceName,
-                errorMessage: extractErrorMessage(caught),
-                routeType: 'socket',
-            });
-        }
+    } catch (error) {
+        throw ensureServiceDefinitionError(error, {
+            path: socket.socketPath,
+            serviceName,
+            routeType: 'socket',
+        });
     }
 }
