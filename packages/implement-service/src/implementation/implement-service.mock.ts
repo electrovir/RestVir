@@ -12,12 +12,22 @@ export type MockServiceContext = {
 export const mockServiceImplementation = implementService(
     {
         service: mockService,
-        createContext({endpoint}): MockServiceContext {
+        createContext({requestHeaders, endpoint}) {
             assert.tsType(endpoint?.customProps).equals<undefined | {somethingElse: string}>();
 
-            return {
-                date: Date.now(),
-            };
+            if (requestHeaders.authorization === 'reject') {
+                return {
+                    reject: {
+                        statusCode: HttpStatus.Unauthorized,
+                    },
+                };
+            } else {
+                return {
+                    context: {
+                        date: Date.now(),
+                    },
+                };
+            }
         },
     },
     {

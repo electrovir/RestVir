@@ -10,7 +10,9 @@ describe(implementService.name, () => {
         implementService(
             {
                 createContext() {
-                    return 'hi';
+                    return {
+                        context: 'hi',
+                    };
                 },
                 service: defineService({
                     endpoints: {
@@ -100,7 +102,9 @@ describe(implementService.name, () => {
                         serviceOrigin: '',
                     }),
                     createContext() {
-                        return 'hi';
+                        return {
+                            context: 'hi',
+                        };
                     },
                 },
                 {
@@ -141,7 +145,9 @@ describe(implementService.name, () => {
                     serviceOrigin: '',
                 }),
                 createContext() {
-                    return 'hi';
+                    return {
+                        context: 'hi',
+                    };
                 },
             },
             {
@@ -175,7 +181,9 @@ describe(implementService.name, () => {
                     serviceOrigin: '',
                 }),
                 createContext() {
-                    return 'hi';
+                    return {
+                        context: 'hi',
+                    };
                 },
             },
             {
@@ -254,7 +262,9 @@ describe(implementService.name, () => {
                     serviceOrigin: '',
                 }),
                 createContext() {
-                    return 'hi';
+                    return {
+                        context: 'hi',
+                    };
                 },
             },
             {
@@ -313,7 +323,9 @@ describe(implementService.name, () => {
                             serviceOrigin: '',
                         }),
                         createContext() {
-                            return 'hi';
+                            return {
+                                context: 'hi',
+                            };
                         },
                     },
                     {

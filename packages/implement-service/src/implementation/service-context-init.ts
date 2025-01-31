@@ -1,4 +1,4 @@
-import {type HttpMethod, type MaybePromise, type Values} from '@augment-vir/common';
+import {HttpMethod, MaybePromise, Values} from '@augment-vir/common';
 import {
     type BaseServiceEndpointsInit,
     type BaseServiceSocketsInit,
@@ -11,7 +11,9 @@ import {
     type WithFinalSocketProps,
 } from '@rest-vir/define-service';
 import {type IncomingHttpHeaders} from 'node:http';
+import type {RequireExactlyOne} from 'type-fest';
 import {type EndpointRequest, type EndpointResponse} from '../util/message.js';
+import {EndpointImplementationErrorOutput} from './implement-endpoint.js';
 
 /**
  * User-defined service implementation Context generator.
@@ -27,7 +29,17 @@ export type ContextInit<
     SocketsInit extends BaseServiceSocketsInit | NoParam,
 > = (
     params: Readonly<ContextInitParameters<ServiceName, EndpointsInit, SocketsInit>>,
-) => MaybePromise<Context>;
+) => MaybePromise<
+    RequireExactlyOne<{
+        /** The context created for this request. */
+        context: Context;
+        /**
+         * Instead of creating a context object for the current request, instead, reject the request
+         * with the specified status code and other options.
+         */
+        reject: EndpointImplementationErrorOutput;
+    }>
+>;
 
 /**
  * Parameters for {@link ContextInit}.

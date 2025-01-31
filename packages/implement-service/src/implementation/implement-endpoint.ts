@@ -25,6 +25,26 @@ import {EndpointRequest, type EndpointResponse} from '../util/message.js';
 import {type ServiceLogger} from '../util/service-logger.js';
 
 /**
+ * The part of {@link EndpointImplementationOutput} allowed for error responses.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/implement-service
+ * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
+ */
+export type EndpointImplementationErrorOutput = {
+    statusCode: HttpStatusByCategory<ErrorHttpStatusCategories>;
+    /**
+     * An error message which will get sent to the frontend.
+     *
+     * DO NOT INCLUDE SENSITIVE INFORMATION IN HERE.
+     */
+    responseErrorMessage?: string | undefined;
+    responseData?: undefined;
+    headers?: OutgoingHttpHeaders | undefined;
+    dataType?: undefined;
+};
+
+/**
  * The object that all endpoint implementations should return.
  *
  * @category Internal
@@ -32,18 +52,7 @@ import {type ServiceLogger} from '../util/service-logger.js';
  * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
  */
 export type EndpointImplementationOutput<ResponseDataType = unknown> =
-    | {
-          statusCode: HttpStatusByCategory<ErrorHttpStatusCategories>;
-          /**
-           * An error message which will get sent to the frontend.
-           *
-           * DO NOT INCLUDE SENSITIVE INFORMATION IN HERE.
-           */
-          responseErrorMessage?: string | undefined;
-          responseData?: undefined;
-          headers?: OutgoingHttpHeaders | undefined;
-          dataType?: undefined;
-      }
+    | EndpointImplementationErrorOutput
     | ({
           statusCode: HttpStatusByCategory<SuccessHttpStatusCategories>;
 
