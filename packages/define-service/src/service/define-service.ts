@@ -124,6 +124,7 @@ export type ServiceDefinition<
                   ? WithFinalEndpointProps<EndpointsInit[EndpointPath], EndpointPath>
                   : EndpointMustStartWithSlashTypeError;
           };
+    /** Given a URL, find the endpoint path from this service that matches it. */
 };
 
 /**

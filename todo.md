@@ -1,6 +1,6 @@
 ## Required
 
--   execute web socket connetions
+-   execute web socket connections
 -   add typed search params
 -   fill in mono-repo README
 

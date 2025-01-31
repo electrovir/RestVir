@@ -2,6 +2,7 @@ import {assert} from '@augment-vir/assert';
 import {getObjectTypedKeys, HttpMethod} from '@augment-vir/common';
 import {describe, it, itCases} from '@augment-vir/test';
 import {assertValidShape, exact, or} from 'object-shape-tester';
+import type {RequireAtLeastOne} from 'type-fest';
 import type {EndpointPathBase} from '../endpoint/endpoint-path.js';
 import {AnyOrigin} from '../util/origin.js';
 import {
@@ -10,6 +11,7 @@ import {
     type ServiceDefinition,
 } from './define-service.js';
 import {mockService} from './define-service.mock.js';
+import {matchUrlToService} from './match-url.js';
 import {ServiceDefinitionError} from './service-definition.error.js';
 
 describe(defineService.name, () => {
@@ -26,6 +28,48 @@ describe(defineService.name, () => {
         assert
             .tsType<(typeof mockService.endpoints)['/long-running']['RequestType']>()
             .equals<undefined | Readonly<{count: number}>>();
+    });
+    it('finds a matching endpoint path', () => {
+        const result = matchUrlToService(mockService, '/with/one/two');
+
+        assert.tsType(result).equals<
+            | undefined
+            | RequireAtLeastOne<{
+                  socketPath: keyof typeof mockService.sockets;
+                  endpointPath: keyof typeof mockService.endpoints;
+              }>
+        >();
+
+        assert.deepEquals(result, {
+            endpointPath: mockService.endpoints['/with/:param1/:param2'].endpointPath,
+        });
+    });
+    it('finds a matching socket path', () => {
+        const result = matchUrlToService(mockService, '/no-origin');
+
+        assert.tsType(result).equals<
+            | undefined
+            | RequireAtLeastOne<{
+                  socketPath: keyof typeof mockService.sockets;
+                  endpointPath: keyof typeof mockService.endpoints;
+              }>
+        >();
+
+        assert.deepEquals(result, {
+            socketPath: mockService.sockets['/no-origin'].socketPath,
+        });
+    });
+    it('finds a matching full socket url', () => {
+        const result = matchUrlToService(mockService, 'http://example.com/no-origin');
+
+        assert.deepEquals(result, {
+            socketPath: mockService.sockets['/no-origin'].socketPath,
+        });
+    });
+    it('finds no matching paths', () => {
+        const result = matchUrlToService(mockService, '/this-does-not-exist');
+
+        assert.isUndefined(result);
     });
     it('preserves methods', () => {
         const myService = defineService({
