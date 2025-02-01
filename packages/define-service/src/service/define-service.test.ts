@@ -41,7 +41,7 @@ describe(defineService.name, () => {
         >();
 
         assert.deepEquals(result, {
-            endpointPath: mockService.endpoints['/with/:param1/:param2'].endpointPath,
+            endpointPath: mockService.endpoints['/with/:param1/:param2'].path,
         });
     });
     it('finds a matching socket path', () => {
@@ -56,14 +56,14 @@ describe(defineService.name, () => {
         >();
 
         assert.deepEquals(result, {
-            socketPath: mockService.sockets['/no-origin'].socketPath,
+            socketPath: mockService.sockets['/no-origin'].path,
         });
     });
     it('finds a matching full socket url', () => {
         const result = matchUrlToService(mockService, 'http://example.com/no-origin');
 
         assert.deepEquals(result, {
-            socketPath: mockService.sockets['/no-origin'].socketPath,
+            socketPath: mockService.sockets['/no-origin'].path,
         });
     });
     it('finds no matching paths', () => {

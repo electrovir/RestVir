@@ -15,7 +15,7 @@ import {
     Endpoint,
     type NoParam,
 } from '@rest-vir/define-service';
-import {type GenericServiceImplementation} from '@rest-vir/implement-service';
+import {GenericServiceImplementation} from '@rest-vir/implement-service';
 import {type InjectOptions} from 'light-my-request';
 import {type OutgoingHttpHeaders} from 'node:http';
 import {buildUrl, parseUrl} from 'url-vir';
@@ -125,8 +125,12 @@ export async function testService<
         SelectFrom<
             GenericServiceImplementation,
             {
+                sockets: true;
                 endpoints: true;
                 serviceName: true;
+                createContext: true;
+                serviceOrigin: true;
+                requiredOrigin: true;
                 logger: true;
             }
         >
@@ -255,8 +259,12 @@ export function describeService<
         SelectFrom<
             GenericServiceImplementation,
             {
+                sockets: true;
                 endpoints: true;
                 serviceName: true;
+                createContext: true;
+                serviceOrigin: true;
+                requiredOrigin: true;
                 logger: true;
             }
         >

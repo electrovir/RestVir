@@ -56,17 +56,30 @@ export type ContextInitParameters<
     service: MinimalService<ServiceName>;
     requestHeaders: IncomingHttpHeaders;
     method: HttpMethod;
+    requestData: EndpointsInit extends NoParam
+        ? unknown
+        : WithFinalEndpointProps<
+              Values<EndpointsInit>,
+              Extract<keyof EndpointsInit, EndpointPathBase>
+          >['RequestType'];
 
     request: EndpointRequest;
     response: EndpointResponse;
 
-    endpoint?: EndpointsInit extends NoParam
-        ? Endpoint
-        : WithFinalEndpointProps<
-              Values<EndpointsInit>,
-              Extract<keyof EndpointsInit, EndpointPathBase>
-          >;
-    socket?: SocketsInit extends NoParam
-        ? Socket
-        : WithFinalSocketProps<Values<SocketsInit>, Extract<keyof SocketsInit, EndpointPathBase>>;
+    endpoint?:
+        | (EndpointsInit extends NoParam
+              ? Endpoint
+              : WithFinalEndpointProps<
+                    Values<EndpointsInit>,
+                    Extract<keyof EndpointsInit, EndpointPathBase>
+                >)
+        | undefined;
+    socket?:
+        | (SocketsInit extends NoParam
+              ? Socket
+              : WithFinalSocketProps<
+                    Values<SocketsInit>,
+                    Extract<keyof SocketsInit, EndpointPathBase>
+                >)
+        | undefined;
 };

@@ -1,6 +1,7 @@
 ## Required
 
--   execute web socket connections
+-   add socket tester
+-   add frontend "connect to websocket" command
 -   add typed search params
 -   fill in mono-repo README
 

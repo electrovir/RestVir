@@ -16,7 +16,7 @@ type FetchOptions = NonNullable<GenericFetchEndpointParams['options']>;
 
 describe(buildEndpointUrl.name, () => {
     function testBuildEndpointUrl(
-        endpoint: Pick<Endpoint, 'endpointPath'>,
+        endpoint: Pick<Endpoint, 'path'>,
         pathParams?: Record<string, string> | undefined,
     ) {
         return buildEndpointUrl(
@@ -43,7 +43,7 @@ describe(buildEndpointUrl.name, () => {
             it: 'handles a path without params',
             inputs: [
                 {
-                    endpointPath: '/hi',
+                    path: '/hi',
                 },
             ],
             expect: 'http://example.com/hi',
@@ -52,7 +52,7 @@ describe(buildEndpointUrl.name, () => {
             it: 'rejects path params when the endpoint has none',
             inputs: [
                 {
-                    endpointPath: '/hi',
+                    path: '/hi',
                 },
                 {},
             ],
@@ -64,7 +64,7 @@ describe(buildEndpointUrl.name, () => {
             it: 'handles params',
             inputs: [
                 {
-                    endpointPath: '/hi/:param1/:param2',
+                    path: '/hi/:param1/:param2',
                 },
                 {
                     param1: 'bye',
@@ -77,7 +77,7 @@ describe(buildEndpointUrl.name, () => {
             it: 'rejects a missing param',
             inputs: [
                 {
-                    endpointPath: '/hi/:param1/:param2',
+                    path: '/hi/:param1/:param2',
                 },
                 {
                     param1: 'bye',

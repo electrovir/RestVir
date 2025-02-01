@@ -1,18 +1,20 @@
 import {assert} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
-import {InternalEndpointError} from './endpoint.error.js';
+import {RestVirHandlerError} from './handler.error.js';
 import {createServiceLogger, defaultServiceLogger, silentServiceLogger} from './service-logger.js';
 
 describe('defaultServiceLogger', () => {
     it('logs errors without issue', () => {
         defaultServiceLogger.error(new Error('fake error'));
         defaultServiceLogger.error(
-            new InternalEndpointError(
+            new RestVirHandlerError(
                 {
-                    endpointPath: '/fake-path',
+                    path: '/fake-path',
                     service: {
                         serviceName: 'fake service',
                     },
+                    endpoint: true,
+                    socket: false,
                 },
                 'fake error',
             ),

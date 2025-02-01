@@ -5,8 +5,10 @@ import {
     EndpointRequest,
     EndpointResponse,
     type ImplementedEndpoint,
+    type ImplementedSocket,
 } from '@rest-vir/implement-service';
 import {OutgoingHttpHeaders} from 'node:http';
+import {setResponseHeaders} from '../util/headers.js';
 
 /**
  * Output from {@link EndpointHandler}.
@@ -19,8 +21,8 @@ export type HandledOutput =
     | {
           body?: never;
           statusCode?: never;
-          headers?: Readonly<OutgoingHttpHeaders>;
-          error?: Error;
+          headers?: Readonly<OutgoingHttpHeaders> | undefined;
+          error?: Error | undefined;
       }
     | {
           body?: unknown;
@@ -29,8 +31,8 @@ export type HandledOutput =
            * any).
            */
           statusCode: HttpStatus;
-          headers?: Readonly<OutgoingHttpHeaders>;
-          error?: Error;
+          headers?: Readonly<OutgoingHttpHeaders> | undefined;
+          error?: Error | undefined;
       }
     /** A value of `undefined` indicates that the response should not be sent yet. */
     | undefined;
@@ -45,7 +47,7 @@ export type HandledOutput =
 export type EndpointHandlerParams = {
     request: EndpointRequest;
     response: EndpointResponse;
-    endpoint: Readonly<ImplementedEndpoint>;
+    route: Readonly<ImplementedEndpoint | ImplementedSocket>;
 };
 
 /**
@@ -58,3 +60,37 @@ export type EndpointHandlerParams = {
 export type EndpointHandler = (
     params: Readonly<EndpointHandlerParams>,
 ) => MaybePromise<HandledOutput>;
+
+/**
+ * Handle the output of a handler. Setting headers, sending the response, etc.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/run-service
+ * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
+ */
+export function handleHandlerResult(
+    result: Readonly<HandledOutput>,
+    response: EndpointResponse,
+): {responseSent: boolean} {
+    if (result?.headers) {
+        setResponseHeaders(response, result.headers);
+    }
+
+    if (result?.statusCode) {
+        response.statusCode = result.statusCode;
+
+        if (result.body) {
+            response.send(result.body);
+        } else {
+            response.send();
+        }
+
+        return {
+            responseSent: true,
+        };
+    }
+
+    return {
+        responseSent: false,
+    };
+}

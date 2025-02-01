@@ -5,11 +5,12 @@ import {
     Endpoint,
     getAllowedEndpointMethods,
     OriginRequirement,
+    type Socket,
 } from '@rest-vir/define-service';
-import {HttpStatus, InternalEndpointError} from '@rest-vir/implement-service';
+import {HttpStatus, RestVirHandlerError} from '@rest-vir/implement-service';
 import {convertDuration} from 'date-vir';
 import type {OutgoingHttpHeaders} from 'node:http';
-import {EndpointHandlerParams, HandledOutput} from '../endpoint-handler.js';
+import {EndpointHandlerParams, HandledOutput} from './endpoint-handler.js';
 
 /**
  * Determines the required origin for the endpoint and compares it with the given request.
@@ -30,7 +31,7 @@ import {EndpointHandlerParams, HandledOutput} from '../endpoint-handler.js';
 export async function handleCors(
     this: void,
     {
-        endpoint,
+        route,
         request,
     }: Readonly<
         SelectFrom<
@@ -40,22 +41,24 @@ export async function handleCors(
                     headers: true;
                     method: true;
                 };
-                endpoint: {
+                route: {
                     requiredOrigin: true;
-                    endpointPath: true;
+                    path: true;
                     service: {
                         serviceName: true;
                         requiredOrigin: true;
                     };
                     methods: true;
+                    endpoint: true;
+                    socket: true;
                 };
             }
         >
     >,
 ): Promise<HandledOutput> {
     const origin = request.headers.origin;
-    const matchedOrigin = await matchOrigin(endpoint, origin);
-    const allowedMethods = getAllowedEndpointMethods(endpoint);
+    const matchedOrigin = await matchOrigin(route, origin);
+    const allowedMethods = route.endpoint ? getAllowedEndpointMethods(route) : [HttpMethod.Get];
 
     if (request.method.toUpperCase() === HttpMethod.Options) {
         return {
@@ -134,14 +137,16 @@ type MatchedOrigin = string | undefined | AnyOrigin;
 async function matchOrigin(
     endpoint: Readonly<
         SelectFrom<
-            Endpoint,
+            Endpoint | Socket,
             {
                 requiredOrigin: true;
-                endpointPath: true;
+                path: true;
                 service: {
                     serviceName: true;
                     requiredOrigin: true;
                 };
+                endpoint: true;
+                socket: true;
             }
         >
     >,
@@ -176,9 +181,9 @@ async function matchOrigin(
      * If the service requirement is `undefined`, something went wrong because service definitions
      * are not allowed to have an `undefined` origin requirement.
      */
-    throw new InternalEndpointError(
+    throw new RestVirHandlerError(
         endpoint,
-        `Request origin '${origin}' failed to get checked for endpoint '${endpoint.endpointPath}' or service '${endpoint.service.serviceName}'`,
+        `Request origin '${origin}' failed to get checked for endpoint '${endpoint.path}' or service '${endpoint.service.serviceName}'`,
     );
 }
 

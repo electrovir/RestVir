@@ -15,8 +15,10 @@ describe(handleCors.name, () => {
                         },
                         method: HttpMethod.Get,
                     },
-                    endpoint: {
-                        endpointPath: '/example-path',
+                    route: {
+                        path: '/example-path',
+                        endpoint: true,
+                        socket: false,
                         methods: {
                             [HttpMethod.Get]: true,
                         },
@@ -41,8 +43,10 @@ describe(handleCors.name, () => {
                     },
                     method: HttpMethod.Get,
                 },
-                endpoint: {
-                    endpointPath: '/example-path',
+                route: {
+                    path: '/example-path',
+                    endpoint: true,
+                    socket: false,
                     methods: {
                         [HttpMethod.Get]: true,
                     },
@@ -66,8 +70,10 @@ describe(handleCors.name, () => {
                     },
                     method: HttpMethod.Get,
                 },
-                endpoint: {
-                    endpointPath: '/example-path',
+                route: {
+                    path: '/example-path',
+                    endpoint: true,
+                    socket: false,
                     methods: {
                         [HttpMethod.Get]: true,
                     },
@@ -95,8 +101,10 @@ describe(handleCors.name, () => {
                     },
                     method: HttpMethod.Get,
                 },
-                endpoint: {
-                    endpointPath: '/example-path',
+                route: {
+                    path: '/example-path',
+                    endpoint: true,
+                    socket: false,
                     methods: {
                         [HttpMethod.Get]: true,
                     },

@@ -1,4 +1,4 @@
-import {extractErrorMessage, stringify} from '@augment-vir/common';
+import {ensureErrorClass, extractErrorMessage, stringify} from '@augment-vir/common';
 import type {NoParam} from '../util/no-param.js';
 
 /**
@@ -10,9 +10,11 @@ import type {NoParam} from '../util/no-param.js';
  */
 export type ServiceDefinitionErrorParams = {
     serviceName: string | NoParam;
-    path: string | undefined;
     errorMessage: string;
-    routeType: 'endpoint' | 'socket' | undefined;
+
+    path: string | undefined;
+    socket: boolean | undefined;
+    endpoint: boolean | undefined;
 };
 
 /**
@@ -24,8 +26,10 @@ export type ServiceDefinitionErrorParams = {
  */
 export class ServiceDefinitionError extends Error {
     public override name = 'ServiceDefinitionError';
-    constructor({serviceName, path, errorMessage, routeType}: ServiceDefinitionErrorParams) {
+    constructor({serviceName, path, errorMessage, endpoint, socket}: ServiceDefinitionErrorParams) {
         const serviceNameMessage = `service '${String(serviceName)}'`;
+
+        const routeType = endpoint ? 'endpoint' : socket ? 'socket' : undefined;
 
         const nameMessage =
             path && routeType
@@ -50,12 +54,8 @@ export function ensureServiceDefinitionError(
     error: unknown,
     params: Omit<ServiceDefinitionErrorParams, 'errorMessage'>,
 ) {
-    if (error instanceof ServiceDefinitionError) {
-        return error;
-    } else {
-        throw new ServiceDefinitionError({
-            ...params,
-            errorMessage: extractErrorMessage(error),
-        });
-    }
+    return ensureErrorClass(error, ServiceDefinitionError, {
+        ...params,
+        errorMessage: extractErrorMessage(error),
+    });
 }

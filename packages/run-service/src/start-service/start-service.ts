@@ -1,9 +1,6 @@
 import {check} from '@augment-vir/assert';
 import type {SelectFrom} from '@augment-vir/common';
-import {
-    type GenericServiceImplementation,
-    type ServiceImplementation,
-} from '@rest-vir/implement-service';
+import {GenericServiceImplementation, ServiceImplementation} from '@rest-vir/implement-service';
 import {ClusterManager, runInCluster, type WorkerRunner} from 'cluster-vir';
 import fastify, {type FastifyInstance} from 'fastify';
 import {getPortPromise} from 'portfinder';
@@ -69,8 +66,12 @@ export async function startService<const Port extends number | false>(
         SelectFrom<
             GenericServiceImplementation,
             {
+                sockets: true;
                 endpoints: true;
                 serviceName: true;
+                createContext: true;
+                serviceOrigin: true;
+                requiredOrigin: true;
                 logger: true;
             }
         >
@@ -141,9 +142,15 @@ export async function startService<const Port extends number | false>(
 async function startServer<const Port extends number | false>(
     service: Readonly<
         SelectFrom<
-            ServiceImplementation,
+            GenericServiceImplementation,
             {
+                sockets: true;
                 endpoints: true;
+                serviceName: true;
+                createContext: true;
+                serviceOrigin: true;
+                requiredOrigin: true;
+                logger: true;
             }
         >
     >,
@@ -151,7 +158,7 @@ async function startServer<const Port extends number | false>(
 ): Promise<StartServiceOutput<Port>> {
     const server = fastify();
 
-    attachService(server, service);
+    await attachService(server, service);
 
     if (check.isNumber(port)) {
         await server.listen({port, host});

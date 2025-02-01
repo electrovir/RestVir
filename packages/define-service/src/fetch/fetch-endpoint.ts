@@ -66,7 +66,7 @@ export type FetchEndpointParams<
     EndpointToFetch extends SelectFrom<
         Endpoint,
         {
-            endpointPath: true;
+            path: true;
             requestDataShape: true;
             responseDataShape: true;
             methods: true;
@@ -75,16 +75,14 @@ export type FetchEndpointParams<
     AllowFetchMock extends boolean = true,
 > = EndpointToFetch extends Endpoint
     ? Readonly<
-          (IsNever<PathParams<EndpointToFetch['endpointPath']>> extends true
+          (IsNever<PathParams<EndpointToFetch['path']>> extends true
               ? {
                     /** This endpoint has no path parameters to configure. */
                     pathParams?: undefined;
                 }
-              : PathParams<EndpointToFetch['endpointPath']> extends string
+              : PathParams<EndpointToFetch['path']> extends string
                 ? {
-                      pathParams: Readonly<
-                          Record<PathParams<EndpointToFetch['endpointPath']>, string>
-                      >;
+                      pathParams: Readonly<Record<PathParams<EndpointToFetch['path']>, string>>;
                   }
                 : {
                       /** This endpoint has no path parameters to configure. */
@@ -181,7 +179,7 @@ function filterToValidMethod(
             Endpoint,
             {
                 methods: true;
-                endpointPath: true;
+                path: true;
                 service: {
                     serviceName: true;
                 };
@@ -194,7 +192,7 @@ function filterToValidMethod(
         return chosenMethod;
     } else if (chosenMethod) {
         throw new Error(
-            `Given HTTP method '${chosenMethod}' is not allowed for endpoint '${endpoint.endpointPath}' in service '${endpoint.service.serviceName}'`,
+            `Given HTTP method '${chosenMethod}' is not allowed for endpoint '${endpoint.path}' in service '${endpoint.service.serviceName}'`,
         );
     }
 
@@ -204,11 +202,11 @@ function filterToValidMethod(
         return allowedMethods[0];
     } else if (allowedMethods.length) {
         throw new Error(
-            `Endpoint '${endpoint.endpointPath}' in service '${endpoint.service.serviceName}' allows multiple HTTP methods, one must be chosen.`,
+            `Endpoint '${endpoint.path}' in service '${endpoint.service.serviceName}' allows multiple HTTP methods, one must be chosen.`,
         );
     } else {
         throw new Error(
-            `Endpoint '${endpoint.endpointPath}' in service '${endpoint.service.serviceName}' has no allowed HTTP methods. Requests cannot be sent.`,
+            `Endpoint '${endpoint.path}' in service '${endpoint.service.serviceName}' has no allowed HTTP methods. Requests cannot be sent.`,
         );
     }
 }
@@ -227,7 +225,7 @@ export type CollapsedFetchEndpointParams<
               SelectFrom<
                   Endpoint,
                   {
-                      endpointPath: true;
+                      path: true;
                       requestDataShape: true;
                       responseDataShape: true;
                       methods: true;
@@ -262,7 +260,7 @@ export async function fetchEndpoint<
                   Endpoint,
                   {
                       requestDataShape: true;
-                      endpointPath: true;
+                      path: true;
                       responseDataShape: true;
                       methods: true;
                       service: {
@@ -280,7 +278,7 @@ export async function fetchEndpoint<
               Endpoint,
               {
                   requestDataShape: true;
-                  endpointPath: true;
+                  path: true;
                   responseDataShape: true;
                   methods: true;
                   service: {
@@ -296,10 +294,10 @@ export async function fetchEndpoint<
 
     if (requestData) {
         if (endpoint.requestDataShape) {
-            assertValidShape(requestData, endpoint.requestDataShape);
+            assertValidShape(requestData, endpoint.requestDataShape, {allowExtraKeys: true});
         } else {
             throw new Error(
-                `Request data was given but endpoint '${endpoint.endpointPath}' is not expecting any request data.`,
+                `Request data was given but endpoint '${endpoint.path}' is not expecting any request data.`,
             );
         }
     }
@@ -312,7 +310,7 @@ export async function fetchEndpoint<
     const responseData = endpoint.responseDataShape ? await response.json() : undefined;
 
     if (endpoint.responseDataShape) {
-        assertValidShape(responseData, endpoint.responseDataShape);
+        assertValidShape(responseData, endpoint.responseDataShape, {allowExtraKeys: true});
     }
 
     return {
@@ -335,7 +333,7 @@ export function buildEndpointRequestInit<
                   Endpoint,
                   {
                       requestDataShape: true;
-                      endpointPath: true;
+                      path: true;
                       responseDataShape: true;
                       methods: true;
                       service: {
@@ -353,7 +351,7 @@ export function buildEndpointRequestInit<
               Endpoint,
               {
                   requestDataShape: true;
-                  endpointPath: true;
+                  path: true;
                   responseDataShape: true;
                   methods: true;
                   service: {
@@ -413,7 +411,7 @@ export function buildEndpointUrl<
               SelectFrom<
                   Endpoint,
                   {
-                      endpointPath: true;
+                      path: true;
                       service: {
                           serviceOrigin: true;
                           serviceName: true;
@@ -431,7 +429,7 @@ export function buildEndpointUrl<
         : SelectFrom<
               Endpoint,
               {
-                  endpointPath: true;
+                  path: true;
                   service: {
                       serviceOrigin: true;
                       serviceName: true;
@@ -453,7 +451,7 @@ export function buildEndpointUrl<
     let pathParamsCount = 0;
 
     const builtUrl = buildUrl(endpoint.service.serviceOrigin, {
-        pathname: endpoint.endpointPath.replaceAll(
+        pathname: endpoint.path.replaceAll(
             /\/:([^/]+)/g,
             (wholeMatch, paramName: string): string => {
                 pathParamsCount++;
@@ -471,7 +469,7 @@ export function buildEndpointUrl<
 
     if (!pathParamsCount && pathParams) {
         throw new Error(
-            `Endpoint '${endpoint.endpointPath}' in service '${endpoint.service.serviceName}' does not allow any path params but some where set.`,
+            `Endpoint '${endpoint.path}' in service '${endpoint.service.serviceName}' does not allow any path params but some where set.`,
         );
     }
 

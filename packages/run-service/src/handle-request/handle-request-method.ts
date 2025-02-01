@@ -1,6 +1,6 @@
 import {checkWrap} from '@augment-vir/assert';
 import {HttpMethod, HttpStatus, SelectFrom} from '@augment-vir/common';
-import {HandledOutput, type EndpointHandlerParams} from '../endpoint-handler.js';
+import {HandledOutput, type EndpointHandlerParams} from './endpoint-handler.js';
 
 /**
  * Verifies that a request's method matches the given endpoint's expectations. If it does not, an
@@ -13,7 +13,7 @@ import {HandledOutput, type EndpointHandlerParams} from '../endpoint-handler.js'
 export function handleRequestMethod(
     this: void,
     {
-        endpoint,
+        route,
         request,
     }: Readonly<
         SelectFrom<
@@ -22,9 +22,9 @@ export function handleRequestMethod(
                 request: {
                     method: true;
                 };
-                endpoint: {
+                route: {
                     methods: true;
-                    endpointPath: true;
+                    path: true;
                     service: {serviceName: true};
                 };
             }
@@ -36,11 +36,21 @@ export function handleRequestMethod(
     /** Always allow preflight requests. */
     if (requestMethod === HttpMethod.Options) {
         return undefined;
-    } else if (!requestMethod || !endpoint.methods[requestMethod]) {
+    }
+
+    const allowedMethods =
+        'methods' in route
+            ? route.methods
+            : /** Sockets only allow get requests. */
+              {
+                  [HttpMethod.Get]: true,
+              };
+
+    if (!requestMethod || !allowedMethods[requestMethod]) {
         return {
             statusCode: HttpStatus.MethodNotAllowed,
         };
+    } else {
+        return undefined;
     }
-
-    return undefined;
 }

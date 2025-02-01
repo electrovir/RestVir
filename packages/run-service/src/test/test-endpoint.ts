@@ -18,15 +18,15 @@ export const testEndpoint = async function testEndpoint<
     const EndpointToTest extends ImplementedEndpoint,
 >(endpoint: EndpointToTest, ...args: CollapsedFetchEndpointParams<EndpointToTest, false>) {
     const {fetchService, kill} = await testService({
+        ...endpoint.service,
         endpoints: {
-            [endpoint.endpointPath]: endpoint,
+            [endpoint.path]: endpoint,
         },
-        logger: endpoint.service.logger,
-        serviceName: endpoint.service.serviceName,
+        sockets: {},
     });
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const response = await fetchService[endpoint.endpointPath]!(...args);
+    const response = await fetchService[endpoint.path]!(...args);
 
     kill();
 

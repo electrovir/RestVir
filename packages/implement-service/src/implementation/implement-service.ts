@@ -204,12 +204,7 @@ export function implementService<
         ...service,
         endpoints,
         sockets,
-        createContext: createContext as ServiceImplementation<
-            Context,
-            ServiceName,
-            EndpointsInit,
-            SocketsInit
-        >['createContext'],
+        createContext,
         logger: createServiceLogger(logger),
     };
 
@@ -260,7 +255,7 @@ export type ServiceImplementation<
               >
             : never;
     };
-    createContext: ContextInit<Context, ServiceName, EndpointsInit, SocketsInit>;
+    createContext: ContextInit<Context, ServiceName, EndpointsInit, SocketsInit> | undefined;
     logger: ServiceLogger;
 };
 

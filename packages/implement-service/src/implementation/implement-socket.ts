@@ -18,7 +18,7 @@ import {
 } from '@rest-vir/define-service';
 import {type IncomingHttpHeaders} from 'node:http';
 import {type IsEqual} from 'type-fest';
-import {type EndpointRequest, type EndpointResponse, type WebSocket} from '../util/message.js';
+import {type EndpointRequest, type WebSocket} from '../util/message.js';
 import {type ServiceLogger} from '../util/service-logger.js';
 
 /**
@@ -35,7 +35,7 @@ export type SocketImplementation<
 > = Partial<{
     /** This will be called when the socket is connected and created. */
     onConnection: (
-        params: SocketImplementationParams<Context, ServiceName, SpecificSocket, false, true>,
+        params: SocketImplementationParams<Context, ServiceName, SpecificSocket, false>,
     ) => MaybePromise<void>;
     /**
      * This will be called on every received socket message.
@@ -43,7 +43,7 @@ export type SocketImplementation<
      * @see https://github.com/websockets/ws/blob/HEAD/doc/ws.md#event-message
      */
     onMessage: (
-        params: SocketImplementationParams<Context, ServiceName, SpecificSocket, true, false>,
+        params: SocketImplementationParams<Context, ServiceName, SpecificSocket, true>,
     ) => MaybePromise<void>;
     /**
      * This will be called when the socket is closed.
@@ -51,7 +51,7 @@ export type SocketImplementation<
      * @see https://github.com/websockets/ws/blob/HEAD/doc/ws.md#event-close-1
      */
     onClose: (
-        params: SocketImplementationParams<Context, ServiceName, SpecificSocket, false, false>,
+        params: SocketImplementationParams<Context, ServiceName, SpecificSocket, false>,
     ) => MaybePromise<void>;
 }>;
 
@@ -67,7 +67,6 @@ export type SocketImplementationParams<
     ServiceName extends string = any,
     SpecificSocket extends Socket | NoParam = NoParam,
     WithMessage extends boolean = boolean,
-    WithConnection extends boolean = boolean,
 > = {
     context: Context;
     webSocket: WebSocket;
@@ -76,18 +75,13 @@ export type SocketImplementationParams<
         : SpecificSocket;
     log: Readonly<ServiceLogger>;
     service: MinimalService<ServiceName>;
+    headers: IncomingHttpHeaders;
+    request: EndpointRequest;
 } & (IsEqual<WithMessage, true> extends true
     ? {
           message: WithFinalSocketProps<Exclude<SpecificSocket, NoParam>, any>['MessageType'];
       }
-    : unknown) &
-    (IsEqual<WithConnection, true> extends true
-        ? {
-              headers: IncomingHttpHeaders;
-              request: EndpointRequest;
-              response: EndpointResponse;
-          }
-        : unknown);
+    : unknown);
 
 /**
  * All sockets implementations to match the service definition's sockets.
@@ -162,7 +156,8 @@ export function assertValidSocketImplementations(
             path: undefined,
             errorMessage: `Sockets implementations are not functions for:\n${invalidFunctionsString}`,
             serviceName: service.serviceName,
-            routeType: undefined,
+            endpoint: undefined,
+            socket: undefined,
         });
     }
 
@@ -188,7 +183,8 @@ export function assertValidSocketImplementations(
                 ',',
             )}'`,
             serviceName: service.serviceName,
-            routeType: undefined,
+            endpoint: undefined,
+            socket: undefined,
         });
     }
 
@@ -199,7 +195,8 @@ export function assertValidSocketImplementations(
                 ',',
             )}'`,
             serviceName: service.serviceName,
-            routeType: undefined,
+            endpoint: undefined,
+            socket: undefined,
         });
     }
 }

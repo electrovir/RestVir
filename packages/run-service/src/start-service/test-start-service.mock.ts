@@ -78,34 +78,44 @@ async function setupService(scriptName: string) {
     return params;
 }
 
+type InnerIt = {
+    (
+        this: void,
+        doesThis: string,
+        itCallback: (params: Awaited<ReturnType<typeof setupService>>) => MaybePromise<void>,
+    ): void;
+};
+
 export function describeServiceScript(
     scriptName: string,
-    describeCallback: ({
-        it,
-    }: {
-        it: (
-            this: void,
-            doesThis: string,
-            itCallback: (params: Awaited<ReturnType<typeof setupService>>) => MaybePromise<void>,
-        ) => void;
-    }) => void,
+    describeCallback: ({it}: {it: InnerIt & {only: InnerIt}}) => void,
 ) {
     describe(scriptName, () => {
         const service = setupService(scriptName);
 
+        const innerIt: InnerIt = (doesThis, itCallback) => {
+            it(doesThis, async () => {
+                await itCallback(await service);
+            });
+        };
+
         describeCallback({
-            it(doesThis, itCallback) {
-                it(doesThis, async () => {
-                    await itCallback(await service);
-                });
-            },
+            it: Object.assign(innerIt, {
+                only: ((doesThis, itCallback) => {
+                    // eslint-disable-next-line sonarjs/no-exclusive-tests
+                    it.only(doesThis, async () => {
+                        await itCallback(await service);
+                    });
+                }) satisfies InnerIt,
+            }),
         });
 
         /**
          * The built-in Node.js test runner runs `it` calls sequentially so this will always be
          * called last.
          */
-        it('closes the server', async () => {
+        // eslint-disable-next-line sonarjs/no-exclusive-tests
+        it.only('closes the server', async () => {
             const {childProcess} = await service;
             childProcess.kill();
         });

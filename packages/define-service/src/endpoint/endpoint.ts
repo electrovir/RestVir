@@ -1,4 +1,10 @@
-import {AnyObject, HttpMethod, JsonCompatibleValue, Overwrite} from '@augment-vir/common';
+import {
+    AnyObject,
+    HttpMethod,
+    JsonCompatibleValue,
+    Overwrite,
+    type SelectFrom,
+} from '@augment-vir/common';
 import {
     defineShape,
     enumShape,
@@ -146,7 +152,9 @@ export type WithFinalEndpointProps<T, EndpointPath extends EndpointPathBase> = (
           }
       >
     : never) & {
-    endpointPath: EndpointPath;
+    path: EndpointPath;
+    socket: false;
+    endpoint: true;
     service: MinimalService;
 };
 
@@ -224,27 +232,30 @@ export function attachEndpointShapeTypeGetters<const T extends AnyObject>(
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export function assertValidEndpoint(
-    endpoint: Readonly<Pick<Endpoint, 'endpointPath' | 'methods'>>,
-    {
-        serviceName,
-    }: {
-        /**
-         * `serviceName` is used purely for error messaging purposes, so that it's possible to
-         * understand which service the endpoint is coming from.
-         */
-        serviceName: string | NoParam;
-    },
+    endpoint: Readonly<
+        SelectFrom<
+            Endpoint,
+            {
+                path: true;
+                methods: true;
+                socket: true;
+                endpoint: true;
+                service: {
+                    serviceName: true;
+                };
+            }
+        >
+    >,
 ) {
     try {
-        assertValidEndpointPath(endpoint.endpointPath);
+        assertValidEndpointPath(endpoint.path);
         if (!Object.values(endpoint.methods).some((value) => value)) {
             throw new Error('Endpoint has no allowed HTTP methods.');
         }
     } catch (error) {
         throw ensureServiceDefinitionError(error, {
-            path: endpoint.endpointPath,
-            serviceName,
-            routeType: 'endpoint',
+            serviceName: endpoint.service.serviceName,
+            ...endpoint,
         });
     }
 }

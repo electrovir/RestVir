@@ -202,7 +202,8 @@ export function assertValidEndpointImplementations(
                 .map(([endpointPath]) => endpointPath)
                 .join(',')}'`,
             serviceName: service.serviceName,
-            routeType: undefined,
+            endpoint: undefined,
+            socket: undefined,
         });
     }
 
@@ -228,7 +229,8 @@ export function assertValidEndpointImplementations(
                 ',',
             )}'`,
             serviceName: service.serviceName,
-            routeType: undefined,
+            endpoint: undefined,
+            socket: undefined,
         });
     }
 
@@ -239,7 +241,8 @@ export function assertValidEndpointImplementations(
                 ',',
             )}'`,
             serviceName: service.serviceName,
-            routeType: undefined,
+            endpoint: undefined,
+            socket: undefined,
         });
     }
 }

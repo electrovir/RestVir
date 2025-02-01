@@ -62,39 +62,35 @@ describe('EndpointInit', () => {
 
 describe(assertValidEndpoint.name, () => {
     const exampleEndpoint = {
-        endpointPath: '/hello',
+        path: '/hello',
         methods: {
             [HttpMethod.Get]: true,
         },
-    } as const;
-
-    const exampleServiceStuff = {
-        serviceName: 'test-service',
+        endpoint: true,
+        socket: false,
+        service: {
+            serviceName: 'test-service',
+        },
     } as const;
 
     itCases(assertValidEndpoint, [
         {
             it: 'passes a valid endpoint',
-            inputs: [
-                exampleEndpoint,
-                exampleServiceStuff,
-            ],
+            input: exampleEndpoint,
             throws: undefined,
         },
         {
             it: 'fails an invalid endpoint path',
-            inputs: [
-                {
-                    ...exampleEndpoint,
-                    // @ts-expect-error: this path is intentionally invalid for the test
-                    endpointPath: 'bad-endpoint',
-                },
-                {
+            input: {
+                ...exampleEndpoint,
+                // @ts-expect-error: this path is intentionally invalid for the test
+                path: 'bad-endpoint',
+                service: {
+                    serviceName: 'test-service',
                     // @ts-expect-error: this path is intentionally invalid for the test
                     endpointServicePath: 'bad-endpoint',
-                    serviceName: 'test-service',
                 },
-            ],
+            },
             throws: {
                 matchConstructor: ServiceDefinitionError,
             },

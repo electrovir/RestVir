@@ -177,9 +177,11 @@ function finalizeServiceDefinition<
                 responseDataShape: endpointInit.responseDataShape
                     ? defineShape<any, true>(endpointInit.responseDataShape, true)
                     : undefined,
-                endpointPath,
+                path: endpointPath,
                 service: minimalService,
                 customProps: endpointInit.customProps,
+                endpoint: true,
+                socket: false,
             } satisfies Omit<Endpoint, 'ResponseType' | 'RequestType'>;
 
             attachEndpointShapeTypeGetters(endpoint);
@@ -195,8 +197,10 @@ function finalizeServiceDefinition<
                 ...socketInit,
                 messageDataShape: defineShape(socketInit.messageDataShape),
                 service: minimalService,
-                socketPath,
+                path: socketPath,
                 customProps: socketInit.customProps,
+                endpoint: false,
+                socket: true,
             } satisfies Omit<Socket, 'MessageType'>;
 
             attachSocketShapeTypeGetters(socket);
@@ -237,7 +241,8 @@ function finalizeServiceDefinition<
         throw ensureServiceDefinitionError(error, {
             path: undefined,
             serviceName: serviceInit.serviceName,
-            routeType: undefined,
+            endpoint: undefined,
+            socket: undefined,
         });
     }
 }
@@ -267,9 +272,7 @@ export function assertValidServiceDefinition(
                 ,
                 endpoint,
             ]) => {
-                assertValidEndpoint(endpoint, {
-                    serviceName: serviceDefinition.serviceName,
-                });
+                assertValidEndpoint(endpoint);
             },
         );
 
@@ -278,16 +281,15 @@ export function assertValidServiceDefinition(
                 ,
                 socket,
             ]) => {
-                assertValidSocket(socket, {
-                    serviceName: serviceDefinition.serviceName,
-                });
+                assertValidSocket(socket);
             },
         );
     } catch (error) {
         throw ensureServiceDefinitionError(error, {
             path: undefined,
             serviceName: serviceDefinition.serviceName,
-            routeType: undefined,
+            endpoint: undefined,
+            socket: undefined,
         });
     }
 }

@@ -1,4 +1,4 @@
-import {AnyObject, Overwrite} from '@augment-vir/common';
+import {AnyObject, Overwrite, type SelectFrom} from '@augment-vir/common';
 import {
     defineShape,
     indexedKeys,
@@ -64,7 +64,9 @@ export type WithFinalSocketProps<T, SocketPath extends EndpointPathBase> = (T ex
           }
       >
     : never) & {
-    socketPath: SocketPath;
+    path: SocketPath;
+    socket: true;
+    endpoint: false;
     service: MinimalService;
 };
 
@@ -138,24 +140,26 @@ export function attachSocketShapeTypeGetters<const T extends AnyObject>(
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export function assertValidSocket(
-    socket: Readonly<Pick<Socket, 'socketPath'>>,
-    {
-        serviceName,
-    }: {
-        /**
-         * `serviceName` is used purely for error messaging purposes, so that it's possible to
-         * understand which service the socket is coming from.
-         */
-        serviceName: string | NoParam;
-    },
+    socket: Readonly<
+        SelectFrom<
+            Socket,
+            {
+                endpoint: true;
+                socket: true;
+                path: true;
+                service: {
+                    serviceName: true;
+                };
+            }
+        >
+    >,
 ) {
     try {
-        assertValidEndpointPath(socket.socketPath);
+        assertValidEndpointPath(socket.path);
     } catch (error) {
         throw ensureServiceDefinitionError(error, {
-            path: socket.socketPath,
-            serviceName,
-            routeType: 'socket',
+            serviceName: socket.service.serviceName,
+            ...socket,
         });
     }
 }
