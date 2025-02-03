@@ -2,8 +2,8 @@ import {assert} from '@augment-vir/assert';
 import {getObjectTypedKeys, HttpMethod} from '@augment-vir/common';
 import {describe, it, itCases} from '@augment-vir/test';
 import {assertValidShape, exact, or} from 'object-shape-tester';
-import type {RequireAtLeastOne} from 'type-fest';
-import type {EndpointPathBase} from '../endpoint/endpoint-path.js';
+import {type RequireAtLeastOne} from 'type-fest';
+import {type EndpointPathBase} from '../endpoint/endpoint-path.js';
 import {AnyOrigin} from '../util/origin.js';
 import {
     assertValidServiceDefinition,
@@ -383,7 +383,8 @@ describe(defineService.name, () => {
             serviceOrigin: '',
             sockets: {
                 '/my-socket': {
-                    messageDataShape: or(
+                    messageFromServerShape: undefined,
+                    messageFromClientShape: or(
                         {
                             code: exact(1),
                         },
@@ -397,27 +398,32 @@ describe(defineService.name, () => {
         });
 
         assert.throws(
-            () => service.sockets['/my-socket'].MessageType,
+            () => service.sockets['/my-socket'].MessageFromClientType,
             undefined,
-            'Should not be able to access socket.MessageType',
+            'Should not be able to access socket.MessageFromClientType',
+        );
+        assert.throws(
+            () => service.sockets['/my-socket'].MessageFromServerType,
+            undefined,
+            'Should not be able to access socket.MessageFromServerType',
         );
 
         assertValidShape(
             {
                 code: 1,
             },
-            service.sockets['/my-socket'].messageDataShape,
+            service.sockets['/my-socket'].messageFromClientShape,
         );
         assert.throws(() =>
             assertValidShape(
                 {
                     code: 3,
                 },
-                service.sockets['/my-socket'].messageDataShape,
+                service.sockets['/my-socket'].messageFromClientShape,
             ),
         );
 
-        assert.tsType<(typeof service.sockets)['/my-socket']['MessageType']>().equals<
+        assert.tsType<(typeof service.sockets)['/my-socket']['MessageFromClientType']>().equals<
             Readonly<
                 | {
                       code: 1;
@@ -446,7 +452,8 @@ describe(defineService.name, () => {
                 serviceOrigin: '',
                 sockets: {
                     '/invalid/': {
-                        messageDataShape: {},
+                        messageFromServerShape: undefined,
+                        messageFromClientShape: {},
                     },
                 },
             }),

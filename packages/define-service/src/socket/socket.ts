@@ -8,7 +8,7 @@ import {
     ShapeToRuntimeType,
     unknownShape,
 } from 'object-shape-tester';
-import type {IsEqual} from 'type-fest';
+import {type IsEqual} from 'type-fest';
 import {assertValidEndpointPath, EndpointPathBase} from '../endpoint/endpoint-path.js';
 import {MinimalService} from '../service/minimal-service.js';
 import {ensureServiceDefinitionError} from '../service/service-definition.error.js';
@@ -22,8 +22,9 @@ import {OriginRequirement, originRequirementShape} from '../util/origin.js';
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export type SocketInit<MessageDataShape = unknown> = {
-    messageDataShape: MessageDataShape;
+export type SocketInit<MessageFromClientShape = unknown, MessageFromServerShape = unknown> = {
+    messageFromClientShape: MessageFromClientShape;
+    messageFromServerShape: MessageFromServerShape;
     /**
      * Set a required client origin for this endpoint.
      *
@@ -48,18 +49,38 @@ export type WithFinalSocketProps<T, SocketPath extends EndpointPathBase> = (T ex
     ? Overwrite<
           T,
           {
-              messageDataShape: IsEqual<T['messageDataShape'], NoParam> extends true
+              messageFromClientShape: IsEqual<T['messageFromClientShape'], NoParam> extends true
                   ? any
-                  : T['messageDataShape'] extends NoParam
+                  : T['messageFromClientShape'] extends NoParam
                     ? ShapeDefinition<any, true> | undefined
-                    : undefined extends T['messageDataShape']
+                    : undefined extends T['messageFromClientShape']
                       ? undefined
-                      : ShapeDefinition<T['messageDataShape'], true>;
-              MessageType: T['messageDataShape'] extends NoParam
+                      : ShapeDefinition<T['messageFromClientShape'], true>;
+              messageFromServerShape: IsEqual<T['messageFromServerShape'], NoParam> extends true
                   ? any
-                  : undefined extends T['messageDataShape']
+                  : T['messageFromServerShape'] extends NoParam
+                    ? ShapeDefinition<any, true> | undefined
+                    : undefined extends T['messageFromServerShape']
+                      ? undefined
+                      : ShapeDefinition<T['messageFromServerShape'], true>;
+              MessageFromClientType: T['messageFromClientShape'] extends NoParam
+                  ? any
+                  : undefined extends T['messageFromClientShape']
                     ? undefined
-                    : ShapeToRuntimeType<ShapeDefinition<T['messageDataShape'], true>, false, true>;
+                    : ShapeToRuntimeType<
+                          ShapeDefinition<T['messageFromClientShape'], true>,
+                          false,
+                          true
+                      >;
+              MessageFromServerType: T['messageFromServerShape'] extends NoParam
+                  ? any
+                  : undefined extends T['messageFromServerShape']
+                    ? undefined
+                    : ShapeToRuntimeType<
+                          ShapeDefinition<T['messageFromServerShape'], true>,
+                          false,
+                          true
+                      >;
               customProps: 'customProps' extends keyof T ? T['customProps'] : undefined;
           }
       >
@@ -78,9 +99,10 @@ export type WithFinalSocketProps<T, SocketPath extends EndpointPathBase> = (T ex
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export type Socket<
-    MessageDataShape = NoParam,
+    MessageFromClientShape = NoParam,
+    MessageFromServerShape = NoParam,
     SocketPath extends EndpointPathBase = EndpointPathBase,
-> = WithFinalSocketProps<SocketInit<MessageDataShape>, SocketPath>;
+> = WithFinalSocketProps<SocketInit<MessageFromClientShape, MessageFromServerShape>, SocketPath>;
 
 /**
  * Shape definition for {@link SocketInit}.
@@ -90,7 +112,8 @@ export type Socket<
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export const socketInitShape = defineShape({
-    messageDataShape: unknownShape(),
+    messageFromClientShape: unknownShape(),
+    messageFromServerShape: unknownShape(),
     /**
      * Set a required client origin for this socket.
      *
@@ -121,12 +144,18 @@ export const socketInitShape = defineShape({
  */
 export function attachSocketShapeTypeGetters<const T extends AnyObject>(
     socket: T,
-): asserts socket is T & Pick<Socket, 'MessageType'> {
+): asserts socket is T & Pick<Socket, 'MessageFromClientType' | 'MessageFromServerType'> {
     Object.defineProperties(socket, {
-        MessageType: {
+        MessageFromClientType: {
             enumerable: false,
             get(): any {
-                throw new Error('.MessageType should not be used as a value.');
+                throw new Error('.MessageFromClientType should not be used as a value.');
+            },
+        },
+        MessageFromServerType: {
+            enumerable: false,
+            get(): any {
+                throw new Error('.MessageFromServerType should not be used as a value.');
             },
         },
     });

@@ -1,5 +1,5 @@
 import {check} from '@augment-vir/assert';
-import type {SelectFrom} from '@augment-vir/common';
+import {type SelectFrom} from '@augment-vir/common';
 import {GenericServiceImplementation, ServiceImplementation} from '@rest-vir/implement-service';
 import {ClusterManager, runInCluster, type WorkerRunner} from 'cluster-vir';
 import fastify, {type FastifyInstance} from 'fastify';

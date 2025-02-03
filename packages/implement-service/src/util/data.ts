@@ -1,3 +1,5 @@
+import {type Overwrite} from '@augment-vir/common';
+import {type NoParam, type Socket} from '@rest-vir/define-service';
 import {type FastifyReply, type FastifyRequest} from 'fastify';
 import {type WebSocket as WsWebSocket} from 'ws';
 
@@ -9,7 +11,7 @@ import {type WebSocket as WsWebSocket} from 'ws';
  * @category Package : @rest-vir/implement-service
  * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
  */
-export type EndpointRequest = FastifyRequest;
+export type ServerRequest = FastifyRequest;
 
 /**
  * A type alias for the response objects used by rest-vir. Currently this is the `FastifyReply`
@@ -19,7 +21,7 @@ export type EndpointRequest = FastifyRequest;
  * @category Package : @rest-vir/implement-service
  * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
  */
-export type EndpointResponse = FastifyReply;
+export type ServerResponse = FastifyReply;
 
 /**
  * A type alias for the web socket objects used by rest-vir. Currently this is the `WebSocket`
@@ -29,4 +31,17 @@ export type EndpointResponse = FastifyReply;
  * @category Package : @rest-vir/implement-service
  * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
  */
-export type WebSocket = WsWebSocket;
+export type ServerWebSocket<SocketDefinition extends Socket | NoParam> = Overwrite<
+    WsWebSocket,
+    SocketDefinition extends NoParam
+        ? {
+              send(message?: any): void;
+          }
+        : Exclude<SocketDefinition, NoParam>['MessageFromServerType'] extends undefined
+          ? {
+                send(message?: Exclude<SocketDefinition, NoParam>['MessageFromServerType']): void;
+            }
+          : {
+                send(message: Exclude<SocketDefinition, NoParam>['MessageFromServerType']): void;
+            }
+>;

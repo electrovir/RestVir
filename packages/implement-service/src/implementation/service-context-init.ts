@@ -11,8 +11,8 @@ import {
     type WithFinalSocketProps,
 } from '@rest-vir/define-service';
 import {type IncomingHttpHeaders} from 'node:http';
-import type {RequireExactlyOne} from 'type-fest';
-import {type EndpointRequest, type EndpointResponse} from '../util/message.js';
+import {type RequireExactlyOne} from 'type-fest';
+import {type ServerRequest, type ServerResponse} from '../util/data.js';
 import {EndpointImplementationErrorOutput} from './implement-endpoint.js';
 
 /**
@@ -63,8 +63,8 @@ export type ContextInitParameters<
               Extract<keyof EndpointsInit, EndpointPathBase>
           >['RequestType'];
 
-    request: EndpointRequest;
-    response: EndpointResponse;
+    request: ServerRequest;
+    response: ServerResponse;
 
     endpoint?:
         | (EndpointsInit extends NoParam

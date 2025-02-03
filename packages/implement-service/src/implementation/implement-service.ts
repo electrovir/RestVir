@@ -30,7 +30,7 @@ import {
     type EndpointImplementations,
 } from './implement-endpoint.js';
 import {assertValidSocketImplementations, SocketImplementations} from './implement-socket.js';
-import type {ContextInit} from './service-context-init.js';
+import {type ContextInit} from './service-context-init.js';
 
 /**
  * A user-defined endpoint error handler for service (and its endpoints) errors.

@@ -167,6 +167,15 @@ export async function testService<
                   port,
               }).origin;
 
+    const socketOrigin =
+        port == undefined
+            ? undefined
+            : buildUrl({
+                  protocol: 'ws',
+                  hostname: host,
+                  port,
+              }).origin;
+
     const fetchService = mapObjectValues(
         service.endpoints as GenericServiceImplementation['endpoints'],
         (endpointKey, endpoint) => {

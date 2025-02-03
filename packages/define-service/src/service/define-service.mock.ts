@@ -14,23 +14,27 @@ export const mockService = defineService({
     requiredOrigin: AnyOrigin,
     sockets: {
         '/origin-locked': {
-            messageDataShape: {
+            messageFromServerShape: undefined,
+            messageFromClientShape: {
                 a: '',
                 b: -1,
             },
             requiredOrigin: mockWebsiteOrigin,
         },
         '/no-origin': {
-            messageDataShape: {
+            messageFromServerShape: undefined,
+            messageFromClientShape: {
                 a: '',
                 b: -1,
             },
         },
         '/no-data': {
-            messageDataShape: undefined,
+            messageFromServerShape: undefined,
+            messageFromClientShape: undefined,
         },
         '/custom-props-socket': {
-            messageDataShape: undefined,
+            messageFromServerShape: undefined,
+            messageFromClientShape: undefined,
             customProps: {
                 hello: '',
             },

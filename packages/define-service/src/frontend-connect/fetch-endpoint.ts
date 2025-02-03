@@ -12,9 +12,9 @@ import {
 import {assertValidShape} from 'object-shape-tester';
 import {type IsEqual, type IsNever} from 'type-fest';
 import {buildUrl} from 'url-vir';
-import type {PathParams} from '../endpoint/endpoint-path.js';
+import {type PathParams} from '../endpoint/endpoint-path.js';
 import {EndpointExecutorData, type Endpoint} from '../endpoint/endpoint.js';
-import type {NoParam} from '../util/no-param.js';
+import {type NoParam} from '../util/no-param.js';
 
 /**
  * A general version of {@link FetchEndpointParams} to be used when accepting _any_ endpoint (like in
@@ -287,10 +287,10 @@ export async function fetchEndpoint<
                   };
               }
           >,
-    ...args: CollapsedFetchEndpointParams<EndpointToFetch>
+    ...params: CollapsedFetchEndpointParams<EndpointToFetch>
 ): Promise<FetchEndpointOutput<EndpointToFetch>> {
-    /* node:coverage ignore next: `args[0]` will never be empty in tests because we always mock `fetch` */
-    const {requestData, fetch} = args[0] || {};
+    /* node:coverage ignore next: `params[0]` will never be empty in tests because we always mock `fetch` */
+    const {requestData, fetch} = params[0] || {};
 
     if (requestData) {
         if (endpoint.requestDataShape) {
@@ -302,7 +302,7 @@ export async function fetchEndpoint<
         }
     }
 
-    const {requestInit, url} = buildEndpointRequestInit(endpoint, ...args);
+    const {requestInit, url} = buildEndpointRequestInit(endpoint, ...params);
 
     /* node:coverage ignore next: all tests mock fetch so we're never going to have a fallback here. */
     const response = await (fetch || globalThis.fetch)(url, requestInit);

@@ -232,7 +232,8 @@ describe(implementService.name, () => {
                     service: defineService({
                         sockets: {
                             '/test': {
-                                messageDataShape: undefined,
+                                messageFromServerShape: undefined,
+                                messageFromClientShape: undefined,
                             },
                         },
                         requiredOrigin: AnyOrigin,
@@ -254,7 +255,8 @@ describe(implementService.name, () => {
                 service: defineService({
                     sockets: {
                         '/test': {
-                            messageDataShape: undefined,
+                            messageFromServerShape: undefined,
+                            messageFromClientShape: undefined,
                         },
                     },
                     requiredOrigin: AnyOrigin,
@@ -282,7 +284,8 @@ describe(implementService.name, () => {
                         service: defineService({
                             sockets: {
                                 '/test': {
-                                    messageDataShape: undefined,
+                                    messageFromServerShape: undefined,
+                                    messageFromClientShape: undefined,
                                 },
                             },
                             requiredOrigin: AnyOrigin,
@@ -315,7 +318,8 @@ describe(implementService.name, () => {
                         service: defineService({
                             sockets: {
                                 '/test': {
-                                    messageDataShape: undefined,
+                                    messageFromServerShape: undefined,
+                                    messageFromClientShape: undefined,
                                 },
                             },
                             requiredOrigin: AnyOrigin,

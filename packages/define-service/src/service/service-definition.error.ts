@@ -1,5 +1,5 @@
 import {ensureErrorClass, extractErrorMessage, stringify} from '@augment-vir/common';
-import type {NoParam} from '../util/no-param.js';
+import {type NoParam} from '../util/no-param.js';
 
 /**
  * Parameters for {@link ServiceDefinitionError}

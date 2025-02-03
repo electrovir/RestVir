@@ -1,5 +1,5 @@
 import {getObjectTypedEntries} from '@augment-vir/common';
-import {type EndpointResponse} from '@rest-vir/implement-service';
+import {type ServerResponse} from '@rest-vir/implement-service';
 import {type OutgoingHttpHeaders} from 'node:http';
 
 /**
@@ -16,7 +16,7 @@ export function setResponseHeaders(
      * that these methods are async (by default it returns the original Fastify reply object which
      * matches PromiseLike and thus confuses ESLint.
      */
-    Readonly<Pick<EndpointResponse, 'removeHeader' | 'header'>>,
+    Readonly<Pick<ServerResponse, 'removeHeader' | 'header'>>,
     headers: Readonly<OutgoingHttpHeaders>,
 ): void {
     getObjectTypedEntries(headers).forEach(

@@ -1,7 +1,7 @@
 import {check} from '@augment-vir/assert';
 import {HttpStatus, isErrorHttpStatus} from '@augment-vir/common';
-import type {IsNever} from 'type-fest';
-import type {Endpoint} from '../endpoint/endpoint.js';
+import {type IsNever} from 'type-fest';
+import {type Endpoint} from '../endpoint/endpoint.js';
 
 /**
  * Options for {@link createMockFetchResponse} and {@link createMockFetch}.

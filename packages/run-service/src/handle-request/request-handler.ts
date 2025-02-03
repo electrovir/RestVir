@@ -1,14 +1,14 @@
 import {assertWrap} from '@augment-vir/assert';
 import {HttpStatus, wrapInTry, type SelectFrom} from '@augment-vir/common';
-import type {Endpoint, EndpointPathBase, Socket} from '@rest-vir/define-service';
+import {type Endpoint, type EndpointPathBase, type Socket} from '@rest-vir/define-service';
 import {matchUrlToService} from '@rest-vir/define-service/src/service/match-url.js';
 import {
     ContextInitParameters,
-    EndpointRequest,
-    EndpointResponse,
     GenericServiceImplementation,
     HttpMethod,
     RestVirHandlerError,
+    ServerRequest,
+    ServerResponse,
 } from '@rest-vir/implement-service';
 import {isValidShape} from 'object-shape-tester';
 import {handleHandlerResult} from './endpoint-handler.js';
@@ -23,8 +23,8 @@ import {handleRequestMethod} from './handle-request-method.js';
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
 export async function preHandler(
-    request: EndpointRequest,
-    response: EndpointResponse,
+    request: ServerRequest,
+    response: ServerResponse,
     service: Readonly<
         SelectFrom<
             GenericServiceImplementation,

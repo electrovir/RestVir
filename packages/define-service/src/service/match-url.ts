@@ -1,5 +1,5 @@
 import {getObjectTypedKeys} from '@augment-vir/common';
-import type {RequireAtLeastOne} from 'type-fest';
+import {type RequireAtLeastOne} from 'type-fest';
 import {parseUrl} from 'url-vir';
 import {EndpointPathBase} from '../endpoint/endpoint-path.js';
 import {match} from '../util/path-to-regexp.js';

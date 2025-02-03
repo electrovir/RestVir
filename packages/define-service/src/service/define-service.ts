@@ -195,13 +195,14 @@ function finalizeServiceDefinition<
             assertValidShape(socketInit, socketInitShape);
             const socket = {
                 ...socketInit,
-                messageDataShape: defineShape(socketInit.messageDataShape),
+                messageFromClientShape: defineShape(socketInit.messageFromClientShape),
+                messageFromServerShape: defineShape(socketInit.messageFromServerShape),
                 service: minimalService,
                 path: socketPath,
                 customProps: socketInit.customProps,
                 endpoint: false,
                 socket: true,
-            } satisfies Omit<Socket, 'MessageType'>;
+            } satisfies Omit<Socket, 'MessageFromClientType' | 'MessageFromServerType'>;
 
             attachSocketShapeTypeGetters(socket);
 

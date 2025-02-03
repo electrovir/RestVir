@@ -1,12 +1,13 @@
 import {assert, check} from '@augment-vir/assert';
 import {ensureError, HttpStatus} from '@augment-vir/common';
+import {type NoParam} from '@rest-vir/define-service';
 import {
-    EndpointRequest,
-    EndpointResponse,
     ImplementedEndpoint,
     RestVirHandlerError,
+    ServerRequest,
+    ServerResponse,
     type ImplementedSocket,
-    type WebSocket,
+    type ServerWebSocket,
 } from '@rest-vir/implement-service';
 import cluster from 'node:cluster';
 import {handleHandlerResult} from './endpoint-handler.js';
@@ -35,10 +36,10 @@ export type HandleRouteOptions = Partial<{
 
 export async function handleRoute(
     /** Endpoint requests won't have a `WebSocket`. */
-    webSocket: WebSocket | undefined,
-    request: EndpointRequest,
+    webSocket: ServerWebSocket<NoParam> | undefined,
+    request: ServerRequest,
     /** `WebSocket` requests won't have a response. */
-    response: EndpointResponse | undefined,
+    response: ServerResponse | undefined,
     route: Readonly<ImplementedEndpoint | ImplementedSocket>,
     attachId: string,
     {throwErrorsForExternalHandling}: HandleRouteOptions = {},

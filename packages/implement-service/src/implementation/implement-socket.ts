@@ -18,7 +18,7 @@ import {
 } from '@rest-vir/define-service';
 import {type IncomingHttpHeaders} from 'node:http';
 import {type IsEqual} from 'type-fest';
-import {type EndpointRequest, type WebSocket} from '../util/message.js';
+import {type ServerRequest, type ServerWebSocket} from '../util/data.js';
 import {type ServiceLogger} from '../util/service-logger.js';
 
 /**
@@ -69,17 +69,19 @@ export type SocketImplementationParams<
     WithMessage extends boolean = boolean,
 > = {
     context: Context;
-    webSocket: WebSocket;
+    webSocket: ServerWebSocket<SpecificSocket>;
     socketDefinition: IsEqual<Extract<SpecificSocket, NoParam>, NoParam> extends true
         ? Socket
         : SpecificSocket;
     log: Readonly<ServiceLogger>;
     service: MinimalService<ServiceName>;
     headers: IncomingHttpHeaders;
-    request: EndpointRequest;
+    request: ServerRequest;
 } & (IsEqual<WithMessage, true> extends true
     ? {
-          message: WithFinalSocketProps<Exclude<SpecificSocket, NoParam>, any>['MessageType'];
+          message: SpecificSocket extends NoParam
+              ? any
+              : Exclude<SpecificSocket, NoParam>['MessageFromClientType'];
       }
     : unknown);
 

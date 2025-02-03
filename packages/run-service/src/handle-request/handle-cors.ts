@@ -9,7 +9,7 @@ import {
 } from '@rest-vir/define-service';
 import {HttpStatus, RestVirHandlerError} from '@rest-vir/implement-service';
 import {convertDuration} from 'date-vir';
-import type {OutgoingHttpHeaders} from 'node:http';
+import {type OutgoingHttpHeaders} from 'node:http';
 import {EndpointHandlerParams, HandledOutput} from './endpoint-handler.js';
 
 /**

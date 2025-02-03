@@ -19,9 +19,9 @@ import {
     ServiceDefinitionError,
     WithFinalEndpointProps,
 } from '@rest-vir/define-service';
-import type {IncomingHttpHeaders, OutgoingHttpHeaders} from 'node:http';
+import {type IncomingHttpHeaders, type OutgoingHttpHeaders} from 'node:http';
 import {type IsEqual, type IsNever} from 'type-fest';
-import {EndpointRequest, type EndpointResponse} from '../util/message.js';
+import {ServerRequest, type ServerResponse} from '../util/data.js';
 import {type ServiceLogger} from '../util/service-logger.js';
 
 /**
@@ -100,8 +100,8 @@ export type EndpointImplementationParams<
     requestData: IsEqual<Extract<SpecificEndpoint, NoParam>, NoParam> extends true
         ? any
         : WithFinalEndpointProps<Exclude<SpecificEndpoint, NoParam>, any>['RequestType'];
-    request: EndpointRequest;
-    response: EndpointResponse;
+    request: ServerRequest;
+    response: ServerResponse;
     log: Readonly<ServiceLogger>;
 };
 
@@ -121,8 +121,8 @@ export type GenericEndpointImplementationParams = {
     requestHeaders: IncomingHttpHeaders;
 
     requestData: any;
-    request: EndpointRequest;
-    response: EndpointResponse;
+    request: ServerRequest;
+    response: ServerResponse;
     log: Readonly<ServiceLogger>;
 };
 

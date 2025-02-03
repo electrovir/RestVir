@@ -1,9 +1,9 @@
 /* node:coverage disable: this file is just types */
 
-import type {HttpStatus, MaybePromise} from '@augment-vir/common';
+import {type HttpStatus, type MaybePromise} from '@augment-vir/common';
 import {
-    EndpointRequest,
-    EndpointResponse,
+    ServerRequest,
+    ServerResponse,
     type ImplementedEndpoint,
     type ImplementedSocket,
 } from '@rest-vir/implement-service';
@@ -45,8 +45,8 @@ export type HandledOutput =
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
 export type EndpointHandlerParams = {
-    request: EndpointRequest;
-    response: EndpointResponse;
+    request: ServerRequest;
+    response: ServerResponse;
     route: Readonly<ImplementedEndpoint | ImplementedSocket>;
 };
 
@@ -70,7 +70,7 @@ export type EndpointHandler = (
  */
 export function handleHandlerResult(
     result: Readonly<HandledOutput>,
-    response: EndpointResponse,
+    response: ServerResponse,
 ): {responseSent: boolean} {
     if (result?.headers) {
         setResponseHeaders(response, result.headers);

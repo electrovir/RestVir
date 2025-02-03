@@ -1,11 +1,12 @@
 import {ensureErrorClass, extractErrorMessage, wrapInTry} from '@augment-vir/common';
+import {NoParam} from '@rest-vir/define-service';
 import {
+    ImplementedSocket,
     RestVirHandlerError,
-    type ImplementedSocket,
-    type WebSocket,
+    ServerRequest,
+    ServerWebSocket,
 } from '@rest-vir/implement-service';
 import {assertValidShape} from 'object-shape-tester';
-import {EndpointHandlerParams} from './endpoint-handler.js';
 
 export async function handleSocketRequest(
     this: void,
@@ -14,13 +15,12 @@ export async function handleSocketRequest(
         request,
         socket,
         webSocket,
-    }: Readonly<
-        Pick<EndpointHandlerParams, 'request'> & {
-            attachId: string;
-            socket: Readonly<ImplementedSocket>;
-            webSocket: WebSocket;
-        }
-    >,
+    }: Readonly<{
+        request: ServerRequest;
+        attachId: string;
+        socket: Readonly<ImplementedSocket>;
+        webSocket: ServerWebSocket<NoParam>;
+    }>,
 ) {
     const restVirContext = request.restVirContext?.[attachId];
 
@@ -52,7 +52,7 @@ export async function handleSocketRequest(
 
                 assertValidShape(
                     message,
-                    socket.messageDataShape,
+                    socket.messageFromClientShape,
                     {allowExtraKeys: true},
                     'Invalid message send shape.',
                 );

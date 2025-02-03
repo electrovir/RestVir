@@ -1,5 +1,5 @@
-import type {IsEqual} from 'type-fest';
-import type {OriginRequirement} from '../util/origin.js';
+import {type IsEqual} from 'type-fest';
+import {type OriginRequirement} from '../util/origin.js';
 
 /**
  * This is a minimal service definition with only data to send and handle fetch requests to that
