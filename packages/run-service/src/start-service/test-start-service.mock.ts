@@ -7,6 +7,7 @@ import {
     streamShellCommand,
 } from '@augment-vir/node';
 import {describe, it} from '@augment-vir/test';
+import {waitForOpenWebSocket} from '@rest-vir/define-service';
 import {join} from 'node:path';
 import {buildUrl} from 'url-vir';
 import {startServiceMocksDirPath} from '../util/file-paths.mock.js';
@@ -16,6 +17,12 @@ export type TestFetch = (
     path: string,
     init?: RequestInit | undefined,
 ) => Promise<Response>;
+
+export type TestConnectSocket = (
+    this: void,
+    path: string,
+    protocols?: string | string[] | undefined,
+) => Promise<globalThis.WebSocket>;
 
 export function getMockScriptCommand(scriptName: string) {
     const testFilePath = join(startServiceMocksDirPath, scriptName + '.script.mock.ts');
@@ -61,13 +68,25 @@ async function setupService(scriptName: string) {
 
     const params = {
         address: serviceUrl,
-        fetchService: ((path, init) => {
+        fetchService: (async (path, init) => {
             const fetchUrl = buildUrl(serviceUrl, {
                 pathname: path,
             }).href;
 
-            return globalThis.fetch(fetchUrl, init);
+            return await globalThis.fetch(fetchUrl, init);
         }) as TestFetch,
+        connectSocket: (async (path, protocols) => {
+            const socketUrl = buildUrl(serviceUrl, {
+                pathname: path,
+                protocol: 'ws',
+            }).href;
+
+            const webSocket = new WebSocket(socketUrl, protocols);
+
+            await waitForOpenWebSocket(webSocket);
+
+            return webSocket;
+        }) as TestConnectSocket,
         childProcess: shellTarget.childProcess,
         stdout,
         stderr,

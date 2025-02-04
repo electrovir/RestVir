@@ -247,10 +247,18 @@ export type CollapsedFetchEndpointParams<
 /**
  * Send a request to an endpoint definition with type safe parameters.
  *
- * This can safely be used on a frontend _or_ backend.
+ * This can safely be used in frontend _or_ backend code.
  *
  * @category Fetch
  * @category Package : @rest-vir/define-service
+ * @example
+ *
+ * ```ts
+ * import {fetchEndpoint} from '@rest-vir/define-service';
+ *
+ * const {data, response} = await fetchEndpoint(myService.endpoints['/my-endpoint']);
+ * ```
+ *
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export async function fetchEndpoint<

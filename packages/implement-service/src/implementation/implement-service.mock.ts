@@ -32,19 +32,27 @@ export const mockServiceImplementation = implementService(
     },
     {
         sockets: {
+            '/sends-protocol': {
+                onMessage({protocols, webSocket}) {
+                    webSocket.send(protocols);
+                },
+            },
             '/custom-props-socket': {
                 onMessage(params) {
                     assert.tsType(params.socketDefinition.customProps).equals<{
                         hello: string;
                     }>();
+                    params.webSocket.send('ok');
                 },
             },
-            '/no-data': {
+            '/no-client-data': {
                 onMessage(params) {
                     assert.tsType(params.context).equals<MockServiceContext>();
                     assert.tsType(params.message).equals<undefined>();
+                    assert.isUndefined(params.message);
                     assert.tsType<'message'>().matches<keyof typeof params>();
                     assert.tsType(params.socketDefinition.customProps).equals<undefined>();
+                    params.webSocket.send('ok');
                 },
                 onClose(params) {
                     assert.tsType(params.context).equals<MockServiceContext>();
@@ -65,6 +73,7 @@ export const mockServiceImplementation = implementService(
                         }>
                     >();
                     assert.tsType<'message'>().matches<keyof typeof params>();
+                    params.webSocket.send('ok');
                 },
                 onClose(params) {
                     assert.tsType(params.context).equals<MockServiceContext>();
@@ -85,6 +94,7 @@ export const mockServiceImplementation = implementService(
                         }>
                     >();
                     assert.tsType<'message'>().matches<keyof typeof params>();
+                    params.webSocket.send('ok');
                 },
                 onClose(params) {
                     assert.tsType(params.context).equals<MockServiceContext>();

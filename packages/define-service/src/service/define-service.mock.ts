@@ -2,7 +2,7 @@
 /** This is just a mock file. */
 
 import {HttpMethod, wait} from '@augment-vir/common';
-import {or} from 'object-shape-tester';
+import {exact, or} from 'object-shape-tester';
 import {AnyOrigin} from '../util/origin.js';
 import {defineService} from './define-service.js';
 
@@ -14,7 +14,7 @@ export const mockService = defineService({
     requiredOrigin: AnyOrigin,
     sockets: {
         '/origin-locked': {
-            messageFromServerShape: undefined,
+            messageFromServerShape: exact('ok'),
             messageFromClientShape: {
                 a: '',
                 b: -1,
@@ -22,18 +22,22 @@ export const mockService = defineService({
             requiredOrigin: mockWebsiteOrigin,
         },
         '/no-origin': {
-            messageFromServerShape: undefined,
+            messageFromServerShape: exact('ok'),
             messageFromClientShape: {
                 a: '',
                 b: -1,
             },
         },
-        '/no-data': {
-            messageFromServerShape: undefined,
+        '/no-client-data': {
+            messageFromServerShape: exact('ok'),
             messageFromClientShape: undefined,
         },
+        '/sends-protocol': {
+            messageFromClientShape: undefined,
+            messageFromServerShape: [''],
+        },
         '/custom-props-socket': {
-            messageFromServerShape: undefined,
+            messageFromServerShape: exact('ok'),
             messageFromClientShape: undefined,
             customProps: {
                 hello: '',

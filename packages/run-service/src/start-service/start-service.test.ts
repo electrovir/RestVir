@@ -2,7 +2,7 @@ import {assert} from '@augment-vir/assert';
 import {HttpMethod, HttpStatus, mergeDeep} from '@augment-vir/common';
 import {runShellCommand} from '@augment-vir/node';
 import {describe, it} from '@augment-vir/test';
-import {fetchEndpoint} from '@rest-vir/define-service';
+import {fetchEndpoint, sendWebSocketMessageAndWaitForResponse} from '@rest-vir/define-service';
 import {
     mockService,
     mockWebsiteOrigin,
@@ -13,6 +13,37 @@ import {describeServiceScript, getMockScriptCommand} from './test-start-service.
 
 describe(startService.name, () => {
     describeServiceScript('single-thread', ({it}) => {
+        it('accepts a valid socket message', async ({connectSocket}) => {
+            const webSocket = await connectSocket(mockService.sockets['/no-client-data'].path);
+
+            const serverMessage = await sendWebSocketMessageAndWaitForResponse(
+                mockService.sockets['/no-client-data'],
+                webSocket,
+                undefined,
+            );
+
+            assert.strictEquals(serverMessage, 'ok');
+        });
+        it('receives web socket protocols', async ({connectSocket}) => {
+            const mockProtocols = [
+                'hi',
+                'hi1',
+                'hi2',
+            ];
+
+            const webSocket = await connectSocket(
+                mockService.sockets['/sends-protocol'].path,
+                mockProtocols,
+            );
+
+            const serverMessage = await sendWebSocketMessageAndWaitForResponse(
+                mockService.sockets['/sends-protocol'],
+                webSocket,
+                undefined,
+            );
+
+            assert.deepEquals(serverMessage, mockProtocols);
+        });
         it('rejects an unexpected method', async ({fetchService}) => {
             assert.strictEquals(
                 (

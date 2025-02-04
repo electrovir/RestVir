@@ -1,9 +1,10 @@
 import {assert} from '@augment-vir/assert';
-import {randomInteger} from '@augment-vir/common';
+import {DeferredPromise, randomInteger} from '@augment-vir/common';
 import {describe, it} from '@augment-vir/test';
 import {AnyOrigin, defineService, HttpMethod, HttpStatus} from '@rest-vir/define-service';
 import {implementService} from '@rest-vir/implement-service';
 import {mockServiceImplementation} from '@rest-vir/implement-service/src/implementation/implement-service.mock.js';
+import {exact} from 'object-shape-tester';
 import {condenseResponse, describeService, testService} from './test-service.js';
 
 describeService({service: mockServiceImplementation}, ({fetchService}) => {
@@ -25,6 +26,12 @@ describeService({service: mockServiceImplementation}, ({fetchService}) => {
 const plainService = implementService(
     {
         service: defineService({
+            sockets: {
+                '/socket': {
+                    messageFromClientShape: exact('from client'),
+                    messageFromServerShape: exact('from server'),
+                },
+            },
             endpoints: {
                 '/health': {
                     methods: {
@@ -47,6 +54,14 @@ const plainService = implementService(
                 return {
                     statusCode: HttpStatus.Ok,
                 };
+            },
+        },
+        sockets: {
+            '/socket': {
+                onMessage({message, webSocket}) {
+                    assert.strictEquals(message, 'from client');
+                    webSocket.send('from server');
+                },
             },
         },
     },
@@ -72,7 +87,7 @@ describeService({service: plainService, options: {}}, ({fetchService}) => {
 
 describe(testService.name, () => {
     it('works with an actual port', async () => {
-        const {fetchService, kill} = await testService(plainService, {
+        const {fetchService, connectSocket, kill} = await testService(plainService, {
             port: 4500 + randomInteger({min: 0, max: 4000}),
         });
 
@@ -83,6 +98,25 @@ describe(testService.name, () => {
                 },
                 status: HttpStatus.Ok,
             });
+
+            const socketMessageReceived = new DeferredPromise<string>();
+
+            const socket = await connectSocket['/socket']({
+                listeners: {
+                    message({message}) {
+                        socketMessageReceived.resolve(message);
+                    },
+                },
+            });
+            try {
+                socket.send('from client');
+
+                const messageReceived = await socketMessageReceived.promise;
+
+                assert.strictEquals(messageReceived, 'from server');
+            } finally {
+                socket.close();
+            }
         } finally {
             kill();
         }

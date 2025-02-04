@@ -1,5 +1,9 @@
-import {ensureErrorClass, extractErrorMessage, wrapInTry} from '@augment-vir/common';
-import {NoParam} from '@rest-vir/define-service';
+import {ensureErrorClass, extractErrorMessage, stringify} from '@augment-vir/common';
+import {
+    type NoParam,
+    overwriteWebSocketSend,
+    parseJsonWithUndefined,
+} from '@rest-vir/define-service';
 import {
     ImplementedSocket,
     RestVirHandlerError,
@@ -24,6 +28,10 @@ export async function handleSocketRequest(
 ) {
     const restVirContext = request.restVirContext?.[attachId];
 
+    const protocols: string[] = (request.headers['sec-websocket-protocol'] || '').split(', ');
+
+    overwriteWebSocketSend(socket, webSocket, 'in-server');
+
     const socketCallbackParams = {
         context: restVirContext?.context,
         headers: request.headers,
@@ -32,6 +40,7 @@ export async function handleSocketRequest(
         service: socket.service,
         socketDefinition: socket,
         webSocket,
+        protocols,
     };
 
     if (socket.implementation.onClose) {
@@ -46,16 +55,20 @@ export async function handleSocketRequest(
                 // eslint-disable-next-line @typescript-eslint/no-base-to-string
                 const stringRawMessage = String(rawMessage);
 
-                const message = wrapInTry(() => JSON.parse(stringRawMessage), {
-                    fallbackValue: stringRawMessage,
-                });
+                const message = parseJsonWithUndefined(stringRawMessage);
 
-                assertValidShape(
-                    message,
-                    socket.messageFromClientShape,
-                    {allowExtraKeys: true},
-                    'Invalid message send shape.',
-                );
+                if (socket.messageFromClientShape) {
+                    assertValidShape(
+                        message,
+                        socket.messageFromClientShape,
+                        {allowExtraKeys: true},
+                        'Invalid message send shape.',
+                    );
+                } else if (message) {
+                    throw new Error(
+                        `Did not expect any data from the client but got ${stringify(message)}.`,
+                    );
+                }
 
                 await socket.implementation.onMessage?.({
                     ...socketCallbackParams,

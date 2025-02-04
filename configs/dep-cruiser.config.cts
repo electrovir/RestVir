@@ -6,7 +6,9 @@ const baseConfig = defineConfig({
         // enter file exceptions by rule name here
         'no-orphans': {
             from: [
-                'src/index.ts',
+                'src/index\\.ts',
+                '\\.script\\.mock\\.ts$',
+                '\\.script\\.ts$',
             ],
         },
         /** For some reason dep-cruiser thinks these deps are unresolvable (they're not). */

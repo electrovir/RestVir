@@ -195,8 +195,12 @@ function finalizeServiceDefinition<
             assertValidShape(socketInit, socketInitShape);
             const socket = {
                 ...socketInit,
-                messageFromClientShape: defineShape(socketInit.messageFromClientShape),
-                messageFromServerShape: defineShape(socketInit.messageFromServerShape),
+                messageFromClientShape: socketInit.messageFromClientShape
+                    ? defineShape(socketInit.messageFromClientShape)
+                    : undefined,
+                messageFromServerShape: socketInit.messageFromServerShape
+                    ? defineShape(socketInit.messageFromServerShape)
+                    : undefined,
                 service: minimalService,
                 path: socketPath,
                 customProps: socketInit.customProps,

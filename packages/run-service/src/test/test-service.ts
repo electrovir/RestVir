@@ -13,12 +13,19 @@ import {
     buildEndpointRequestInit,
     CollapsedFetchEndpointParams,
     Endpoint,
+    type ClientWebSocket,
+    type CollapsedConnectSocketParams,
     type NoParam,
+    type Socket,
 } from '@rest-vir/define-service';
 import {GenericServiceImplementation} from '@rest-vir/implement-service';
 import {type InjectOptions} from 'light-my-request';
 import {type OutgoingHttpHeaders} from 'node:http';
 import {buildUrl, parseUrl} from 'url-vir';
+import {
+    buildSocketUrl,
+    finalizeClientWebSocket,
+} from '../../../define-service/src/frontend-connect/connect-socket.js';
 import {type StartServiceUserOptions} from '../start-service/start-service-options.js';
 import {startService} from '../start-service/start-service.js';
 
@@ -88,6 +95,17 @@ export type FetchTestEndpoint<EndpointToTest extends Endpoint> = (
 ) => Promise<Response>;
 
 /**
+ * Used for each individual endpoint's fetcher in {@link FetchTestService}.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/run-service
+ * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
+ */
+export type ConnectTestSocket<SocketToTest extends Socket> = (
+    ...params: CollapsedConnectSocketParams<SocketToTest, false>
+) => Promise<ClientWebSocket<SocketToTest>>;
+
+/**
  * Type for the `fetchService` function provided by {@link testService} and {@link describeService}.
  *
  * @category Internal
@@ -104,6 +122,26 @@ export type FetchTestService<
 > = {
     [EndpointPath in keyof Service['endpoints']]: Service['endpoints'][EndpointPath] extends Endpoint
         ? FetchTestEndpoint<Service['endpoints'][EndpointPath]>
+        : never;
+};
+
+/**
+ * Type for the `connectSocket` function provided by {@link testService} and {@link describeService}.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/run-service
+ * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
+ */
+export type ConnectTestServiceSocket<
+    Service extends SelectFrom<
+        GenericServiceImplementation,
+        {
+            sockets: true;
+        }
+    >,
+> = {
+    [SocketPath in keyof Service['sockets']]: Service['sockets'][SocketPath] extends Socket
+        ? ConnectTestSocket<Service['sockets'][SocketPath]>
         : never;
 };
 
@@ -167,18 +205,9 @@ export async function testService<
                   port,
               }).origin;
 
-    const socketOrigin =
-        port == undefined
-            ? undefined
-            : buildUrl({
-                  protocol: 'ws',
-                  hostname: host,
-                  port,
-              }).origin;
-
     const fetchService = mapObjectValues(
         service.endpoints as GenericServiceImplementation['endpoints'],
-        (endpointKey, endpoint) => {
+        (endpointPath, endpoint) => {
             return async (
                 ...args: CollapsedFetchEndpointParams<NoParam, false>
             ): Promise<Response> => {
@@ -229,6 +258,46 @@ export async function testService<
         },
     ) as AnyObject as FetchTestService<Service>;
 
+    const socketOrigin =
+        port == undefined
+            ? undefined
+            : buildUrl({
+                  protocol: 'ws',
+                  hostname: host,
+                  port,
+              }).origin;
+
+    const connectSocket = mapObjectValues(
+        service.sockets as GenericServiceImplementation['sockets'],
+        (socketPath, socket) => {
+            return async (
+                ...args: CollapsedConnectSocketParams<NoParam, false>
+            ): Promise<ClientWebSocket<NoParam>> => {
+                const [{protocols = [], listeners} = {}] = args;
+
+                const overwrittenOriginSocket = mergeDeep(
+                    socket as Socket,
+                    socketOrigin
+                        ? {
+                              service: {
+                                  serviceOrigin: socketOrigin,
+                              },
+                          }
+                        : {},
+                );
+
+                const socketUrl = buildSocketUrl(overwrittenOriginSocket, ...args);
+
+                const webSocket =
+                    socketOrigin == undefined
+                        ? await server.injectWS()
+                        : new WebSocket(socketUrl, protocols);
+
+                return await finalizeClientWebSocket(socket, webSocket, listeners);
+            };
+        },
+    ) as AnyObject as ConnectTestServiceSocket<Service>;
+
     return {
         /**
          * Kill the service. Make sure to call this at the end of the test or the service will
@@ -237,6 +306,8 @@ export async function testService<
         kill,
         /** Send a request to the service. */
         fetchService,
+        /** Connect to a service socket. */
+        connectSocket,
     };
 }
 

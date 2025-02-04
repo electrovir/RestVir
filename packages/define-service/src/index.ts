@@ -12,4 +12,5 @@ export * from './socket/socket.js';
 export * from './util/mock-fetch.js';
 export * from './util/no-param.js';
 export * from './util/origin.js';
+export * from './util/parse-json-with-undefined.js';
 export * from './util/path-to-regexp.js';

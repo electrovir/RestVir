@@ -77,6 +77,7 @@ export type SocketImplementationParams<
     service: MinimalService<ServiceName>;
     headers: IncomingHttpHeaders;
     request: ServerRequest;
+    protocols: string[];
 } & (IsEqual<WithMessage, true> extends true
     ? {
           message: SpecificSocket extends NoParam
