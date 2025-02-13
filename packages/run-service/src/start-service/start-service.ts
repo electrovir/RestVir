@@ -18,12 +18,12 @@ import {
  * @category Package : @rest-vir/run-service
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
-export type StartServiceOutput<Port extends number | false> = {
+export type StartServiceOutput = {
     /**
      * The port that the server actually started on. This depends on the options given to
      * {@link startService}.
      */
-    port: Port extends boolean ? undefined : number;
+    port: number;
     /**
      * The host that the server was attached to. (This is simply passed directly from the user
      * options, merged with the default.)
@@ -61,7 +61,7 @@ export type StartServiceOutput<Port extends number | false> = {
  * @category Package : @rest-vir/run-service
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
-export async function startService<const Port extends number | false>(
+export async function startService(
     service: Readonly<
         SelectFrom<
             GenericServiceImplementation,
@@ -76,8 +76,8 @@ export async function startService<const Port extends number | false>(
             }
         >
     >,
-    userOptions: Readonly<StartServiceUserOptions<Port>>,
-): Promise<StartServiceOutput<Port>> {
+    userOptions: Readonly<StartServiceUserOptions>,
+): Promise<StartServiceOutput> {
     const options = finalizeOptions(userOptions);
 
     const port: number | boolean =
@@ -86,13 +86,17 @@ export async function startService<const Port extends number | false>(
             : await getPortPromise({
                   port: options.port,
               });
-    options.port = port as Port;
+    options.port = port;
 
     if (options.workerCount === 1 || !check.isNumber(port)) {
         /** Only run a single server. */
         const result = await startServer(service, options);
 
-        service.logger.info(`${service.serviceName} started on http://localhost:${options.port}`);
+        if (options.port) {
+            service.logger.info(
+                `${service.serviceName} started on http://localhost:${options.port}`,
+            );
+        }
 
         return result;
     } else {
@@ -114,13 +118,15 @@ export async function startService<const Port extends number | false>(
 
         if (check.instanceOf(manager, ClusterManager)) {
             await manager.startWorkers();
-            service.logger.info(
-                `${service.serviceName} started on http://localhost:${options.port}`,
-            );
+            if (options.port) {
+                service.logger.info(
+                    `${service.serviceName} started on http://localhost:${options.port}`,
+                );
+            }
 
             return {
                 host: options.host,
-                port: port as StartServiceOutput<Port>['port'],
+                port: port,
                 cluster: manager,
                 kill() {
                     manager.destroy();
@@ -129,7 +135,7 @@ export async function startService<const Port extends number | false>(
         } else {
             return {
                 host: options.host,
-                port: port as StartServiceOutput<Port>['port'],
+                port: port,
                 worker: manager,
                 kill() {
                     manager.destroy();
@@ -139,7 +145,7 @@ export async function startService<const Port extends number | false>(
     }
 }
 
-async function startServer<const Port extends number | false>(
+async function startServer(
     service: Readonly<
         SelectFrom<
             GenericServiceImplementation,
@@ -154,19 +160,17 @@ async function startServer<const Port extends number | false>(
             }
         >
     >,
-    {host, port}: Readonly<Pick<StartServiceOptions<Port>, 'host' | 'port'>>,
-): Promise<StartServiceOutput<Port>> {
+    {host, port}: Readonly<Pick<StartServiceOptions, 'host' | 'port'>>,
+): Promise<StartServiceOutput> {
     const server = fastify();
 
     await attachService(server, service);
 
-    if (check.isNumber(port)) {
-        await server.listen({port, host});
-    }
+    await server.listen({port, host});
 
     return {
         host,
-        port: (check.isNumber(port) ? port : undefined) as StartServiceOutput<Port>['port'],
+        port,
         server,
         kill() {
             server.server.close();

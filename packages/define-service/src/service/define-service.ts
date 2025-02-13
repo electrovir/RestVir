@@ -206,7 +206,7 @@ function finalizeServiceDefinition<
                 customProps: socketInit.customProps,
                 endpoint: false,
                 socket: true,
-            } satisfies Omit<Socket, 'MessageFromClientType' | 'MessageFromServerType'>;
+            } satisfies Omit<Socket, 'MessageFromClientType' | 'MessageFromHostType'>;
 
             attachSocketShapeTypeGetters(socket);
 

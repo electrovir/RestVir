@@ -230,28 +230,34 @@ export type ServiceImplementation<
     ServiceName extends string = any,
     EndpointsInit extends BaseServiceEndpointsInit | NoParam = NoParam,
     SocketsInit extends BaseServiceSocketsInit | NoParam = NoParam,
-> = Omit<ServiceDefinition<ServiceName, EndpointsInit, SocketsInit>, 'endpoints'> & {
+> = Omit<ServiceDefinition<ServiceName, EndpointsInit, SocketsInit>, 'endpoints' | 'sockets'> & {
     endpoints: {
         [EndpointPath in keyof ServiceDefinition<
             ServiceName,
-            EndpointsInit
+            EndpointsInit,
+            SocketsInit
         >['endpoints']]: EndpointPath extends EndpointPathBase
             ? ImplementedEndpoint<
                   Context,
                   ServiceName,
-                  ServiceDefinition<ServiceName, EndpointsInit>['endpoints'][EndpointPath]
+                  ServiceDefinition<
+                      ServiceName,
+                      EndpointsInit,
+                      SocketsInit
+                  >['endpoints'][EndpointPath]
               >
             : never;
     };
     sockets: {
         [SocketPath in keyof ServiceDefinition<
             ServiceName,
-            EndpointsInit
+            EndpointsInit,
+            SocketsInit
         >['sockets']]: SocketPath extends EndpointPathBase
             ? ImplementedSocket<
                   Context,
                   ServiceName,
-                  ServiceDefinition<ServiceName, EndpointsInit>['sockets'][SocketPath]
+                  ServiceDefinition<ServiceName, EndpointsInit, SocketsInit>['sockets'][SocketPath]
               >
             : never;
     };

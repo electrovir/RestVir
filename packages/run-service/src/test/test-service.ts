@@ -1,33 +1,35 @@
-import {assert, assertWrap} from '@augment-vir/assert';
+import {assert, assertWrap, check} from '@augment-vir/assert';
 import {
     mapObjectValues,
     mergeDeep,
     mergeDefinedProperties,
     omitObjectKeys,
     type AnyObject,
+    type Overwrite,
     type PartialWithUndefined,
     type SelectFrom,
 } from '@augment-vir/common';
 import {describe, it} from '@augment-vir/test';
 import {
     buildEndpointRequestInit,
+    buildSocketUrl,
     CollapsedFetchEndpointParams,
     Endpoint,
+    finalizeWebSocket,
+    WebSocketLocation,
     type ClientWebSocket,
     type CollapsedConnectSocketParams,
     type NoParam,
     type Socket,
 } from '@rest-vir/define-service';
 import {GenericServiceImplementation} from '@rest-vir/implement-service';
+import fastify, {FastifyInstance} from 'fastify';
 import {type InjectOptions} from 'light-my-request';
 import {type OutgoingHttpHeaders} from 'node:http';
 import {buildUrl, parseUrl} from 'url-vir';
-import {
-    buildSocketUrl,
-    finalizeClientWebSocket,
-} from '../../../define-service/src/frontend-connect/connect-socket.js';
+import {HandleRouteOptions} from '../handle-request/handle-route.js';
+import {attachService} from '../start-service/attach-service.js';
 import {type StartServiceUserOptions} from '../start-service/start-service-options.js';
-import {startService} from '../start-service/start-service.js';
 
 /**
  * Options for {@link condenseResponse}.
@@ -146,6 +148,20 @@ export type ConnectTestServiceSocket<
 };
 
 /**
+ * Options for {@link testService}.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/run-service
+ * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
+ */
+export type TestServiceOptions = Overwrite<
+    StartServiceUserOptions,
+    {
+        port?: number | undefined | false;
+    }
+>;
+
+/**
  * Test your service with actual Request and Response objects!
  *
  * The returned object includes a function to send fetches to directly to the running service. See
@@ -175,34 +191,89 @@ export async function testService<
     >,
 >(
     service: Readonly<Service>,
-    testServiceOptions: Omit<
-        PartialWithUndefined<StartServiceUserOptions>,
-        'workerCount' | 'preventWorkerRespawn'
+    testServiceOptions: Readonly<
+        Omit<PartialWithUndefined<TestServiceOptions>, 'workerCount' | 'preventWorkerRespawn'>
     > = {},
 ) {
-    const {kill, port, host, server} = await startService(
-        service,
-        mergeDefinedProperties<StartServiceUserOptions>(
-            {
-                port: false,
-            },
-            testServiceOptions,
-            {
-                workerCount: 1,
-                preventWorkerRespawn: true,
-            },
-        ),
+    const {host = 'localhost', port} = mergeDefinedProperties<TestServiceOptions>(
+        {
+            port: false,
+        },
+        testServiceOptions,
+        {
+            workerCount: 1,
+            preventWorkerRespawn: true,
+        },
     );
+
+    const server = fastify();
 
     assert.isDefined(server, 'Service server was not started.');
 
+    const output = {
+        ...(await testExistingServer(server, service, {
+            port: port || undefined,
+            host,
+            throwErrorsForExternalHandling: false,
+        })),
+        /** Kill the server being tested. This should always be called after your tests are finished. */
+        async kill(this: void) {
+            await server.close();
+        },
+    };
+
+    if (check.isNumber(port)) {
+        await server.listen({
+            port,
+            host,
+        });
+    }
+
+    return output;
+}
+
+/**
+ * Similar to {@link testService} but used to test against a Fastify server that you've already
+ * started elsewhere. This will merely attach all route listeners to it and return test callbacks.
+ *
+ * The returned object includes a function to send fetches to directly to the running service.
+ *
+ * By default, this uses Fastify's request injection strategy to avoid using up real system ports.
+ * To instead listen to an actual port, set `port` in the options parameter.
+ *
+ * @category Testing
+ * @category Package : @rest-vir/run-service
+ * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
+ */
+export async function testExistingServer<
+    const Service extends Readonly<
+        SelectFrom<
+            GenericServiceImplementation,
+            {
+                sockets: true;
+                endpoints: true;
+                serviceName: true;
+                createContext: true;
+                serviceOrigin: true;
+                requiredOrigin: true;
+                logger: true;
+            }
+        >
+    >,
+>(
+    server: Readonly<FastifyInstance>,
+    service: Readonly<Service>,
+    options: HandleRouteOptions & PartialWithUndefined<{host: string; port: number}> = {},
+) {
+    await attachService(server, service, options);
+
     const fetchOrigin =
-        port == undefined
+        options.port == undefined
             ? undefined
             : buildUrl({
                   protocol: 'http',
-                  hostname: host,
-                  port,
+                  hostname: options.host,
+                  port: options.port,
               }).origin;
 
     const fetchService = mapObjectValues(
@@ -211,6 +282,7 @@ export async function testService<
             return async (
                 ...args: CollapsedFetchEndpointParams<NoParam, false>
             ): Promise<Response> => {
+                await server.ready();
                 const overwrittenOriginEndpoint = mergeDeep(
                     endpoint as Endpoint,
                     fetchOrigin
@@ -259,12 +331,12 @@ export async function testService<
     ) as AnyObject as FetchTestService<Service>;
 
     const socketOrigin =
-        port == undefined
+        options.port == undefined
             ? undefined
             : buildUrl({
                   protocol: 'ws',
-                  hostname: host,
-                  port,
+                  hostname: options.host,
+                  port: options.port,
               }).origin;
 
     const connectSocket = mapObjectValues(
@@ -272,7 +344,8 @@ export async function testService<
         (socketPath, socket) => {
             return async (
                 ...args: CollapsedConnectSocketParams<NoParam, false>
-            ): Promise<ClientWebSocket<NoParam>> => {
+            ): Promise<ClientWebSocket<Socket>> => {
+                await server.ready();
                 const [{protocols = [], listeners} = {}] = args;
 
                 const overwrittenOriginSocket = mergeDeep(
@@ -290,20 +363,24 @@ export async function testService<
 
                 const webSocket =
                     socketOrigin == undefined
-                        ? await server.injectWS()
+                        ? ((await server.injectWS(
+                              parseUrl(socketUrl).pathname,
+                          )) as unknown as globalThis.WebSocket)
                         : new WebSocket(socketUrl, protocols);
 
-                return await finalizeClientWebSocket(socket, webSocket, listeners);
+                const finalized = await finalizeWebSocket(
+                    socket,
+                    webSocket,
+                    listeners,
+                    WebSocketLocation.OnClient,
+                );
+
+                return finalized;
             };
         },
     ) as AnyObject as ConnectTestServiceSocket<Service>;
 
     return {
-        /**
-         * Kill the service. Make sure to call this at the end of the test or the service will
-         * simply keep running.
-         */
-        kill,
         /** Send a request to the service. */
         fetchService,
         /** Connect to a service socket. */
@@ -384,7 +461,7 @@ export function describeService<
          */
         it('can be killed', async () => {
             const {kill} = await servicePromise;
-            kill();
+            await kill();
         });
     });
 }

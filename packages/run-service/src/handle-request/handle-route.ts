@@ -1,21 +1,20 @@
 import {assert, check} from '@augment-vir/assert';
 import {ensureError, HttpStatus} from '@augment-vir/common';
-import {type NoParam} from '@rest-vir/define-service';
 import {
     ImplementedEndpoint,
     RestVirHandlerError,
     ServerRequest,
     ServerResponse,
     type ImplementedSocket,
-    type ServerWebSocket,
 } from '@rest-vir/implement-service';
 import cluster from 'node:cluster';
+import {type WebSocket as WsWebSocket} from 'ws';
 import {handleHandlerResult} from './endpoint-handler.js';
 import {handleEndpointRequest} from './handle-endpoint.js';
 import {handleSocketRequest} from './handle-socket.js';
 
 /**
- * Options for {@link handleEndpointRequest}.
+ * Options for {@link handleRoute}.
  *
  * @category Internal
  * @category Package : @rest-vir/run-service
@@ -34,9 +33,16 @@ export type HandleRouteOptions = Partial<{
     throwErrorsForExternalHandling: boolean;
 }>;
 
+/**
+ * Handles a WebSocket or Endpoint request.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/run-service
+ * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
+ */
 export async function handleRoute(
     /** Endpoint requests won't have a `WebSocket`. */
-    webSocket: ServerWebSocket<NoParam> | undefined,
+    webSocket: WsWebSocket | undefined,
     request: ServerRequest,
     /** `WebSocket` requests won't have a response. */
     response: ServerResponse | undefined,

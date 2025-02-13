@@ -1,5 +1,9 @@
-import {type Overwrite} from '@augment-vir/common';
-import {type NoParam, type Socket} from '@rest-vir/define-service';
+import {
+    type NoParam,
+    type OverwriteWebSocketMethods,
+    type Socket,
+    type WebSocketLocation,
+} from '@rest-vir/define-service';
 import {type FastifyReply, type FastifyRequest} from 'fastify';
 import {type WebSocket as WsWebSocket} from 'ws';
 
@@ -31,17 +35,8 @@ export type ServerResponse = FastifyReply;
  * @category Package : @rest-vir/implement-service
  * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
  */
-export type ServerWebSocket<SocketDefinition extends Socket | NoParam> = Overwrite<
+export type ServerWebSocket<SocketDefinition extends Socket | NoParam> = OverwriteWebSocketMethods<
     WsWebSocket,
-    SocketDefinition extends NoParam
-        ? {
-              send(message?: any): void;
-          }
-        : Exclude<SocketDefinition, NoParam>['MessageFromServerType'] extends undefined
-          ? {
-                send(message?: Exclude<SocketDefinition, NoParam>['MessageFromServerType']): void;
-            }
-          : {
-                send(message: Exclude<SocketDefinition, NoParam>['MessageFromServerType']): void;
-            }
+    WebSocketLocation.OnHost,
+    SocketDefinition
 >;

@@ -1,36 +1,39 @@
 import {ensureErrorClass, extractErrorMessage, stringify} from '@augment-vir/common';
 import {
-    type NoParam,
-    overwriteWebSocketSend,
+    overwriteWebSocketMethods,
     parseJsonWithUndefined,
+    WebSocketLocation,
 } from '@rest-vir/define-service';
-import {
-    ImplementedSocket,
-    RestVirHandlerError,
-    ServerRequest,
-    ServerWebSocket,
-} from '@rest-vir/implement-service';
+import {ImplementedSocket, RestVirHandlerError, ServerRequest} from '@rest-vir/implement-service';
 import {assertValidShape} from 'object-shape-tester';
+import {type WebSocket as WsWebSocket} from 'ws';
 
+/**
+ * Handles a WebSocket request.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/run-service
+ * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
+ */
 export async function handleSocketRequest(
     this: void,
     {
         attachId,
         request,
         socket,
-        webSocket,
+        webSocket: wsWebSocket,
     }: Readonly<{
         request: ServerRequest;
         attachId: string;
         socket: Readonly<ImplementedSocket>;
-        webSocket: ServerWebSocket<NoParam>;
+        webSocket: WsWebSocket;
     }>,
 ) {
     const restVirContext = request.restVirContext?.[attachId];
 
     const protocols: string[] = (request.headers['sec-websocket-protocol'] || '').split(', ');
 
-    overwriteWebSocketSend(socket, webSocket, 'in-server');
+    const webSocket = overwriteWebSocketMethods(socket, wsWebSocket, WebSocketLocation.OnHost);
 
     const socketCallbackParams = {
         context: restVirContext?.context,
@@ -75,11 +78,13 @@ export async function handleSocketRequest(
                     message,
                 });
             } catch (error) {
-                throw ensureErrorClass(
-                    error,
-                    RestVirHandlerError,
-                    socket,
-                    extractErrorMessage(error),
+                socket.service.logger.error(
+                    ensureErrorClass(
+                        error,
+                        RestVirHandlerError,
+                        socket,
+                        extractErrorMessage(error),
+                    ),
                 );
             }
         });

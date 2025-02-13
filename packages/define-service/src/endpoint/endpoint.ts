@@ -120,35 +120,42 @@ export const endpointInitShape = defineShape({
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export type WithFinalEndpointProps<T, EndpointPath extends EndpointPathBase> = (T extends AnyObject
+export type WithFinalEndpointProps<
+    Init,
+    EndpointPath extends EndpointPathBase,
+> = (Init extends AnyObject
     ? Overwrite<
-          T,
+          Init,
           {
-              requestDataShape: T['requestDataShape'] extends NoParam
+              requestDataShape: Init['requestDataShape'] extends NoParam
                   ? ShapeDefinition<any, true> | undefined
-                  : undefined extends T['requestDataShape']
+                  : undefined extends Init['requestDataShape']
                     ? undefined
-                    : ShapeDefinition<T['requestDataShape'], true>;
-              responseDataShape: T['responseDataShape'] extends NoParam
+                    : ShapeDefinition<Init['requestDataShape'], true>;
+              responseDataShape: Init['responseDataShape'] extends NoParam
                   ? ShapeDefinition<any, true> | undefined
-                  : undefined extends T['responseDataShape']
+                  : undefined extends Init['responseDataShape']
                     ? undefined
-                    : ShapeDefinition<T['responseDataShape'], true>;
-              RequestType: T['requestDataShape'] extends NoParam
+                    : ShapeDefinition<Init['responseDataShape'], true>;
+              RequestType: Init['requestDataShape'] extends NoParam
                   ? any
-                  : undefined extends T['requestDataShape']
-                    ? undefined
-                    : ShapeToRuntimeType<ShapeDefinition<T['requestDataShape'], true>, false, true>;
-              ResponseType: T['responseDataShape'] extends NoParam
-                  ? any
-                  : undefined extends T['responseDataShape']
+                  : undefined extends Init['requestDataShape']
                     ? undefined
                     : ShapeToRuntimeType<
-                          ShapeDefinition<T['responseDataShape'], true>,
+                          ShapeDefinition<Init['requestDataShape'], true>,
                           false,
                           true
                       >;
-              customProps: 'customProps' extends keyof T ? T['customProps'] : undefined;
+              ResponseType: Init['responseDataShape'] extends NoParam
+                  ? any
+                  : undefined extends Init['responseDataShape']
+                    ? undefined
+                    : ShapeToRuntimeType<
+                          ShapeDefinition<Init['responseDataShape'], true>,
+                          false,
+                          true
+                      >;
+              customProps: 'customProps' extends keyof Init ? Init['customProps'] : undefined;
           }
       >
     : never) & {

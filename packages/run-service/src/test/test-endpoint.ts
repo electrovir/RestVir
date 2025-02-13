@@ -2,6 +2,13 @@ import {CollapsedFetchEndpointParams, Endpoint} from '@rest-vir/define-service';
 import {type ImplementedEndpoint} from '@rest-vir/implement-service';
 import {testService} from './test-service.js';
 
+/**
+ * The type definition for {@link testEndpoint}.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/run-service
+ * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
+ */
 export type TestEndpoint = <EndpointToTest extends Endpoint>(
     endpoint: EndpointToTest,
     ...args: CollapsedFetchEndpointParams<EndpointToTest, false>
@@ -28,7 +35,7 @@ export const testEndpoint = async function testEndpoint<
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const response = await fetchService[endpoint.path]!(...args);
 
-    kill();
+    await kill();
 
     return response;
 } as TestEndpoint;

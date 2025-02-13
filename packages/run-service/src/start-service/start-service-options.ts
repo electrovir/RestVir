@@ -1,10 +1,6 @@
-import {
-    mergeDefinedProperties,
-    type Overwrite,
-    type PartialWithUndefined,
-} from '@augment-vir/common';
+import {mergeDefinedProperties, type PartialWithUndefined} from '@augment-vir/common';
 import {cpus} from 'node:os';
-import {assertValidShape, defineShape, exact, or} from 'object-shape-tester';
+import {assertValidShape, defineShape} from 'object-shape-tester';
 
 /**
  * Shape definition for `startService` options.
@@ -31,7 +27,7 @@ export const startServiceOptionsShape = defineShape({
      *
      * @default 3000
      */
-    port: or(3000, exact(false)),
+    port: 3000,
     /**
      * The number of workers to split the server into (for parallel request handling).
      *
@@ -60,12 +56,7 @@ export const startServiceOptionsShape = defineShape({
  * @category Package : @rest-vir/run-service
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
-export type StartServiceOptions<Port extends number | false> = Overwrite<
-    typeof startServiceOptionsShape.runtimeType,
-    {
-        port: Port;
-    }
->;
+export type StartServiceOptions = typeof startServiceOptionsShape.runtimeType;
 
 /**
  * User-provided options type for `startService`.
@@ -75,8 +66,7 @@ export type StartServiceOptions<Port extends number | false> = Overwrite<
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  * @see {@link startServiceOptionsShape} for option explanations.
  */
-export type StartServiceUserOptions<Port extends number | false = number | false> =
-    PartialWithUndefined<StartServiceOptions<Port>>;
+export type StartServiceUserOptions = PartialWithUndefined<StartServiceOptions>;
 
 /**
  * Combines user defined options with default options to create a full options type for
@@ -87,11 +77,11 @@ export type StartServiceUserOptions<Port extends number | false = number | false
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  * @see {@link startServiceOptionsShape} for option explanations.
  */
-export function finalizeOptions<const Port extends number | false>(
-    userOptions: Readonly<StartServiceUserOptions<Port>>,
-): StartServiceOptions<Port> {
-    const options = mergeDefinedProperties<StartServiceOptions<Port>>(
-        startServiceOptionsShape.defaultValue as StartServiceOptions<any>,
+export function finalizeOptions(
+    userOptions: Readonly<StartServiceUserOptions>,
+): StartServiceOptions {
+    const options = mergeDefinedProperties<StartServiceOptions>(
+        startServiceOptionsShape.defaultValue,
         userOptions,
     );
     options.workerCount = Math.max(1, options.workerCount);

@@ -1,10 +1,12 @@
 ## Required
 
+-   rename `requiredOrigin` to `requiredClientOrigin`
+-   change `Socket` to `WebSocketDefinition`
+-   change `Endpoint` to `EndpointDefinition`
+-   add typed web socket protocols
 -   add typed search params
 -   fill in mono-repo README
--   rename `requiredOrigin` to `requiredClientOrigin`
--   change `Socket` to `SocketDefinition`
--   change `Endpoint` to `EndpointDefinition`
+-   make sure everything is exported
 
 ## Not required
 

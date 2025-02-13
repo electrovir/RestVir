@@ -7,12 +7,20 @@ import {createMockFetch, createMockFetchResponse} from '../util/mock-fetch.js';
 import {type NoParam} from '../util/no-param.js';
 import {
     buildEndpointUrl,
+    CollapsedFetchEndpointParams,
     fetchEndpoint,
     type FetchEndpointParams,
     type GenericFetchEndpointParams,
 } from './fetch-endpoint.js';
 
 type FetchOptions = NonNullable<GenericFetchEndpointParams['options']>;
+
+describe('CollapsedFetchEndpointParams', () => {
+    it('uses NoParam for generic params', () => {
+        const genericParams: CollapsedFetchEndpointParams<NoParam> =
+            {} as CollapsedFetchEndpointParams<(typeof mockService.endpoints)['/empty']>;
+    });
+});
 
 describe(buildEndpointUrl.name, () => {
     function testBuildEndpointUrl(
@@ -90,7 +98,7 @@ describe(buildEndpointUrl.name, () => {
     ]);
 });
 
-describe('FetchEndpointParameters', () => {
+describe('FetchEndpointParams', () => {
     it('includes request data', () => {
         assert.tsType<FetchEndpointParams<(typeof mockService.endpoints)['/test']>>().equals<
             Readonly<{
@@ -118,6 +126,9 @@ describe('FetchEndpointParameters', () => {
                 }>
             >();
     });
+});
+
+describe(fetchEndpoint.name, () => {
     it('returns response type', async () => {
         assert
             .tsType(

@@ -32,28 +32,30 @@ export type SocketImplementation<
     Context = any,
     ServiceName extends string = any,
     SpecificSocket extends Socket | NoParam = NoParam,
-> = Partial<{
-    /** This will be called when the socket is connected and created. */
-    onConnection: (
-        params: SocketImplementationParams<Context, ServiceName, SpecificSocket, false>,
-    ) => MaybePromise<void>;
-    /**
-     * This will be called on every received socket message.
-     *
-     * @see https://github.com/websockets/ws/blob/HEAD/doc/ws.md#event-message
-     */
-    onMessage: (
-        params: SocketImplementationParams<Context, ServiceName, SpecificSocket, true>,
-    ) => MaybePromise<void>;
-    /**
-     * This will be called when the socket is closed.
-     *
-     * @see https://github.com/websockets/ws/blob/HEAD/doc/ws.md#event-close-1
-     */
-    onClose: (
-        params: SocketImplementationParams<Context, ServiceName, SpecificSocket, false>,
-    ) => MaybePromise<void>;
-}>;
+> = SpecificSocket extends NoParam
+    ? any
+    : Partial<{
+          /** This will be called when the socket is connected and created. */
+          onConnection: (
+              params: SocketImplementationParams<Context, ServiceName, SpecificSocket, false>,
+          ) => MaybePromise<void>;
+          /**
+           * This will be called on every received socket message.
+           *
+           * @see https://github.com/websockets/ws/blob/HEAD/doc/ws.md#event-message
+           */
+          onMessage: (
+              params: SocketImplementationParams<Context, ServiceName, SpecificSocket, true>,
+          ) => MaybePromise<void>;
+          /**
+           * This will be called when the socket is closed.
+           *
+           * @see https://github.com/websockets/ws/blob/HEAD/doc/ws.md#event-close-1
+           */
+          onClose: (
+              params: SocketImplementationParams<Context, ServiceName, SpecificSocket, false>,
+          ) => MaybePromise<void>;
+      }>;
 
 /**
  * Parameters for event callbacks in {@link SocketImplementation}.

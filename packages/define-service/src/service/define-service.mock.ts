@@ -32,6 +32,10 @@ export const mockService = defineService({
             messageFromServerShape: exact('ok'),
             messageFromClientShape: undefined,
         },
+        '/no-server-data': {
+            messageFromServerShape: undefined,
+            messageFromClientShape: undefined,
+        },
         '/sends-protocol': {
             messageFromClientShape: undefined,
             messageFromServerShape: [''],
@@ -42,6 +46,10 @@ export const mockService = defineService({
             customProps: {
                 hello: '',
             },
+        },
+        '/with-all-listeners': {
+            messageFromServerShape: exact('ok'),
+            messageFromClientShape: undefined,
         },
     },
     endpoints: {
@@ -154,6 +162,13 @@ export const mockService = defineService({
         },
         /** This endpoint is missing its implementation in the mock service implementation. */
         '/missing': {
+            requestDataShape: undefined,
+            responseDataShape: undefined,
+            methods: {
+                [HttpMethod.Get]: true,
+            },
+        },
+        '/incorrectly-has-response-data': {
             requestDataShape: undefined,
             responseDataShape: undefined,
             methods: {

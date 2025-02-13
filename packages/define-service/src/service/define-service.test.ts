@@ -162,6 +162,7 @@ describe(defineService.name, () => {
                 (
                     | '/empty'
                     | '/missing'
+                    | '/incorrectly-has-response-data'
                     | '/requires-admin'
                     | '/returns-error-status'
                     | '/returns-response-error'
@@ -403,9 +404,9 @@ describe(defineService.name, () => {
             'Should not be able to access socket.MessageFromClientType',
         );
         assert.throws(
-            () => service.sockets['/my-socket'].MessageFromServerType,
+            () => service.sockets['/my-socket'].MessageFromHostType,
             undefined,
-            'Should not be able to access socket.MessageFromServerType',
+            'Should not be able to access socket.MessageFromHostType',
         );
 
         assertValidShape(

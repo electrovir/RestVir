@@ -1,5 +1,10 @@
 import {assertWrap} from '@augment-vir/assert';
-import {HttpStatus, wrapInTry, type SelectFrom} from '@augment-vir/common';
+import {
+    ensureErrorAndPrependMessage,
+    HttpStatus,
+    wrapInTry,
+    type SelectFrom,
+} from '@augment-vir/common';
 import {type Endpoint, type EndpointPathBase, type Socket} from '@rest-vir/define-service';
 import {matchUrlToService} from '@rest-vir/define-service/src/service/match-url.js';
 import {
@@ -103,28 +108,32 @@ export async function preHandler(
         socket,
     };
 
-    const contextOutput = await service.createContext?.(contextParams);
+    try {
+        const contextOutput = await service.createContext?.(contextParams);
 
-    if (contextOutput?.reject) {
-        handleHandlerResult(
-            {
-                body: contextOutput.reject.responseErrorMessage,
-                statusCode: contextOutput.reject.statusCode,
-                headers: contextOutput.reject.headers,
-            },
-            response,
-        );
-        return;
+        if (contextOutput?.reject) {
+            handleHandlerResult(
+                {
+                    body: contextOutput.reject.responseErrorMessage,
+                    statusCode: contextOutput.reject.statusCode,
+                    headers: contextOutput.reject.headers,
+                },
+                response,
+            );
+            return;
+        }
+
+        if (!request.restVirContext) {
+            request.restVirContext = {};
+        }
+
+        request.restVirContext[attachId] = {
+            context: contextOutput?.context,
+            requestData,
+        };
+    } catch (error) {
+        throw ensureErrorAndPrependMessage(error, 'Failed to generate request context.');
     }
-
-    if (!request.restVirContext) {
-        request.restVirContext = {};
-    }
-
-    request.restVirContext[attachId] = {
-        context: contextOutput?.context,
-        requestData,
-    };
 }
 
 function extractRequestData(

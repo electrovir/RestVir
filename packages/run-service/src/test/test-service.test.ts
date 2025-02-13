@@ -1,11 +1,17 @@
-import {assert} from '@augment-vir/assert';
+import {assert, waitUntil} from '@augment-vir/assert';
 import {DeferredPromise, randomInteger} from '@augment-vir/common';
 import {describe, it} from '@augment-vir/test';
 import {AnyOrigin, defineService, HttpMethod, HttpStatus} from '@rest-vir/define-service';
 import {implementService} from '@rest-vir/implement-service';
 import {mockServiceImplementation} from '@rest-vir/implement-service/src/implementation/implement-service.mock.js';
+import fastify from 'fastify';
 import {exact} from 'object-shape-tester';
-import {condenseResponse, describeService, testService} from './test-service.js';
+import {
+    condenseResponse,
+    describeService,
+    testExistingServer,
+    testService,
+} from './test-service.js';
 
 describeService({service: mockServiceImplementation}, ({fetchService}) => {
     it('responds to a request', async () => {
@@ -40,11 +46,27 @@ const plainService = implementService(
                     requestDataShape: undefined,
                     responseDataShape: undefined,
                 },
+                '/internal-error': {
+                    methods: {
+                        [HttpMethod.Get]: true,
+                    },
+                    requestDataShape: undefined,
+                    responseDataShape: undefined,
+                },
             },
             requiredOrigin: AnyOrigin,
             serviceName: 'plain service',
             serviceOrigin: 'https://example.com',
         }),
+        createContext({requestHeaders}) {
+            if (requestHeaders.authorization === 'reject') {
+                throw new Error('context failed');
+            }
+
+            return {
+                context: undefined,
+            };
+        },
     },
     {
         endpoints: {
@@ -54,6 +76,9 @@ const plainService = implementService(
                 return {
                     statusCode: HttpStatus.Ok,
                 };
+            },
+            '/internal-error'() {
+                throw new Error('Intentional error.');
             },
         },
         sockets: {
@@ -101,24 +126,118 @@ describe(testService.name, () => {
 
             const socketMessageReceived = new DeferredPromise<string>();
 
-            const socket = await connectSocket['/socket']({
+            const webSocket = await connectSocket['/socket']({
                 listeners: {
-                    message({message}) {
+                    message({message, webSocket}) {
                         socketMessageReceived.resolve(message);
                     },
                 },
             });
             try {
-                socket.send('from client');
+                const reply = await webSocket.sendAndWaitForReply({message: 'from client'});
+                assert.tsType(reply).equals<'from server'>();
+                assert.strictEquals(reply, 'from server');
+                webSocket.send('from client');
 
                 const messageReceived = await socketMessageReceived.promise;
 
                 assert.strictEquals(messageReceived, 'from server');
             } finally {
-                socket.close();
+                webSocket.close();
             }
         } finally {
-            kill();
+            await kill();
+        }
+    });
+    it('works without a port', async () => {
+        const {fetchService, connectSocket, kill} = await testService(plainService);
+
+        try {
+            assert.deepEquals(await condenseResponse(await fetchService['/health']()), {
+                headers: {
+                    'access-control-allow-origin': '*',
+                },
+                status: HttpStatus.Ok,
+            });
+
+            const socketMessageReceived = new DeferredPromise<string>();
+
+            const webSocket = await connectSocket['/socket']({
+                listeners: {
+                    message({message, webSocket}) {
+                        socketMessageReceived.resolve(message);
+                    },
+                },
+            });
+            try {
+                const reply = await webSocket.sendAndWaitForReply({message: 'from client'});
+                assert.tsType(reply).equals<'from server'>();
+                assert.strictEquals(reply, 'from server');
+                webSocket.send('from client');
+
+                const messageReceived = await socketMessageReceived.promise;
+
+                assert.strictEquals(messageReceived, 'from server');
+            } finally {
+                webSocket.close();
+            }
+        } finally {
+            await kill();
+        }
+    });
+});
+
+describe(testExistingServer.name, () => {
+    it('works with an existing fastify instance', async () => {
+        const server = fastify();
+
+        const errors: string[] = [];
+
+        server.setErrorHandler((error, request, reply) => {
+            errors.push(error.message);
+            reply.status(HttpStatus.InternalServerError).send();
+        });
+
+        const {fetchService} = await testExistingServer(server, plainService, {
+            throwErrorsForExternalHandling: true,
+        });
+        try {
+            assert.deepEquals(
+                await condenseResponse(await fetchService['/health']()),
+                {
+                    headers: {
+                        'access-control-allow-origin': '*',
+                    },
+                    status: HttpStatus.Ok,
+                },
+                'should work with a simple request',
+            );
+
+            assert.isFalse((await fetchService['/internal-error']()).ok);
+
+            await waitUntil.isLengthExactly(1, () => errors);
+
+            assert.strictEquals(
+                errors[0],
+                "Endpoint '/internal-error' failed in service 'plain service': Intentional error.",
+            );
+            assert.isFalse(
+                (
+                    await fetchService['/health']({
+                        options: {
+                            headers: {
+                                authorization: 'reject',
+                            },
+                        },
+                    })
+                ).ok,
+            );
+
+            await waitUntil.isLengthExactly(2, () => errors);
+
+            assert.strictEquals(errors[1], 'Failed to generate request context: context failed');
+        } finally {
+            await server.close();
         }
     });
 });

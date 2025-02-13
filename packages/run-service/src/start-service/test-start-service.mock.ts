@@ -7,8 +7,15 @@ import {
     streamShellCommand,
 } from '@augment-vir/node';
 import {describe, it} from '@augment-vir/test';
-import {waitForOpenWebSocket} from '@rest-vir/define-service';
+import {
+    AnyOrigin,
+    overwriteWebSocketMethods,
+    waitForOpenWebSocket,
+    WebSocketLocation,
+    type ClientWebSocket,
+} from '@rest-vir/define-service';
 import {join} from 'node:path';
+import {defineShape, unknownShape} from 'object-shape-tester';
 import {buildUrl} from 'url-vir';
 import {startServiceMocksDirPath} from '../util/file-paths.mock.js';
 
@@ -22,7 +29,7 @@ export type TestConnectSocket = (
     this: void,
     path: string,
     protocols?: string | string[] | undefined,
-) => Promise<globalThis.WebSocket>;
+) => Promise<ClientWebSocket>;
 
 export function getMockScriptCommand(scriptName: string) {
     const testFilePath = join(startServiceMocksDirPath, scriptName + '.script.mock.ts');
@@ -66,6 +73,8 @@ async function setupService(scriptName: string) {
 
     const serviceUrl = await serverStarted.promise;
 
+    const allWebSockets = [] as WebSocket[];
+
     const params = {
         address: serviceUrl,
         fetchService: (async (path, init) => {
@@ -82,14 +91,43 @@ async function setupService(scriptName: string) {
             }).href;
 
             const webSocket = new WebSocket(socketUrl, protocols);
+            allWebSockets.push(webSocket);
 
             await waitForOpenWebSocket(webSocket);
 
-            return webSocket;
+            const finalSocket = overwriteWebSocketMethods(
+                {
+                    /**
+                     * Allow any shape because in this testing framework we're not doing anything
+                     * specific to one endpoint.
+                     */
+                    messageFromClientShape: defineShape(unknownShape()),
+                    messageFromServerShape: defineShape(unknownShape()),
+                    path: '/test',
+                    service: {
+                        serviceName: 'test',
+                        requiredOrigin: AnyOrigin,
+                        serviceOrigin: '',
+                    },
+                    customProps: undefined,
+                    endpoint: false,
+                    socket: true,
+                    MessageFromClientType: undefined,
+                    MessageFromHostType: undefined,
+                },
+                webSocket,
+                WebSocketLocation.OnHost,
+            );
+
+            return finalSocket;
         }) as TestConnectSocket,
         childProcess: shellTarget.childProcess,
         stdout,
         stderr,
+        kill(this: void) {
+            allWebSockets.forEach((webSocket) => webSocket.close());
+            shellTarget.childProcess.kill('SIGTERM');
+        },
     };
 
     await waitUntil.isTrue(async () => (await params.fetchService('health')).ok);
@@ -120,6 +158,7 @@ export function describeServiceScript(
 
         describeCallback({
             it: Object.assign(innerIt, {
+                /* node:coverage ignore next 6: this is only used when `it.only` is used. */
                 only: ((doesThis, itCallback) => {
                     // eslint-disable-next-line sonarjs/no-exclusive-tests
                     it.only(doesThis, async () => {
@@ -135,8 +174,8 @@ export function describeServiceScript(
          */
         // eslint-disable-next-line sonarjs/no-exclusive-tests
         it.only('closes the server', async () => {
-            const {childProcess} = await service;
-            childProcess.kill();
+            const {kill} = await service;
+            kill();
         });
     });
 }

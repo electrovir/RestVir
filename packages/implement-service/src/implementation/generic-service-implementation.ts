@@ -1,5 +1,11 @@
 import {type Overwrite} from '@augment-vir/common';
-import {Endpoint, EndpointPathBase, ServiceDefinition, Socket} from '@rest-vir/define-service';
+import {
+    Endpoint,
+    EndpointPathBase,
+    ServiceDefinition,
+    Socket,
+    type NoParam,
+} from '@rest-vir/define-service';
 import {type ServiceLogger} from '../util/service-logger.js';
 import {type EndpointImplementation} from './implement-endpoint.js';
 import {type SocketImplementation} from './implement-socket.js';
@@ -50,9 +56,9 @@ export type GenericServiceImplementation = Omit<ServiceDefinition, 'endpoints'> 
 export type ImplementedSocket<
     Context = any,
     ServiceName extends string = any,
-    SpecificSocket extends Socket = Socket,
+    SpecificSocket extends Socket | NoParam = NoParam,
 > = Overwrite<
-    SpecificSocket,
+    SpecificSocket extends NoParam ? Socket : SpecificSocket,
     {
         service: GenericServiceImplementation;
     }

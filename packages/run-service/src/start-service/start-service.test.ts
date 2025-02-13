@@ -1,8 +1,10 @@
+/* eslint-disable sonarjs/no-commented-code */
+
 import {assert} from '@augment-vir/assert';
 import {HttpMethod, HttpStatus, mergeDeep} from '@augment-vir/common';
 import {runShellCommand} from '@augment-vir/node';
 import {describe, it} from '@augment-vir/test';
-import {fetchEndpoint, sendWebSocketMessageAndWaitForResponse} from '@rest-vir/define-service';
+import {fetchEndpoint} from '@rest-vir/define-service';
 import {
     mockService,
     mockWebsiteOrigin,
@@ -15,14 +17,19 @@ describe(startService.name, () => {
     describeServiceScript('single-thread', ({it}) => {
         it('accepts a valid socket message', async ({connectSocket}) => {
             const webSocket = await connectSocket(mockService.sockets['/no-client-data'].path);
-
-            const serverMessage = await sendWebSocketMessageAndWaitForResponse(
-                mockService.sockets['/no-client-data'],
-                webSocket,
-                undefined,
-            );
+            const serverMessage = await webSocket.sendAndWaitForReply();
 
             assert.strictEquals(serverMessage, 'ok');
+        });
+        it('fires websocket listeners', async ({connectSocket}) => {
+            const webSocket = await connectSocket(mockService.sockets['/with-all-listeners'].path);
+
+            webSocket.send();
+        });
+        it('handles client message data that should not exist', async ({connectSocket}) => {
+            const webSocket = await connectSocket(mockService.sockets['/no-client-data'].path);
+
+            webSocket.send('something here');
         });
         it('receives web socket protocols', async ({connectSocket}) => {
             const mockProtocols = [
@@ -36,13 +43,22 @@ describe(startService.name, () => {
                 mockProtocols,
             );
 
-            const serverMessage = await sendWebSocketMessageAndWaitForResponse(
-                mockService.sockets['/sends-protocol'],
-                webSocket,
-                undefined,
-            );
+            const serverMessage = await webSocket.sendAndWaitForReply();
 
             assert.deepEquals(serverMessage, mockProtocols);
+        });
+        it('errors on invalid response', async ({fetchService}) => {
+            assert.strictEquals(
+                (
+                    await fetchService(
+                        mockService.endpoints['/incorrectly-has-response-data'].path,
+                        {
+                            method: HttpMethod.Get,
+                        },
+                    )
+                ).status,
+                HttpStatus.InternalServerError,
+            );
         });
         it('rejects an unexpected method', async ({fetchService}) => {
             assert.strictEquals(
@@ -327,6 +343,42 @@ describe(startService.name, () => {
                         'access-control-allow-origin': '*',
                         /** This header is automatically added by fastify. */
                         'content-type': 'text/plain; charset=utf-8',
+                    },
+                },
+            );
+        });
+        it('handles a context rejection', async ({fetchService}) => {
+            assert.deepEquals(
+                await condenseResponse(
+                    await fetchService(mockService.endpoints['/empty'].path, {
+                        method: HttpMethod.Get,
+                        headers: {
+                            authorization: 'reject',
+                        },
+                    }),
+                ),
+                {
+                    status: HttpStatus.Unauthorized,
+                    headers: {
+                        'access-control-allow-origin': '*',
+                    },
+                },
+            );
+        });
+        it('handles failed context generation', async ({fetchService}) => {
+            assert.deepEquals(
+                await condenseResponse(
+                    await fetchService(mockService.endpoints['/empty'].path, {
+                        method: HttpMethod.Get,
+                        headers: {
+                            authorization: 'error',
+                        },
+                    }),
+                ),
+                {
+                    status: HttpStatus.InternalServerError,
+                    headers: {
+                        'access-control-allow-origin': '*',
                     },
                 },
             );

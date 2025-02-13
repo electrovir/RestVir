@@ -4,11 +4,11 @@ import {
     indexedKeys,
     optional,
     or,
-    ShapeDefinition,
-    ShapeToRuntimeType,
     unknownShape,
+    type ShapeDefinition,
+    type ShapeToRuntimeType,
 } from 'object-shape-tester';
-import {type IsEqual} from 'type-fest';
+import type {IsEqual} from 'type-fest';
 import {assertValidEndpointPath, EndpointPathBase} from '../endpoint/endpoint-path.js';
 import {MinimalService} from '../service/minimal-service.js';
 import {ensureServiceDefinitionError} from '../service/service-definition.error.js';
@@ -45,43 +45,46 @@ export type SocketInit<MessageFromClientShape = unknown, MessageFromServerShape 
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export type WithFinalSocketProps<T, SocketPath extends EndpointPathBase> = (T extends AnyObject
+export type WithFinalSocketProps<
+    Init,
+    SocketPath extends EndpointPathBase,
+> = (Init extends AnyObject
     ? Overwrite<
-          T,
+          Init,
           {
-              messageFromClientShape: IsEqual<T['messageFromClientShape'], NoParam> extends true
+              messageFromClientShape: IsEqual<Init['messageFromClientShape'], NoParam> extends true
                   ? any
-                  : T['messageFromClientShape'] extends NoParam
+                  : Init['messageFromClientShape'] extends NoParam
                     ? ShapeDefinition<any, true> | undefined
-                    : undefined extends T['messageFromClientShape']
+                    : undefined extends Init['messageFromClientShape']
                       ? undefined
-                      : ShapeDefinition<T['messageFromClientShape'], true>;
-              messageFromServerShape: IsEqual<T['messageFromServerShape'], NoParam> extends true
+                      : ShapeDefinition<Init['messageFromClientShape'], true>;
+              messageFromServerShape: IsEqual<Init['messageFromServerShape'], NoParam> extends true
                   ? any
-                  : T['messageFromServerShape'] extends NoParam
+                  : Init['messageFromServerShape'] extends NoParam
                     ? ShapeDefinition<any, true> | undefined
-                    : undefined extends T['messageFromServerShape']
+                    : undefined extends Init['messageFromServerShape']
                       ? undefined
-                      : ShapeDefinition<T['messageFromServerShape'], true>;
-              MessageFromClientType: T['messageFromClientShape'] extends NoParam
+                      : ShapeDefinition<Init['messageFromServerShape'], true>;
+              MessageFromClientType: Init['messageFromClientShape'] extends NoParam
                   ? any
-                  : undefined extends T['messageFromClientShape']
+                  : undefined extends Init['messageFromClientShape']
                     ? undefined
                     : ShapeToRuntimeType<
-                          ShapeDefinition<T['messageFromClientShape'], true>,
+                          ShapeDefinition<Init['messageFromClientShape'], true>,
                           false,
                           true
                       >;
-              MessageFromServerType: T['messageFromServerShape'] extends NoParam
+              MessageFromHostType: Init['messageFromServerShape'] extends NoParam
                   ? any
-                  : undefined extends T['messageFromServerShape']
+                  : undefined extends Init['messageFromServerShape']
                     ? undefined
                     : ShapeToRuntimeType<
-                          ShapeDefinition<T['messageFromServerShape'], true>,
+                          ShapeDefinition<Init['messageFromServerShape'], true>,
                           false,
                           true
                       >;
-              customProps: 'customProps' extends keyof T ? T['customProps'] : undefined;
+              customProps: 'customProps' extends keyof Init ? Init['customProps'] : undefined;
           }
       >
     : never) & {
@@ -144,7 +147,7 @@ export const socketInitShape = defineShape({
  */
 export function attachSocketShapeTypeGetters<const T extends AnyObject>(
     socket: T,
-): asserts socket is T & Pick<Socket, 'MessageFromClientType' | 'MessageFromServerType'> {
+): asserts socket is T & Pick<Socket, 'MessageFromClientType' | 'MessageFromHostType'> {
     Object.defineProperties(socket, {
         MessageFromClientType: {
             enumerable: false,
@@ -152,10 +155,10 @@ export function attachSocketShapeTypeGetters<const T extends AnyObject>(
                 throw new Error('.MessageFromClientType should not be used as a value.');
             },
         },
-        MessageFromServerType: {
+        MessageFromHostType: {
             enumerable: false,
             get(): any {
-                throw new Error('.MessageFromServerType should not be used as a value.');
+                throw new Error('.MessageFromHostType should not be used as a value.');
             },
         },
     });

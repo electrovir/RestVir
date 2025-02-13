@@ -1,7 +1,7 @@
 /* node:coverage disable */
 
 import {assert} from '@augment-vir/assert';
-import {HttpStatus, wait, type AnyObject} from '@augment-vir/common';
+import {HttpStatus, log, wait, type AnyObject} from '@augment-vir/common';
 import {mockService} from '@rest-vir/define-service/src/service/define-service.mock';
 import {implementService} from './implement-service.js';
 
@@ -21,6 +21,8 @@ export const mockServiceImplementation = implementService(
                         statusCode: HttpStatus.Unauthorized,
                     },
                 };
+            } else if (requestHeaders.authorization === 'error') {
+                throw new Error('Context creation failed.');
             } else {
                 return {
                     context: {
@@ -32,6 +34,18 @@ export const mockServiceImplementation = implementService(
     },
     {
         sockets: {
+            '/no-server-data': {},
+            '/with-all-listeners': {
+                onClose() {
+                    log.faint('close called');
+                },
+                onConnection() {
+                    log.faint('connection called');
+                },
+                onMessage() {
+                    log.faint('message called');
+                },
+            },
             '/sends-protocol': {
                 onMessage({protocols, webSocket}) {
                     webSocket.send(protocols);
@@ -107,6 +121,13 @@ export const mockServiceImplementation = implementService(
             },
         },
         endpoints: {
+            // @ts-expect-error: this endpoint is not supposed to return data
+            '/incorrectly-has-response-data'() {
+                return {
+                    statusCode: HttpStatus.Ok,
+                    responseData: {data: 'should not be here'},
+                };
+            },
             '/custom-props'() {
                 return {
                     statusCode: HttpStatus.Ok,
