@@ -5,13 +5,13 @@ import {
     RestVirHandlerError,
     ServerRequest,
     ServerResponse,
-    type ImplementedSocket,
+    type ImplementedWebSocket,
 } from '@rest-vir/implement-service';
 import cluster from 'node:cluster';
 import {type WebSocket as WsWebSocket} from 'ws';
 import {handleHandlerResult} from './endpoint-handler.js';
 import {handleEndpointRequest} from './handle-endpoint.js';
-import {handleSocketRequest} from './handle-socket.js';
+import {handleWebSocketRequest} from './handle-web-socket.js';
 
 /**
  * Options for {@link handleRoute}.
@@ -46,7 +46,7 @@ export async function handleRoute(
     request: ServerRequest,
     /** `WebSocket` requests won't have a response. */
     response: ServerResponse | undefined,
-    route: Readonly<ImplementedEndpoint | ImplementedSocket>,
+    route: Readonly<ImplementedEndpoint | ImplementedWebSocket>,
     attachId: string,
     {throwErrorsForExternalHandling}: HandleRouteOptions = {},
 ) {
@@ -78,7 +78,7 @@ export async function handleRoute(
         } else if (route.socket as boolean) {
             assert.isDefined(webSocket);
 
-            await handleSocketRequest({
+            await handleWebSocketRequest({
                 request,
                 socket: route,
                 webSocket,

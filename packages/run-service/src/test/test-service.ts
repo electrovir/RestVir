@@ -12,15 +12,15 @@ import {
 import {describe, it} from '@augment-vir/test';
 import {
     buildEndpointRequestInit,
-    buildSocketUrl,
+    buildWebSocketUrl,
     CollapsedFetchEndpointParams,
     Endpoint,
     finalizeWebSocket,
     WebSocketLocation,
     type ClientWebSocket,
-    type CollapsedConnectSocketParams,
+    type CollapsedConnectWebSocketParams,
     type NoParam,
-    type Socket,
+    type WebSocketDefinition,
 } from '@rest-vir/define-service';
 import {GenericServiceImplementation} from '@rest-vir/implement-service';
 import fastify, {FastifyInstance} from 'fastify';
@@ -103,9 +103,9 @@ export type FetchTestEndpoint<EndpointToTest extends Endpoint> = (
  * @category Package : @rest-vir/run-service
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
-export type ConnectTestSocket<SocketToTest extends Socket> = (
-    ...params: CollapsedConnectSocketParams<SocketToTest, false>
-) => Promise<ClientWebSocket<SocketToTest>>;
+export type ConnectTestWebSocket<WebSocketToTest extends WebSocketDefinition> = (
+    ...params: CollapsedConnectWebSocketParams<WebSocketToTest, false>
+) => Promise<ClientWebSocket<WebSocketToTest>>;
 
 /**
  * Type for the `fetchService` function provided by {@link testService} and {@link describeService}.
@@ -128,13 +128,14 @@ export type FetchTestService<
 };
 
 /**
- * Type for the `connectSocket` function provided by {@link testService} and {@link describeService}.
+ * Type for the `connectWebSocket` function provided by {@link testService} and
+ * {@link describeService}.
  *
  * @category Internal
  * @category Package : @rest-vir/run-service
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
-export type ConnectTestServiceSocket<
+export type ConnectTestServiceWebSocket<
     Service extends SelectFrom<
         GenericServiceImplementation,
         {
@@ -142,8 +143,8 @@ export type ConnectTestServiceSocket<
         }
     >,
 > = {
-    [SocketPath in keyof Service['sockets']]: Service['sockets'][SocketPath] extends Socket
-        ? ConnectTestSocket<Service['sockets'][SocketPath]>
+    [WebSocketPath in keyof Service['sockets']]: Service['sockets'][WebSocketPath] extends WebSocketDefinition
+        ? ConnectTestWebSocket<Service['sockets'][WebSocketPath]>
         : never;
 };
 
@@ -339,17 +340,17 @@ export async function testExistingServer<
                   port: options.port,
               }).origin;
 
-    const connectSocket = mapObjectValues(
+    const connectWebSocket = mapObjectValues(
         service.sockets as GenericServiceImplementation['sockets'],
         (socketPath, socket) => {
             return async (
-                ...args: CollapsedConnectSocketParams<NoParam, false>
-            ): Promise<ClientWebSocket<Socket>> => {
+                ...args: CollapsedConnectWebSocketParams<NoParam, false>
+            ): Promise<ClientWebSocket<WebSocketDefinition>> => {
                 await server.ready();
                 const [{protocols = [], listeners} = {}] = args;
 
-                const overwrittenOriginSocket = mergeDeep(
-                    socket as Socket,
+                const overwrittenOriginWebSocket = mergeDeep(
+                    socket as WebSocketDefinition,
                     socketOrigin
                         ? {
                               service: {
@@ -359,7 +360,7 @@ export async function testExistingServer<
                         : {},
                 );
 
-                const socketUrl = buildSocketUrl(overwrittenOriginSocket, ...args);
+                const socketUrl = buildWebSocketUrl(overwrittenOriginWebSocket, ...args);
 
                 const webSocket =
                     socketOrigin == undefined
@@ -378,13 +379,13 @@ export async function testExistingServer<
                 return finalized;
             };
         },
-    ) as AnyObject as ConnectTestServiceSocket<Service>;
+    ) as AnyObject as ConnectTestServiceWebSocket<Service>;
 
     return {
         /** Send a request to the service. */
         fetchService,
         /** Connect to a service socket. */
-        connectSocket,
+        connectWebSocket,
     };
 }
 

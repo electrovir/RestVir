@@ -20,7 +20,7 @@ import {
     CommonWebSocketEventMap,
     CommonWebSocketState,
 } from './common-web-socket.js';
-import {Socket} from './socket.js';
+import {type WebSocketDefinition} from './web-socket-definition.js';
 
 /**
  * Location of the WebSocket in question: on a client connecting to a WebSocket host or on the host
@@ -37,13 +37,13 @@ export enum WebSocketLocation {
 
 /**
  * Returns the inverse WebSocket location compared to the given WebSocket location. For example,
- * passing in `SocketLocation.OnHost` here will give you `SocketLocation.OnClient`.
+ * passing in `WebSocketLocation.OnHost` here will give you `WebSocketLocation.OnClient`.
  *
  * @category Internal
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export function getOppositeSocketLocation(
+export function getOppositeWebSocketLocation(
     originalWebSocketLocation: WebSocketLocation,
 ): WebSocketLocation {
     if (originalWebSocketLocation === WebSocketLocation.OnClient) {
@@ -55,7 +55,7 @@ export function getOppositeSocketLocation(
 
 /**
  * Returns the inverse WebSocket location compared to the given WebSocket location. For example,
- * passing in `SocketLocation.OnHost` here will give you `SocketLocation.OnClient`.
+ * passing in `WebSocketLocation.OnHost` here will give you `WebSocketLocation.OnClient`.
  *
  * @category Internal
  * @category Package : @rest-vir/define-service
@@ -75,7 +75,7 @@ export type FlipWebSocketLocation<Location extends WebSocketLocation> =
  */
 export type GetWebSocketMessageTypeFromLocation<
     SpecificWebSocket extends Readonly<
-        Pick<Socket, 'MessageFromClientType' | 'MessageFromHostType'>
+        Pick<WebSocketDefinition, 'MessageFromClientType' | 'MessageFromHostType'>
     >,
     MessageFromSource extends WebSocketLocation,
 > = MessageFromSource extends WebSocketLocation.OnClient
@@ -91,10 +91,10 @@ export type GetWebSocketMessageTypeFromLocation<
  */
 export type SendAndWaitForReplyParams<
     Location extends WebSocketLocation,
-    WebSocketDefinition extends
+    WebSocketToConnect extends
         | Readonly<
               SelectFrom<
-                  Socket,
+                  WebSocketDefinition,
                   {
                       MessageFromClientType: true;
                       MessageFromHostType: true;
@@ -102,26 +102,26 @@ export type SendAndWaitForReplyParams<
               >
           >
         | NoParam = NoParam,
-> = (WebSocketDefinition extends NoParam
+> = (WebSocketToConnect extends NoParam
     ? {
           /** Generic message to send. */
           message?: any;
       }
     : GetWebSocketMessageTypeFromLocation<
-            Exclude<WebSocketDefinition, NoParam>,
+            Exclude<WebSocketToConnect, NoParam>,
             Location
         > extends undefined
       ? {
             /** The message data to send to the other side of the WebSocket connection. */
             message?: GetWebSocketMessageTypeFromLocation<
-                Exclude<WebSocketDefinition, NoParam>,
+                Exclude<WebSocketToConnect, NoParam>,
                 Location
             >;
         }
       : {
             /** The message data to send to the other side of the WebSocket connection. */
             message: GetWebSocketMessageTypeFromLocation<
-                Exclude<WebSocketDefinition, NoParam>,
+                Exclude<WebSocketToConnect, NoParam>,
                 Location
             >;
         }) & {
@@ -144,10 +144,10 @@ export type SendAndWaitForReplyParams<
  */
 export type CollapsedSendAndWaitForReplyParams<
     Location extends WebSocketLocation,
-    SocketDefinition extends
+    WebSocketToConnect extends
         | Readonly<
               SelectFrom<
-                  Socket,
+                  WebSocketDefinition,
                   {
                       MessageFromClientType: true;
                       MessageFromHostType: true;
@@ -156,9 +156,9 @@ export type CollapsedSendAndWaitForReplyParams<
           >
         | NoParam = NoParam,
 > =
-    HasRequiredKeys<SendAndWaitForReplyParams<Location, SocketDefinition>> extends true
-        ? [SendAndWaitForReplyParams<Location, SocketDefinition>]
-        : [SendAndWaitForReplyParams<Location, SocketDefinition>?];
+    HasRequiredKeys<SendAndWaitForReplyParams<Location, WebSocketToConnect>> extends true
+        ? [SendAndWaitForReplyParams<Location, WebSocketToConnect>]
+        : [SendAndWaitForReplyParams<Location, WebSocketToConnect>?];
 
 /**
  * Takes any WebSocket class and overwrites it with some new rest vir methods and makes some
@@ -171,10 +171,10 @@ export type CollapsedSendAndWaitForReplyParams<
 export type OverwriteWebSocketMethods<
     WebSocketClass extends CommonWebSocket,
     Location extends WebSocketLocation,
-    SocketDefinition extends
+    OriginalWebSocketDefinition extends
         | Readonly<
               SelectFrom<
-                  Socket,
+                  WebSocketDefinition,
                   {
                       MessageFromClientType: true;
                       MessageFromHostType: true;
@@ -191,9 +191,9 @@ export type OverwriteWebSocketMethods<
          */
         addEventListener<const EventName extends keyof CommonWebSocketEventMap>(
             eventName: EventName,
-            listener: SocketListener<
+            listener: WebSocketListener<
                 EventName,
-                SocketDefinition,
+                OriginalWebSocketDefinition,
                 FlipWebSocketLocation<Location>,
                 WebSocketClass
             >,
@@ -206,12 +206,12 @@ export type OverwriteWebSocketMethods<
          * message as it will catch _any_ message sent from the other side.
          */
         sendAndWaitForReply(
-            ...params: CollapsedSendAndWaitForReplyParams<Location, SocketDefinition>
+            ...params: CollapsedSendAndWaitForReplyParams<Location, OriginalWebSocketDefinition>
         ): Promise<
-            SocketDefinition extends NoParam
+            OriginalWebSocketDefinition extends NoParam
                 ? any
                 : GetWebSocketMessageTypeFromLocation<
-                      Exclude<SocketDefinition, NoParam>,
+                      Exclude<OriginalWebSocketDefinition, NoParam>,
                       FlipWebSocketLocation<Location>
                   >
         >;
@@ -224,21 +224,21 @@ export type OverwriteWebSocketMethods<
          * `WebSocket.send()` docs.
          */
         send(
-            ...args: SocketDefinition extends NoParam
+            ...args: OriginalWebSocketDefinition extends NoParam
                 ? [message?: any]
                 : GetWebSocketMessageTypeFromLocation<
-                        Exclude<SocketDefinition, NoParam>,
+                        Exclude<OriginalWebSocketDefinition, NoParam>,
                         Location
                     > extends undefined
                   ? [
                         message?: GetWebSocketMessageTypeFromLocation<
-                            Exclude<SocketDefinition, NoParam>,
+                            Exclude<OriginalWebSocketDefinition, NoParam>,
                             Location
                         >,
                     ]
                   : [
                         message: GetWebSocketMessageTypeFromLocation<
-                            Exclude<SocketDefinition, NoParam>,
+                            Exclude<OriginalWebSocketDefinition, NoParam>,
                             Location
                         >,
                     ]
@@ -254,10 +254,10 @@ export type OverwriteWebSocketMethods<
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export type ClientWebSocket<
-    SocketToConnect extends
+    WebSocketToConnect extends
         | Readonly<
               SelectFrom<
-                  Socket,
+                  WebSocketDefinition,
                   {
                       MessageFromClientType: true;
                       MessageFromHostType: true;
@@ -266,21 +266,21 @@ export type ClientWebSocket<
           >
         | NoParam = NoParam,
     WebSocketClass extends CommonWebSocket = CommonWebSocket,
-> = OverwriteWebSocketMethods<WebSocketClass, WebSocketLocation.OnClient, SocketToConnect>;
+> = OverwriteWebSocketMethods<WebSocketClass, WebSocketLocation.OnClient, WebSocketToConnect>;
 
 /**
- * Parameters for a type-safe WebSocket listener callback. Used in {@link SocketListener}.
+ * Parameters for a type-safe WebSocket listener callback. Used in {@link WebSocketListener}.
  *
  * @category Internal
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export type SocketListenerParams<
+export type WebSocketListenerParams<
     EventName extends keyof CommonWebSocketEventMap,
-    SocketToConnect extends
+    WebSocketToConnect extends
         | Readonly<
               SelectFrom<
-                  Socket,
+                  WebSocketDefinition,
                   {
                       MessageFromClientType: true;
                       MessageFromHostType: true;
@@ -291,37 +291,37 @@ export type SocketListenerParams<
     MessageSource extends WebSocketLocation,
     WebSocketClass extends CommonWebSocket,
 > = {
-    socket: SocketToConnect extends NoParam
+    socket: WebSocketToConnect extends NoParam
         ? Readonly<
               Overwrite<
-                  Socket,
+                  WebSocketDefinition,
                   /**
                    * This `Overwrite` is needed so that
-                   * `CollapsedConnectSocketParams<ACTUAL_SOCKET>` can be assigned to
-                   * `CollapsedConnectSocketParams<NoParam>`. Idk why.
+                   * `CollapsedConnectWebSocketParams<ACTUAL_SOCKET>` can be assigned to
+                   * `CollapsedConnectWebSocketParams<NoParam>`. Idk why.
                    */
                   {path: any; customProps: any}
               >
           >
-        : Readonly<SocketToConnect>;
-    webSocket: ClientWebSocket<SocketToConnect, WebSocketClass>;
+        : Readonly<WebSocketToConnect>;
+    webSocket: ClientWebSocket<WebSocketToConnect, WebSocketClass>;
 } & (EventName extends 'message'
     ? {
           event: Overwrite<
               CommonWebSocketEventMap[EventName],
               {
-                  data: SocketToConnect extends NoParam
+                  data: WebSocketToConnect extends NoParam
                       ? any
                       : GetWebSocketMessageTypeFromLocation<
-                            Exclude<SocketToConnect, NoParam>,
+                            Exclude<WebSocketToConnect, NoParam>,
                             MessageSource
                         >;
               }
           >;
-          message: SocketToConnect extends NoParam
+          message: WebSocketToConnect extends NoParam
               ? any
               : GetWebSocketMessageTypeFromLocation<
-                    Exclude<SocketToConnect, NoParam>,
+                    Exclude<WebSocketToConnect, NoParam>,
                     MessageSource
                 >;
       }
@@ -337,11 +337,11 @@ export type SocketListenerParams<
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export type ConnectSocketListeners<
-    SocketToConnect extends
+export type ConnectWebSocketListeners<
+    WebSocketToConnect extends
         | Readonly<
               SelectFrom<
-                  Socket,
+                  WebSocketDefinition,
                   {
                       MessageFromClientType: true;
                       MessageFromHostType: true;
@@ -351,9 +351,9 @@ export type ConnectSocketListeners<
         | NoParam,
     WebSocketClass extends CommonWebSocket,
 > = Partial<{
-    [EventName in keyof CommonWebSocketEventMap]: SocketListener<
+    [EventName in keyof CommonWebSocketEventMap]: WebSocketListener<
         EventName,
-        SocketToConnect,
+        WebSocketToConnect,
         WebSocketLocation.OnHost,
         WebSocketClass
     >;
@@ -366,12 +366,12 @@ export type ConnectSocketListeners<
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export type SocketListener<
+export type WebSocketListener<
     EventName extends keyof CommonWebSocketEventMap,
-    SocketToConnect extends
+    WebSocketToConnect extends
         | Readonly<
               SelectFrom<
-                  Socket,
+                  WebSocketDefinition,
                   {
                       MessageFromClientType: true;
                       MessageFromHostType: true;
@@ -382,17 +382,17 @@ export type SocketListener<
     MessageSource extends WebSocketLocation,
     WebSocketClass extends CommonWebSocket,
 > = (
-    params: SocketListenerParams<EventName, SocketToConnect, MessageSource, WebSocketClass>,
+    params: WebSocketListenerParams<EventName, WebSocketToConnect, MessageSource, WebSocketClass>,
 ) => MaybePromise<void>;
 
 /**
- * Generic connection parameters for `connectSocket`.
+ * Generic connection parameters for `connectWebSocket`.
  *
  * @category Internal
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export type GenericConnectSocketParams<WebSocketClass extends CommonWebSocket> = {
+export type GenericConnectWebSocketParams<WebSocketClass extends CommonWebSocket> = {
     /** Parameters for socket paths that need them, like `'/my-path/:param1/:param2'`. */
     pathParams?: Record<string, string> | undefined;
     /**
@@ -406,7 +406,7 @@ export type GenericConnectSocketParams<WebSocketClass extends CommonWebSocket> =
      * Optional listeners that can be immediately attached to the WebSocket instance instead of
      * requiring externally adding them.
      */
-    listeners?: ConnectSocketListeners<NoParam, WebSocketClass>;
+    listeners?: ConnectWebSocketListeners<NoParam, WebSocketClass>;
     /**
      * A custom `WebSocket` constructor. Useful for debugging or unit testing. This can safely be
      * omitted to use the default JavaScript built-in global `WebSocket` class.
@@ -426,14 +426,14 @@ export type GenericConnectSocketParams<WebSocketClass extends CommonWebSocket> =
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export function overwriteWebSocketMethods<
-    const SocketToConnect extends Socket | NoParam,
+    const WebSocketToConnect extends WebSocketDefinition | NoParam,
     const WebSocketClass extends CommonWebSocket,
     const Location extends WebSocketLocation,
 >(
-    socket: SocketToConnect extends NoParam ? Socket : SocketToConnect,
+    socket: WebSocketToConnect extends NoParam ? WebSocketDefinition : WebSocketToConnect,
     rawWebSocket: Readonly<WebSocketClass>,
     socketLocation: Location,
-): OverwriteWebSocketMethods<WebSocketClass, Location, SocketToConnect> {
+): OverwriteWebSocketMethods<WebSocketClass, Location, WebSocketToConnect> {
     const originalSend = rawWebSocket.send;
     const originalAddEventListener = rawWebSocket.addEventListener;
     const originalRemoveEventListener = rawWebSocket.removeEventListener;
@@ -441,7 +441,7 @@ export function overwriteWebSocketMethods<
     const webSocket = rawWebSocket as unknown as OverwriteWebSocketMethods<
         WebSocketClass,
         Location,
-        SocketToConnect
+        WebSocketToConnect
     >;
 
     const originalListenerMap: Record<string, WeakMap<AnyFunction, AnyFunction>> = {};
@@ -452,7 +452,7 @@ export function overwriteWebSocketMethods<
             this: CommonWebSocket,
             eventName: EventName,
             listener: (
-                params: SocketListenerParams<
+                params: WebSocketListenerParams<
                     EventName,
                     NoParam,
                     FlipWebSocketLocation<Location>,
@@ -463,7 +463,7 @@ export function overwriteWebSocketMethods<
             function newListener(event: Values<CommonWebSocketEventMap>) {
                 const baseParams: Omit<
                     Record<
-                        keyof SocketListenerParams<
+                        keyof WebSocketListenerParams<
                             keyof CommonWebSocketEventMap,
                             NoParam,
                             FlipWebSocketLocation<Location>,
@@ -478,7 +478,7 @@ export function overwriteWebSocketMethods<
                     socket,
                 };
                 if (eventName === 'message') {
-                    const message = verifySocketMessage(
+                    const message = verifyWebSocketMessage(
                         socket,
                         parseJsonWithUndefined(
                             String((event as CommonWebSocketEventMap['message']).data),
@@ -488,9 +488,12 @@ export function overwriteWebSocketMethods<
                          * come from the server and messages on the server `WebSocket` will come
                          * from the client.
                          */
-                        getOppositeSocketLocation(socketLocation),
+                        getOppositeWebSocketLocation(socketLocation),
                     );
-                    return listener({...baseParams, message} as AnyObject as SocketListenerParams<
+                    return listener({
+                        ...baseParams,
+                        message,
+                    } as AnyObject as WebSocketListenerParams<
                         EventName,
                         NoParam,
                         FlipWebSocketLocation<Location>,
@@ -498,7 +501,7 @@ export function overwriteWebSocketMethods<
                     >);
                 } else {
                     return listener(
-                        baseParams as AnyObject as SocketListenerParams<
+                        baseParams as AnyObject as WebSocketListenerParams<
                             EventName,
                             NoParam,
                             FlipWebSocketLocation<Location>,
@@ -530,7 +533,7 @@ export function overwriteWebSocketMethods<
 
             function listener({
                 message,
-            }: SocketListenerParams<
+            }: WebSocketListenerParams<
                 'message',
                 NoParam,
                 FlipWebSocketLocation<Location>,
@@ -564,7 +567,7 @@ export function overwriteWebSocketMethods<
             originalSend.call(
                 webSocket,
                 /** The extra `String()` wrapper is to convert `undefined` into `'undefined'`. */
-                String(JSON.stringify(verifySocketMessage(socket, message, socketLocation))),
+                String(JSON.stringify(verifyWebSocketMessage(socket, message, socketLocation))),
             );
         },
     });
@@ -575,7 +578,7 @@ export function overwriteWebSocketMethods<
 /**
  * Waits for a WebSocket to reach to the open state.
  *
- * @category Socket
+ * @category WebSocket
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
@@ -609,14 +612,14 @@ export async function waitForOpenWebSocket(
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export async function finalizeWebSocket<
-    const WebSocketToConnect extends Readonly<Socket> | NoParam,
+    const WebSocketToConnect extends Readonly<WebSocketDefinition> | NoParam,
     const WebSocketClass extends CommonWebSocket,
     const Location extends WebSocketLocation,
 >(
-    socket: WebSocketToConnect extends NoParam ? Socket : WebSocketToConnect,
+    socket: WebSocketToConnect extends NoParam ? WebSocketDefinition : WebSocketToConnect,
     /** An already-constructed WebSocket instance. */
     webSocketInput: WebSocketClass,
-    listeners: ConnectSocketListeners<NoParam, WebSocketClass> | undefined,
+    listeners: ConnectWebSocketListeners<NoParam, WebSocketClass> | undefined,
     location: Location,
 ): Promise<OverwriteWebSocketMethods<WebSocketClass, Location, WebSocketToConnect>> {
     const webSocket = overwriteWebSocketMethods<WebSocketToConnect, WebSocketClass, Location>(
@@ -651,9 +654,9 @@ export async function finalizeWebSocket<
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export function verifySocketMessage<
-    const SpecificSocket extends SelectFrom<
-        Socket,
+export function verifyWebSocketMessage<
+    const SpecificWebSocket extends SelectFrom<
+        WebSocketDefinition,
         {
             MessageFromHostType: true;
             messageFromServerShape: true;
@@ -666,12 +669,12 @@ export function verifySocketMessage<
     >,
     Location extends WebSocketLocation,
 >(
-    socket: Readonly<SpecificSocket>,
+    socket: Readonly<SpecificWebSocket>,
     /** The raw message data. */
     message: any,
     /** The location from which the message was sent. */
     messageSentFrom: Location,
-): SpecificSocket['MessageFromHostType'] {
+): SpecificWebSocket['MessageFromHostType'] {
     const shape =
         messageSentFrom === WebSocketLocation.OnClient
             ? socket.messageFromClientShape
@@ -681,7 +684,7 @@ export function verifySocketMessage<
         assertValidShape(message, shape);
     } else if (message) {
         throw new TypeError(
-            `Socket '${socket.path}' in service '${socket.service.serviceName}' does not expect any message data from the ${messageSentFrom === WebSocketLocation.OnClient ? 'client' : 'server'} but received it: ${stringify(message)}.`,
+            `WebSocket '${socket.path}' in service '${socket.service.serviceName}' does not expect any message data from the ${messageSentFrom === WebSocketLocation.OnClient ? 'client' : 'server'} but received it: ${stringify(message)}.`,
         );
     }
 

@@ -3,16 +3,19 @@ import {
     CommonWebSocket,
     CommonWebSocketEventMap,
     CommonWebSocketState,
-} from '../socket/common-web-socket.js';
-import {type ClientWebSocket} from '../socket/overwrite-socket-methods.js';
-import {Socket} from '../socket/socket.js';
+} from '../web-socket/common-web-socket.js';
+import {type ClientWebSocket} from '../web-socket/overwrite-web-socket-methods.js';
+import {WebSocketDefinition} from '../web-socket/web-socket-definition.js';
 
-export type MockClientWebSocketClientSendCallback<SocketToConnect extends Socket> = (
-    webSocket: ClientWebSocket<SocketToConnect, MockClientWebSocket<SocketToConnect>>,
-    data: SocketToConnect['MessageFromClientType'],
-) => void;
+export type MockClientWebSocketClientSendCallback<WebSocketToConnect extends WebSocketDefinition> =
+    (
+        webSocket: ClientWebSocket<WebSocketToConnect, MockClientWebSocket<WebSocketToConnect>>,
+        data: WebSocketToConnect['MessageFromClientType'],
+    ) => void;
 
-export class MockClientWebSocket<const SocketToConnect extends Socket> implements CommonWebSocket {
+export class MockClientWebSocket<const WebSocketToConnect extends WebSocketDefinition>
+    implements CommonWebSocket
+{
     public listeners: Partial<{
         [EventName in keyof CommonWebSocketEventMap]: Set<
             (event: CommonWebSocketEventMap[EventName]) => void
@@ -20,7 +23,7 @@ export class MockClientWebSocket<const SocketToConnect extends Socket> implement
     }> = {};
 
     /** This is called whenever this WebSocket's `.send()` method is called. */
-    public sendCallback: MockClientWebSocketClientSendCallback<SocketToConnect> | undefined;
+    public sendCallback: MockClientWebSocketClientSendCallback<WebSocketToConnect> | undefined;
 
     constructor() {
         setTimeout(() => {
@@ -71,7 +74,7 @@ export class MockClientWebSocket<const SocketToConnect extends Socket> implement
         this.sendCallback?.(this as any, data);
     }
 
-    public sendFromServer(data: SocketToConnect['MessageFromHostType']) {
+    public sendFromServer(data: WebSocketToConnect['MessageFromHostType']) {
         this.dispatchEvent('message', {
             data,
         });

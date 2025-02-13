@@ -6,15 +6,15 @@ import {
     getObjectTypedKeys,
 } from '@augment-vir/common';
 import {
-    type BaseServiceSocketsInit,
+    type BaseServiceWebSocketsInit,
     type EndpointPathBase,
     type MinimalService,
     type NoParam,
     type ServiceDefinition,
     ServiceDefinitionError,
-    type Socket,
-    type SocketInit,
-    type WithFinalSocketProps,
+    type WebSocketDefinition,
+    type WebSocketInit,
+    type WithFinalWebSocketProps,
 } from '@rest-vir/define-service';
 import {type IncomingHttpHeaders} from 'node:http';
 import {type IsEqual} from 'type-fest';
@@ -28,16 +28,16 @@ import {type ServiceLogger} from '../util/service-logger.js';
  * @category Package : @rest-vir/implement-service
  * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
  */
-export type SocketImplementation<
+export type WebSocketImplementation<
     Context = any,
     ServiceName extends string = any,
-    SpecificSocket extends Socket | NoParam = NoParam,
-> = SpecificSocket extends NoParam
+    SpecificWebSocket extends WebSocketDefinition | NoParam = NoParam,
+> = SpecificWebSocket extends NoParam
     ? any
     : Partial<{
           /** This will be called when the socket is connected and created. */
           onConnection: (
-              params: SocketImplementationParams<Context, ServiceName, SpecificSocket, false>,
+              params: WebSocketImplementationParams<Context, ServiceName, SpecificWebSocket, false>,
           ) => MaybePromise<void>;
           /**
            * This will be called on every received socket message.
@@ -45,7 +45,7 @@ export type SocketImplementation<
            * @see https://github.com/websockets/ws/blob/HEAD/doc/ws.md#event-message
            */
           onMessage: (
-              params: SocketImplementationParams<Context, ServiceName, SpecificSocket, true>,
+              params: WebSocketImplementationParams<Context, ServiceName, SpecificWebSocket, true>,
           ) => MaybePromise<void>;
           /**
            * This will be called when the socket is closed.
@@ -53,28 +53,28 @@ export type SocketImplementation<
            * @see https://github.com/websockets/ws/blob/HEAD/doc/ws.md#event-close-1
            */
           onClose: (
-              params: SocketImplementationParams<Context, ServiceName, SpecificSocket, false>,
+              params: WebSocketImplementationParams<Context, ServiceName, SpecificWebSocket, false>,
           ) => MaybePromise<void>;
       }>;
 
 /**
- * Parameters for event callbacks in {@link SocketImplementation}.
+ * Parameters for event callbacks in {@link WebSocketImplementation}.
  *
  * @category Internal
  * @category Package : @rest-vir/implement-service
  * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
  */
-export type SocketImplementationParams<
+export type WebSocketImplementationParams<
     Context = any,
     ServiceName extends string = any,
-    SpecificSocket extends Socket | NoParam = NoParam,
+    SpecificWebSocket extends WebSocketDefinition | NoParam = NoParam,
     WithMessage extends boolean = boolean,
 > = {
     context: Context;
-    webSocket: ServerWebSocket<SpecificSocket>;
-    socketDefinition: IsEqual<Extract<SpecificSocket, NoParam>, NoParam> extends true
-        ? Socket
-        : SpecificSocket;
+    webSocket: ServerWebSocket<SpecificWebSocket>;
+    socketDefinition: IsEqual<Extract<SpecificWebSocket, NoParam>, NoParam> extends true
+        ? WebSocketDefinition
+        : SpecificWebSocket;
     log: Readonly<ServiceLogger>;
     service: MinimalService<ServiceName>;
     headers: IncomingHttpHeaders;
@@ -82,9 +82,9 @@ export type SocketImplementationParams<
     protocols: string[];
 } & (IsEqual<WithMessage, true> extends true
     ? {
-          message: SpecificSocket extends NoParam
+          message: SpecificWebSocket extends NoParam
               ? any
-              : Exclude<SpecificSocket, NoParam>['MessageFromClientType'];
+              : Exclude<SpecificWebSocket, NoParam>['MessageFromClientType'];
       }
     : unknown);
 
@@ -95,19 +95,19 @@ export type SocketImplementationParams<
  * @category Package : @rest-vir/implement-service
  * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
  */
-export type SocketImplementations<
+export type WebSocketImplementations<
     Context = any,
     ServiceName extends string = any,
-    SocketsInit extends BaseServiceSocketsInit | NoParam = NoParam,
-> = SocketsInit extends NoParam
-    ? Record<EndpointPathBase, SocketImplementation>
+    WebSocketsInit extends BaseServiceWebSocketsInit | NoParam = NoParam,
+> = WebSocketsInit extends NoParam
+    ? Record<EndpointPathBase, WebSocketImplementation>
     : {
-          [SocketPath in keyof SocketsInit]: SocketsInit[SocketPath] extends SocketInit
-              ? SocketPath extends EndpointPathBase
-                  ? SocketImplementation<
+          [WebSocketPath in keyof WebSocketsInit]: WebSocketsInit[WebSocketPath] extends WebSocketInit
+              ? WebSocketPath extends EndpointPathBase
+                  ? WebSocketImplementation<
                         Context,
                         ServiceName,
-                        WithFinalSocketProps<SocketsInit[SocketPath], SocketPath>
+                        WithFinalWebSocketProps<WebSocketsInit[WebSocketPath], WebSocketPath>
                     >
                   : never
               : never;
@@ -120,9 +120,9 @@ export type SocketImplementations<
  * @category Package : @rest-vir/implement-service
  * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
  */
-export function assertValidSocketImplementations(
+export function assertValidWebSocketImplementations(
     service: Pick<ServiceDefinition, 'sockets' | 'serviceName'>,
-    socketImplementations: SocketImplementations,
+    socketImplementations: WebSocketImplementations,
 ) {
     const nonFunctionImplementations = filterMap(
         getObjectTypedEntries(socketImplementations),
@@ -159,7 +159,7 @@ export function assertValidSocketImplementations(
 
         throw new ServiceDefinitionError({
             path: undefined,
-            errorMessage: `Sockets implementations are not functions for:\n${invalidFunctionsString}`,
+            errorMessage: `WebSockets implementations are not functions for:\n${invalidFunctionsString}`,
             serviceName: service.serviceName,
             endpoint: undefined,
             socket: undefined,
@@ -184,7 +184,7 @@ export function assertValidSocketImplementations(
     if (missingImplementationPaths.length) {
         throw new ServiceDefinitionError({
             path: undefined,
-            errorMessage: `Sockets are missing implementations: '${missingImplementationPaths.join(
+            errorMessage: `WebSockets are missing implementations: '${missingImplementationPaths.join(
                 ',',
             )}'`,
             serviceName: service.serviceName,
@@ -196,7 +196,7 @@ export function assertValidSocketImplementations(
     if (extraImplementationPaths.length) {
         throw new ServiceDefinitionError({
             path: undefined,
-            errorMessage: `Socket implementations have extra paths: '${extraImplementationPaths.join(
+            errorMessage: `WebSocket implementations have extra paths: '${extraImplementationPaths.join(
                 ',',
             )}'`,
             serviceName: service.serviceName,

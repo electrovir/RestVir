@@ -1,6 +1,5 @@
 ## Required
 
--   change `Socket` to `WebSocketDefinition`
 -   change `Endpoint` to `EndpointDefinition`
 -   add typed web socket protocols
 -   add typed search params

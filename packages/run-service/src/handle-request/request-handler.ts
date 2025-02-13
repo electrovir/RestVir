@@ -5,7 +5,11 @@ import {
     wrapInTry,
     type SelectFrom,
 } from '@augment-vir/common';
-import {type Endpoint, type EndpointPathBase, type Socket} from '@rest-vir/define-service';
+import {
+    type Endpoint,
+    type EndpointPathBase,
+    type WebSocketDefinition,
+} from '@rest-vir/define-service';
 import {matchUrlToService} from '@rest-vir/define-service/src/service/match-url.js';
 import {
     ContextInitParameters,
@@ -140,7 +144,7 @@ function extractRequestData(
     body: unknown,
     route: Readonly<
         SelectFrom<
-            Endpoint | Socket,
+            Endpoint | WebSocketDefinition,
             {
                 requestDataShape: true;
                 path: true;

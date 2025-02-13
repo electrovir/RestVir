@@ -383,7 +383,7 @@ describe(defineService.name, () => {
             requiredClientOrigin: AnyOrigin,
             serviceOrigin: '',
             sockets: {
-                '/my-socket': {
+                '/my-web-socket': {
                     messageFromServerShape: undefined,
                     messageFromClientShape: or(
                         {
@@ -399,12 +399,12 @@ describe(defineService.name, () => {
         });
 
         assert.throws(
-            () => service.sockets['/my-socket'].MessageFromClientType,
+            () => service.sockets['/my-web-socket'].MessageFromClientType,
             undefined,
             'Should not be able to access socket.MessageFromClientType',
         );
         assert.throws(
-            () => service.sockets['/my-socket'].MessageFromHostType,
+            () => service.sockets['/my-web-socket'].MessageFromHostType,
             undefined,
             'Should not be able to access socket.MessageFromHostType',
         );
@@ -413,18 +413,18 @@ describe(defineService.name, () => {
             {
                 code: 1,
             },
-            service.sockets['/my-socket'].messageFromClientShape,
+            service.sockets['/my-web-socket'].messageFromClientShape,
         );
         assert.throws(() =>
             assertValidShape(
                 {
                     code: 3,
                 },
-                service.sockets['/my-socket'].messageFromClientShape,
+                service.sockets['/my-web-socket'].messageFromClientShape,
             ),
         );
 
-        assert.tsType<(typeof service.sockets)['/my-socket']['MessageFromClientType']>().equals<
+        assert.tsType<(typeof service.sockets)['/my-web-socket']['MessageFromClientType']>().equals<
             Readonly<
                 | {
                       code: 1;

@@ -2,26 +2,30 @@ import {assert} from '@augment-vir/assert';
 import {wait} from '@augment-vir/common';
 import {describe, it, itCases} from '@augment-vir/test';
 import {mockService} from '../service/define-service.mock.js';
-import {getOppositeSocketLocation, WebSocketLocation} from '../socket/overwrite-socket-methods.js';
 import {
-    buildSocketUrl,
-    connectSocket,
-    type CollapsedConnectSocketParams,
-} from './connect-socket.js';
+    getOppositeWebSocketLocation,
+    WebSocketLocation,
+} from '../web-socket/overwrite-web-socket-methods.js';
+import {
+    buildWebSocketUrl,
+    connectWebSocket,
+    type CollapsedConnectWebSocketParams,
+} from './connect-web-socket.js';
 import {MockClientWebSocket} from './mock-client-web-socket.js';
 
-describe('CollapsedConnectSocketParams', () => {
+describe('CollapsedConnectWebSocketParams', () => {
     it('uses NoParam for generic params', () => {
-        const genericParams: CollapsedConnectSocketParams = {} as CollapsedConnectSocketParams<
-            (typeof mockService.sockets)['/custom-props-socket']
-        >;
+        const genericParams: CollapsedConnectWebSocketParams =
+            {} as CollapsedConnectWebSocketParams<
+                (typeof mockService.sockets)['/custom-props-web-socket']
+            >;
     });
 });
 
-describe(connectSocket.name, () => {
+describe(connectWebSocket.name, () => {
     it('receives events', async () => {
         const events: string[] = [];
-        const clientWebSocket = await connectSocket(mockService.sockets['/no-client-data'], {
+        const clientWebSocket = await connectWebSocket(mockService.sockets['/no-client-data'], {
             listeners: {
                 close({event}) {
                     events.push(event.type);
@@ -66,7 +70,7 @@ describe(connectSocket.name, () => {
         ]);
     });
     it('rejects invalid messages', async () => {
-        const clientWebSocket = await connectSocket(mockService.sockets['/no-server-data'], {
+        const clientWebSocket = await connectWebSocket(mockService.sockets['/no-server-data'], {
             WebSocket: MockClientWebSocket<(typeof mockService.sockets)['/no-server-data']>,
         });
 
@@ -94,7 +98,7 @@ describe(connectSocket.name, () => {
         );
     });
     it('waits for a reply', async () => {
-        const clientWebSocket = await connectSocket(mockService.sockets['/no-client-data'], {
+        const clientWebSocket = await connectWebSocket(mockService.sockets['/no-client-data'], {
             WebSocket: MockClientWebSocket<(typeof mockService.sockets)['/no-client-data']>,
         });
 
@@ -106,7 +110,7 @@ describe(connectSocket.name, () => {
         assert.strictEquals(await replyPromise, 'ok');
     });
     it('times out with no reply', async () => {
-        const clientWebSocket = await connectSocket(mockService.sockets['/no-client-data'], {
+        const clientWebSocket = await connectWebSocket(mockService.sockets['/no-client-data'], {
             WebSocket: MockClientWebSocket<(typeof mockService.sockets)['/no-client-data']>,
         });
 
@@ -124,8 +128,8 @@ describe(connectSocket.name, () => {
     });
 });
 
-describe(getOppositeSocketLocation.name, () => {
-    itCases(getOppositeSocketLocation, [
+describe(getOppositeWebSocketLocation.name, () => {
+    itCases(getOppositeWebSocketLocation, [
         {
             it: 'flips on client',
             input: WebSocketLocation.OnClient,
@@ -139,8 +143,8 @@ describe(getOppositeSocketLocation.name, () => {
     ]);
 });
 
-describe(buildSocketUrl.name, () => {
-    itCases(buildSocketUrl, [
+describe(buildWebSocketUrl.name, () => {
+    itCases(buildWebSocketUrl, [
         {
             it: 'builds a ws url',
             inputs: [

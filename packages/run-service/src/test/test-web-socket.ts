@@ -1,18 +1,18 @@
 import type {AnyFunction, MaybePromise} from '@augment-vir/common';
 import {
     type ClientWebSocket,
-    type CollapsedConnectSocketParams,
-    type ConnectSocketParams,
+    type CollapsedConnectWebSocketParams,
+    type ConnectWebSocketParams,
     type NoParam,
-    type Socket,
+    type WebSocketDefinition,
 } from '@rest-vir/define-service';
-import {type ImplementedSocket} from '@rest-vir/implement-service';
+import {type ImplementedWebSocket} from '@rest-vir/implement-service';
 import {testService} from './test-service.js';
 
-export type TestWebSocket = <SocketToTest extends Socket>(
-    socket: SocketToTest,
-    ...args: CollapsedConnectSocketParams<SocketToTest, false>
-) => Promise<ClientWebSocket<SocketToTest>>;
+export type TestWebSocket = <WebSocketToTest extends WebSocketDefinition>(
+    socket: WebSocketToTest,
+    ...args: CollapsedConnectWebSocketParams<WebSocketToTest, false>
+) => Promise<ClientWebSocket<WebSocketToTest>>;
 
 /**
  * Test your WebSocket implementation with a real pipeline.
@@ -22,12 +22,12 @@ export type TestWebSocket = <SocketToTest extends Socket>(
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
 export const testWebSocket = async function testWebSocket<
-    const SocketToTest extends ImplementedSocket,
+    const WebSocketToTest extends ImplementedWebSocket,
 >(
-    webSocketImplementation: SocketToTest,
-    params: ConnectSocketParams<Exclude<SocketToTest, NoParam>, false>,
+    webSocketImplementation: WebSocketToTest,
+    params: ConnectWebSocketParams<Exclude<WebSocketToTest, NoParam>, false>,
 ) {
-    const {connectSocket, kill} = await testService({
+    const {connectWebSocket, kill} = await testService({
         ...webSocketImplementation.service,
         sockets: {
             [webSocketImplementation.path]: webSocketImplementation,
@@ -35,7 +35,7 @@ export const testWebSocket = async function testWebSocket<
         endpoints: {},
     });
 
-    const webSocket = await (connectSocket[webSocketImplementation.path] as AnyFunction)(params);
+    const webSocket = await (connectWebSocket[webSocketImplementation.path] as AnyFunction)(params);
 
     webSocket.addEventListener('close', async () => {
         await kill();
@@ -43,8 +43,8 @@ export const testWebSocket = async function testWebSocket<
     return webSocket;
 } as TestWebSocket;
 
-export type WithWebSocketTestCallback<SocketToTest extends ImplementedSocket> = (
-    clientWebSocket: ClientWebSocket<SocketToTest>,
+export type WithWebSocketTestCallback<WebSocketToTest extends ImplementedWebSocket> = (
+    clientWebSocket: ClientWebSocket<WebSocketToTest>,
 ) => MaybePromise<void>;
 
 /**
@@ -62,7 +62,7 @@ export type WithWebSocketTestCallback<SocketToTest extends ImplementedSocket> = 
  *     it(
  *         'does a thing',
  *         withWebSocketTest(
- *             myServiceImplementation.sockets['/my-socket-path'],
+ *             myServiceImplementation.sockets['/my-web-socket-path'],
  *             {},
  *             (webSocket) => {
  *                 const response = await webSocket.sendAndWaitForReply();
@@ -75,10 +75,10 @@ export type WithWebSocketTestCallback<SocketToTest extends ImplementedSocket> = 
  *
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
-export function withWebSocketTest<const SocketToTest extends ImplementedSocket>(
-    webSocketDefinition: SocketToTest,
-    params: Omit<ConnectSocketParams<SocketToTest, false>, 'listeners'>,
-    callback: WithWebSocketTestCallback<SocketToTest>,
+export function withWebSocketTest<const WebSocketToTest extends ImplementedWebSocket>(
+    webSocketDefinition: WebSocketToTest,
+    params: Omit<ConnectWebSocketParams<WebSocketToTest, false>, 'listeners'>,
+    callback: WithWebSocketTestCallback<WebSocketToTest>,
 ) {
     return async () => {
         const clientWebSocket = await testWebSocket<any>(webSocketDefinition, params as any);

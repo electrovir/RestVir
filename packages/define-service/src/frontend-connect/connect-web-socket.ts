@@ -2,17 +2,17 @@ import {HttpMethod, RequiredKeysOf, SelectFrom} from '@augment-vir/common';
 import {IsNever} from 'type-fest';
 import {buildUrl} from 'url-vir';
 import {PathParams} from '../endpoint/endpoint-path.js';
-import type {CommonWebSocket} from '../socket/common-web-socket.js';
+import {type NoParam} from '../util/no-param.js';
+import type {CommonWebSocket} from '../web-socket/common-web-socket.js';
 import {
     finalizeWebSocket,
     WebSocketLocation,
     type ClientWebSocket,
-    type ConnectSocketListeners,
-    type GenericConnectSocketParams,
+    type ConnectWebSocketListeners,
+    type GenericConnectWebSocketParams,
     type OverwriteWebSocketMethods,
-} from '../socket/overwrite-socket-methods.js';
-import {type Socket} from '../socket/socket.js';
-import {type NoParam} from '../util/no-param.js';
+} from '../web-socket/overwrite-web-socket-methods.js';
+import {type WebSocketDefinition} from '../web-socket/web-socket-definition.js';
 import {buildEndpointUrl} from './fetch-endpoint.js';
 
 /**
@@ -22,10 +22,10 @@ import {buildEndpointUrl} from './fetch-endpoint.js';
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export function buildSocketUrl(
+export function buildWebSocketUrl(
     socket: Readonly<
         SelectFrom<
-            Socket,
+            WebSocketDefinition,
             {
                 path: true;
                 service: {
@@ -37,7 +37,7 @@ export function buildSocketUrl(
     >,
     ...[
         {pathParams} = {},
-    ]: CollapsedConnectSocketParams
+    ]: CollapsedConnectWebSocketParams
 ): string {
     const httpUrl = buildEndpointUrl(
         {
@@ -58,16 +58,16 @@ export function buildSocketUrl(
 }
 
 /**
- * Params for {@link connectSocket}.
+ * Params for {@link connectWebSocket}.
  *
  * @category Internal
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export type ConnectSocketParams<
-    SocketToConnect extends Readonly<
+export type ConnectWebSocketParams<
+    WebSocketToConnect extends Readonly<
         SelectFrom<
-            Socket,
+            WebSocketDefinition,
             {
                 path: true;
                 MessageFromClientType: true;
@@ -82,38 +82,38 @@ export type ConnectSocketParams<
      * Optional listeners that can be immediately attached to the WebSocket instance instead of
      * requiring externally adding them.
      */
-    listeners?: ConnectSocketListeners<SocketToConnect, WebSocketClass>;
-} & (IsNever<PathParams<SocketToConnect['path']>> extends true
+    listeners?: ConnectWebSocketListeners<WebSocketToConnect, WebSocketClass>;
+} & (IsNever<PathParams<WebSocketToConnect['path']>> extends true
     ? {
           /** This socket has no path parameters to configure. */
           pathParams?: undefined;
       }
-    : PathParams<SocketToConnect['path']> extends string
+    : PathParams<WebSocketToConnect['path']> extends string
       ? {
             /** Required path params for this socket's path. */
-            pathParams: Readonly<Record<PathParams<SocketToConnect['path']>, string>>;
+            pathParams: Readonly<Record<PathParams<WebSocketToConnect['path']>, string>>;
         }
       : {
             /** This socket has no path parameters to configure. */
             pathParams?: undefined;
         }) &
     (AllowWebSocketMock extends true
-        ? Pick<GenericConnectSocketParams<WebSocketClass>, 'protocols' | 'WebSocket'>
-        : Pick<GenericConnectSocketParams<WebSocketClass>, 'protocols'>);
+        ? Pick<GenericConnectWebSocketParams<WebSocketClass>, 'protocols' | 'WebSocket'>
+        : Pick<GenericConnectWebSocketParams<WebSocketClass>, 'protocols'>);
 
 /**
- * Collapsed version of {@link ConnectSocketParams} for {@link connectSocket} that only _requires_ an
- * object parameter if the parameters object has any required keys.
+ * Collapsed version of {@link ConnectWebSocketParams} for {@link connectWebSocket} that only
+ * _requires_ an object parameter if the parameters object has any required keys.
  *
  * @category Internal
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export type CollapsedConnectSocketParams<
-    SocketToConnect extends
+export type CollapsedConnectWebSocketParams<
+    WebSocketToConnect extends
         | Readonly<
               SelectFrom<
-                  Socket,
+                  WebSocketDefinition,
                   {
                       path: true;
                       MessageFromClientType: true;
@@ -124,11 +124,11 @@ export type CollapsedConnectSocketParams<
         | NoParam = NoParam,
     AllowWebSocketMock extends boolean = true,
     WebSocketClass extends CommonWebSocket = CommonWebSocket,
-> = SocketToConnect extends NoParam
-    ? [Readonly<GenericConnectSocketParams<WebSocketClass>>?]
+> = WebSocketToConnect extends NoParam
+    ? [Readonly<GenericConnectWebSocketParams<WebSocketClass>>?]
     : Readonly<
-            ConnectSocketParams<
-                Exclude<SocketToConnect, NoParam>,
+            ConnectWebSocketParams<
+                Exclude<WebSocketToConnect, NoParam>,
                 AllowWebSocketMock,
                 WebSocketClass
             >
@@ -141,28 +141,30 @@ export type CollapsedConnectSocketParams<
 /**
  * Creates and connects a new client WebSocket instance with type safety.
  *
- * @category Socket
+ * @category WebSocket
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export async function connectSocket<
-    const SocketToConnect extends Readonly<Socket> | NoParam,
+export async function connectWebSocket<
+    const WebSocketToConnect extends Readonly<WebSocketDefinition> | NoParam,
     WebSocketClass extends CommonWebSocket,
 >(
-    socket: SocketToConnect extends Socket ? SocketToConnect : Readonly<Socket>,
-    ...params: CollapsedConnectSocketParams<SocketToConnect, true, WebSocketClass>
-): Promise<ClientWebSocket<SocketToConnect, WebSocketClass>> {
+    socket: WebSocketToConnect extends WebSocketDefinition
+        ? WebSocketToConnect
+        : Readonly<WebSocketDefinition>,
+    ...params: CollapsedConnectWebSocketParams<WebSocketToConnect, true, WebSocketClass>
+): Promise<ClientWebSocket<WebSocketToConnect, WebSocketClass>> {
     const [
         {WebSocket = globalThis.WebSocket, protocols, listeners} = {},
     ] = params;
 
-    const url = buildSocketUrl(socket, ...(params as any));
+    const url = buildWebSocketUrl(socket, ...(params as any));
 
     const clientWebSocket: OverwriteWebSocketMethods<
         WebSocketClass,
         WebSocketLocation.OnClient,
-        SocketToConnect
-    > = await finalizeWebSocket<SocketToConnect, WebSocketClass, WebSocketLocation.OnClient>(
+        WebSocketToConnect
+    > = await finalizeWebSocket<WebSocketToConnect, WebSocketClass, WebSocketLocation.OnClient>(
         socket as any,
         new WebSocket(url, protocols) as WebSocketClass,
         listeners,

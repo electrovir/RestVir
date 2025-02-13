@@ -22,7 +22,7 @@ import {OriginRequirement, originRequirementShape} from '../util/origin.js';
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export type SocketInit<MessageFromClientShape = unknown, MessageFromServerShape = unknown> = {
+export type WebSocketInit<MessageFromClientShape = unknown, MessageFromServerShape = unknown> = {
     messageFromClientShape: MessageFromClientShape;
     messageFromServerShape: MessageFromServerShape;
     /**
@@ -39,15 +39,15 @@ export type SocketInit<MessageFromClientShape = unknown, MessageFromServerShape 
 };
 
 /**
- * Adds final props to a {@link SocketInit}, converting it into a {@link Socket}.
+ * Adds final props to a {@link WebSocketInit}, converting it into a {@link WebSocketDefinition}.
  *
  * @category Internal
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export type WithFinalSocketProps<
+export type WithFinalWebSocketProps<
     Init,
-    SocketPath extends EndpointPathBase,
+    WebSocketPath extends EndpointPathBase,
 > = (Init extends AnyObject
     ? Overwrite<
           Init,
@@ -88,27 +88,30 @@ export type WithFinalSocketProps<
           }
       >
     : never) & {
-    path: SocketPath;
+    path: WebSocketPath;
     socket: true;
     endpoint: false;
     service: MinimalService;
 };
 
 /**
- * A fully defined socket instance. This is generated from `defineService`.
+ * A finished REST server WebSocket definition. This is generated from `defineService`.
  *
  * @category Internal
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export type Socket<
+export type WebSocketDefinition<
     MessageFromClientShape = NoParam,
     MessageFromServerShape = NoParam,
-    SocketPath extends EndpointPathBase = EndpointPathBase,
-> = WithFinalSocketProps<SocketInit<MessageFromClientShape, MessageFromServerShape>, SocketPath>;
+    WebSocketPath extends EndpointPathBase = EndpointPathBase,
+> = WithFinalWebSocketProps<
+    WebSocketInit<MessageFromClientShape, MessageFromServerShape>,
+    WebSocketPath
+>;
 
 /**
- * Shape definition for {@link SocketInit}.
+ * Shape definition for {@link WebSocketInit}.
  *
  * @category Internal
  * @category Package : @rest-vir/define-service
@@ -136,7 +139,7 @@ export const socketInitShape = defineShape({
             }),
         ),
     ),
-} satisfies Record<keyof SocketInit, any>);
+} satisfies Record<keyof WebSocketInit, any>);
 
 /**
  * Attaches message type-only getters to a socket definition.
@@ -145,9 +148,10 @@ export const socketInitShape = defineShape({
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export function attachSocketShapeTypeGetters<const T extends AnyObject>(
+export function attachWebSocketShapeTypeGetters<const T extends AnyObject>(
     socket: T,
-): asserts socket is T & Pick<Socket, 'MessageFromClientType' | 'MessageFromHostType'> {
+): asserts socket is T &
+    Pick<WebSocketDefinition, 'MessageFromClientType' | 'MessageFromHostType'> {
     Object.defineProperties(socket, {
         MessageFromClientType: {
             enumerable: false,
@@ -171,10 +175,10 @@ export function attachSocketShapeTypeGetters<const T extends AnyObject>(
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export function assertValidSocket(
+export function assertValidWebSocketDefinition(
     socket: Readonly<
         SelectFrom<
-            Socket,
+            WebSocketDefinition,
             {
                 endpoint: true;
                 socket: true;

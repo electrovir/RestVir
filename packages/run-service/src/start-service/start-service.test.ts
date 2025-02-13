@@ -15,30 +15,32 @@ import {describeServiceScript, getMockScriptCommand} from './test-start-service.
 
 describe(startService.name, () => {
     describeServiceScript('single-thread', ({it}) => {
-        it('accepts a valid socket message', async ({connectSocket}) => {
-            const webSocket = await connectSocket(mockService.sockets['/no-client-data'].path);
+        it('accepts a valid socket message', async ({connectWebSocket}) => {
+            const webSocket = await connectWebSocket(mockService.sockets['/no-client-data'].path);
             const serverMessage = await webSocket.sendAndWaitForReply();
 
             assert.strictEquals(serverMessage, 'ok');
         });
-        it('fires websocket listeners', async ({connectSocket}) => {
-            const webSocket = await connectSocket(mockService.sockets['/with-all-listeners'].path);
+        it('fires websocket listeners', async ({connectWebSocket}) => {
+            const webSocket = await connectWebSocket(
+                mockService.sockets['/with-all-listeners'].path,
+            );
 
             webSocket.send();
         });
-        it('handles client message data that should not exist', async ({connectSocket}) => {
-            const webSocket = await connectSocket(mockService.sockets['/no-client-data'].path);
+        it('handles client message data that should not exist', async ({connectWebSocket}) => {
+            const webSocket = await connectWebSocket(mockService.sockets['/no-client-data'].path);
 
             webSocket.send('something here');
         });
-        it('receives web socket protocols', async ({connectSocket}) => {
+        it('receives web socket protocols', async ({connectWebSocket}) => {
             const mockProtocols = [
                 'hi',
                 'hi1',
                 'hi2',
             ];
 
-            const webSocket = await connectSocket(
+            const webSocket = await connectWebSocket(
                 mockService.sockets['/sends-protocol'].path,
                 mockProtocols,
             );

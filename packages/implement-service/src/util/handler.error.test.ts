@@ -25,7 +25,7 @@ describe(createRestVirHandlerErrorPrefix.name, () => {
                 endpoint: false,
                 socket: true,
             },
-            expect: "Socket '/path' failed in service 'test service'",
+            expect: "WebSocket '/path' failed in service 'test service'",
         },
         {
             it: 'creates a plain prefix string',

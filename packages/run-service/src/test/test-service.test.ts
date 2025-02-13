@@ -112,7 +112,7 @@ describeService({service: plainService, options: {}}, ({fetchService}) => {
 
 describe(testService.name, () => {
     it('works with an actual port', async () => {
-        const {fetchService, connectSocket, kill} = await testService(plainService, {
+        const {fetchService, connectWebSocket, kill} = await testService(plainService, {
             port: 4500 + randomInteger({min: 0, max: 4000}),
         });
 
@@ -126,7 +126,7 @@ describe(testService.name, () => {
 
             const socketMessageReceived = new DeferredPromise<string>();
 
-            const webSocket = await connectSocket['/socket']({
+            const webSocket = await connectWebSocket['/socket']({
                 listeners: {
                     message({message, webSocket}) {
                         socketMessageReceived.resolve(message);
@@ -150,7 +150,7 @@ describe(testService.name, () => {
         }
     });
     it('works without a port', async () => {
-        const {fetchService, connectSocket, kill} = await testService(plainService);
+        const {fetchService, connectWebSocket, kill} = await testService(plainService);
 
         try {
             assert.deepEquals(await condenseResponse(await fetchService['/health']()), {
@@ -162,7 +162,7 @@ describe(testService.name, () => {
 
             const socketMessageReceived = new DeferredPromise<string>();
 
-            const webSocket = await connectSocket['/socket']({
+            const webSocket = await connectWebSocket['/socket']({
                 listeners: {
                     message({message, webSocket}) {
                         socketMessageReceived.resolve(message);

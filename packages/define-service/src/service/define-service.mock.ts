@@ -40,7 +40,7 @@ export const mockService = defineService({
             messageFromClientShape: undefined,
             messageFromServerShape: [''],
         },
-        '/custom-props-socket': {
+        '/custom-props-web-socket': {
             messageFromServerShape: exact('ok'),
             messageFromClientShape: undefined,
             customProps: {

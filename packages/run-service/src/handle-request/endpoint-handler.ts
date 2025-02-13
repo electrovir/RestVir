@@ -5,7 +5,7 @@ import {
     ServerRequest,
     ServerResponse,
     type ImplementedEndpoint,
-    type ImplementedSocket,
+    type ImplementedWebSocket,
 } from '@rest-vir/implement-service';
 import {OutgoingHttpHeaders} from 'node:http';
 import {setResponseHeaders} from '../util/headers.js';
@@ -47,7 +47,7 @@ export type HandledOutput =
 export type EndpointHandlerParams = {
     request: ServerRequest;
     response: ServerResponse;
-    route: Readonly<ImplementedEndpoint | ImplementedSocket>;
+    route: Readonly<ImplementedEndpoint | ImplementedWebSocket>;
 };
 
 /**

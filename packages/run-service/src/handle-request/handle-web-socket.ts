@@ -4,7 +4,11 @@ import {
     parseJsonWithUndefined,
     WebSocketLocation,
 } from '@rest-vir/define-service';
-import {ImplementedSocket, RestVirHandlerError, ServerRequest} from '@rest-vir/implement-service';
+import {
+    ImplementedWebSocket,
+    RestVirHandlerError,
+    ServerRequest,
+} from '@rest-vir/implement-service';
 import {assertValidShape} from 'object-shape-tester';
 import {type WebSocket as WsWebSocket} from 'ws';
 
@@ -15,7 +19,7 @@ import {type WebSocket as WsWebSocket} from 'ws';
  * @category Package : @rest-vir/run-service
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
-export async function handleSocketRequest(
+export async function handleWebSocketRequest(
     this: void,
     {
         attachId,
@@ -25,7 +29,7 @@ export async function handleSocketRequest(
     }: Readonly<{
         request: ServerRequest;
         attachId: string;
-        socket: Readonly<ImplementedSocket>;
+        socket: Readonly<ImplementedWebSocket>;
         webSocket: WsWebSocket;
     }>,
 ) {

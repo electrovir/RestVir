@@ -1,7 +1,7 @@
 import {
     type NoParam,
     type OverwriteWebSocketMethods,
-    type Socket,
+    type WebSocketDefinition,
     type WebSocketLocation,
 } from '@rest-vir/define-service';
 import {type FastifyReply, type FastifyRequest} from 'fastify';
@@ -35,8 +35,5 @@ export type ServerResponse = FastifyReply;
  * @category Package : @rest-vir/implement-service
  * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
  */
-export type ServerWebSocket<SocketDefinition extends Socket | NoParam> = OverwriteWebSocketMethods<
-    WsWebSocket,
-    WebSocketLocation.OnHost,
-    SocketDefinition
->;
+export type ServerWebSocket<SpecificWebSocket extends WebSocketDefinition | NoParam> =
+    OverwriteWebSocketMethods<WsWebSocket, WebSocketLocation.OnHost, SpecificWebSocket>;

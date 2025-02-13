@@ -1,14 +1,14 @@
 import {HttpMethod, MaybePromise, Values} from '@augment-vir/common';
 import {
     type BaseServiceEndpointsInit,
-    type BaseServiceSocketsInit,
+    type BaseServiceWebSocketsInit,
     type Endpoint,
     type EndpointPathBase,
     type MinimalService,
     type NoParam,
-    type Socket,
+    type WebSocketDefinition,
     type WithFinalEndpointProps,
-    type WithFinalSocketProps,
+    type WithFinalWebSocketProps,
 } from '@rest-vir/define-service';
 import {type IncomingHttpHeaders} from 'node:http';
 import {type RequireExactlyOne} from 'type-fest';
@@ -26,9 +26,9 @@ export type ContextInit<
     Context,
     ServiceName extends string,
     EndpointsInit extends BaseServiceEndpointsInit | NoParam,
-    SocketsInit extends BaseServiceSocketsInit | NoParam,
+    WebSocketsInit extends BaseServiceWebSocketsInit | NoParam,
 > = (
-    params: Readonly<ContextInitParameters<ServiceName, EndpointsInit, SocketsInit>>,
+    params: Readonly<ContextInitParameters<ServiceName, EndpointsInit, WebSocketsInit>>,
 ) => MaybePromise<
     RequireExactlyOne<{
         /** The context created for this request. */
@@ -51,7 +51,7 @@ export type ContextInit<
 export type ContextInitParameters<
     ServiceName extends string = any,
     EndpointsInit extends BaseServiceEndpointsInit | NoParam = NoParam,
-    SocketsInit extends BaseServiceSocketsInit | NoParam = NoParam,
+    WebSocketsInit extends BaseServiceWebSocketsInit | NoParam = NoParam,
 > = {
     service: MinimalService<ServiceName>;
     requestHeaders: IncomingHttpHeaders;
@@ -75,11 +75,11 @@ export type ContextInitParameters<
                 >)
         | undefined;
     socket?:
-        | (SocketsInit extends NoParam
-              ? Socket
-              : WithFinalSocketProps<
-                    Values<SocketsInit>,
-                    Extract<keyof SocketsInit, EndpointPathBase>
+        | (WebSocketsInit extends NoParam
+              ? WebSocketDefinition
+              : WithFinalWebSocketProps<
+                    Values<WebSocketsInit>,
+                    Extract<keyof WebSocketsInit, EndpointPathBase>
                 >)
         | undefined;
 };

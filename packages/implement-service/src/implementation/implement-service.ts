@@ -10,9 +10,9 @@ import {
     EndpointPathBase,
     NoParam,
     ServiceDefinition,
-    type BaseServiceSocketsInit,
+    type BaseServiceWebSocketsInit,
     type Endpoint,
-    type Socket,
+    type WebSocketDefinition,
 } from '@rest-vir/define-service';
 import {type IsEqual, type OmitIndexSignature} from 'type-fest';
 import {
@@ -23,13 +23,16 @@ import {
 } from '../util/service-logger.js';
 import {
     type ImplementedEndpoint,
-    type ImplementedSocket,
+    type ImplementedWebSocket,
 } from './generic-service-implementation.js';
 import {
     assertValidEndpointImplementations,
     type EndpointImplementations,
 } from './implement-endpoint.js';
-import {assertValidSocketImplementations, SocketImplementations} from './implement-socket.js';
+import {
+    assertValidWebSocketImplementations,
+    WebSocketImplementations,
+} from './implement-web-socket.js';
 import {type ContextInit} from './service-context-init.js';
 
 /**
@@ -52,9 +55,9 @@ export type ServiceImplementationInit<
     Context,
     ServiceName extends string,
     EndpointsInit extends BaseServiceEndpointsInit,
-    SocketsInit extends BaseServiceSocketsInit,
+    WebSocketsInit extends BaseServiceWebSocketsInit,
 > = {
-    service: ServiceDefinition<ServiceName, EndpointsInit, SocketsInit>;
+    service: ServiceDefinition<ServiceName, EndpointsInit, WebSocketsInit>;
     /**
      * Logger for the service. Use {@link silentServiceLogger} to disable logging entirely (even
      * errors) or simply set `undefined` to the log type that you wish to suppress. An omitted log
@@ -69,7 +72,7 @@ export type ServiceImplementationInit<
                     Context,
                     NoInfer<ServiceName>,
                     NoInfer<EndpointsInit>,
-                    NoInfer<SocketsInit>
+                    NoInfer<WebSocketsInit>
                 >;
       }
     : {
@@ -77,7 +80,7 @@ export type ServiceImplementationInit<
               Context,
               NoInfer<ServiceName>,
               NoInfer<EndpointsInit>,
-              NoInfer<SocketsInit>
+              NoInfer<WebSocketsInit>
           >;
       });
 
@@ -92,7 +95,7 @@ export type ServiceImplementationsParams<
     Context,
     ServiceName extends string,
     EndpointsInit extends BaseServiceEndpointsInit,
-    SocketsInit extends BaseServiceSocketsInit,
+    WebSocketsInit extends BaseServiceWebSocketsInit,
 > = (KeyCount<OmitIndexSignature<EndpointsInit>> extends 0
     ? {
           endpoints?: never;
@@ -104,15 +107,15 @@ export type ServiceImplementationsParams<
               NoInfer<EndpointsInit>
           >;
       }) &
-    (KeyCount<OmitIndexSignature<SocketsInit>> extends 0
+    (KeyCount<OmitIndexSignature<WebSocketsInit>> extends 0
         ? {
               sockets?: never;
           }
         : {
-              sockets: SocketImplementations<
+              sockets: WebSocketImplementations<
                   NoInfer<Context>,
                   NoInfer<ServiceName>,
-                  NoInfer<SocketsInit>
+                  NoInfer<WebSocketsInit>
               >;
           });
 
@@ -129,7 +132,7 @@ export type ServiceImplementationsParams<
 export function implementService<
     const ServiceName extends string,
     const EndpointsInit extends BaseServiceEndpointsInit,
-    const SocketsInit extends BaseServiceSocketsInit,
+    const WebSocketsInit extends BaseServiceWebSocketsInit,
     const Context = undefined,
 >(
     /** Init must be first so that TypeScript can infer the type for `Context`. */
@@ -137,7 +140,7 @@ export function implementService<
         service,
         createContext,
         logger,
-    }: ServiceImplementationInit<Context, ServiceName, EndpointsInit, SocketsInit>,
+    }: ServiceImplementationInit<Context, ServiceName, EndpointsInit, WebSocketsInit>,
     {
         endpoints: endpointImplementations,
         sockets: socketImplementations,
@@ -145,11 +148,11 @@ export function implementService<
         NoInfer<Context>,
         NoInfer<ServiceName>,
         NoInfer<EndpointsInit>,
-        NoInfer<SocketsInit>
+        NoInfer<WebSocketsInit>
     >,
-): ServiceImplementation<Context, ServiceName, EndpointsInit, SocketsInit> {
+): ServiceImplementation<Context, ServiceName, EndpointsInit, WebSocketsInit> {
     assertValidEndpointImplementations(service, endpointImplementations || {});
-    assertValidSocketImplementations(service, socketImplementations || {});
+    assertValidWebSocketImplementations(service, socketImplementations || {});
 
     const endpoints = mapObjectValues(service.endpoints, (endpointPath, endpoint) => {
         const implementation = endpointImplementations?.[endpointPath as EndpointPathBase];
@@ -170,7 +173,7 @@ export function implementService<
         Context,
         ServiceName,
         EndpointsInit,
-        SocketsInit
+        WebSocketsInit
     >['endpoints'];
 
     const sockets = mapObjectValues(service.sockets, (socketPath, socket) => {
@@ -185,21 +188,21 @@ export function implementService<
          * created, we attach the correct service to all sockets.
          */
         return {
-            ...(socket as Socket),
+            ...(socket as WebSocketDefinition),
             implementation,
-        } satisfies Omit<ImplementedSocket, 'service'>;
+        } satisfies Omit<ImplementedWebSocket, 'service'>;
     }) as AnyObject as ServiceImplementation<
         Context,
         ServiceName,
         EndpointsInit,
-        SocketsInit
+        WebSocketsInit
     >['sockets'];
 
     const serviceImplementation: ServiceImplementation<
         Context,
         ServiceName,
         EndpointsInit,
-        SocketsInit
+        WebSocketsInit
     > = {
         ...service,
         endpoints,
@@ -229,13 +232,13 @@ export type ServiceImplementation<
     Context = any,
     ServiceName extends string = any,
     EndpointsInit extends BaseServiceEndpointsInit | NoParam = NoParam,
-    SocketsInit extends BaseServiceSocketsInit | NoParam = NoParam,
-> = Omit<ServiceDefinition<ServiceName, EndpointsInit, SocketsInit>, 'endpoints' | 'sockets'> & {
+    WebSocketsInit extends BaseServiceWebSocketsInit | NoParam = NoParam,
+> = Omit<ServiceDefinition<ServiceName, EndpointsInit, WebSocketsInit>, 'endpoints' | 'sockets'> & {
     endpoints: {
         [EndpointPath in keyof ServiceDefinition<
             ServiceName,
             EndpointsInit,
-            SocketsInit
+            WebSocketsInit
         >['endpoints']]: EndpointPath extends EndpointPathBase
             ? ImplementedEndpoint<
                   Context,
@@ -243,25 +246,29 @@ export type ServiceImplementation<
                   ServiceDefinition<
                       ServiceName,
                       EndpointsInit,
-                      SocketsInit
+                      WebSocketsInit
                   >['endpoints'][EndpointPath]
               >
             : never;
     };
     sockets: {
-        [SocketPath in keyof ServiceDefinition<
+        [WebSocketPath in keyof ServiceDefinition<
             ServiceName,
             EndpointsInit,
-            SocketsInit
-        >['sockets']]: SocketPath extends EndpointPathBase
-            ? ImplementedSocket<
+            WebSocketsInit
+        >['sockets']]: WebSocketPath extends EndpointPathBase
+            ? ImplementedWebSocket<
                   Context,
                   ServiceName,
-                  ServiceDefinition<ServiceName, EndpointsInit, SocketsInit>['sockets'][SocketPath]
+                  ServiceDefinition<
+                      ServiceName,
+                      EndpointsInit,
+                      WebSocketsInit
+                  >['sockets'][WebSocketPath]
               >
             : never;
     };
-    createContext: ContextInit<Context, ServiceName, EndpointsInit, SocketsInit> | undefined;
+    createContext: ContextInit<Context, ServiceName, EndpointsInit, WebSocketsInit> | undefined;
     logger: ServiceLogger;
 };
 
@@ -279,7 +286,7 @@ export type ServiceImplementationFromServiceDefinition<
     SpecificServiceDefinition extends ServiceDefinition<
         infer ServiceName,
         infer EndpointInit,
-        infer SocketInit
+        infer WebSocketInit
     >
-        ? ServiceImplementation<unknown, ServiceName, EndpointInit, SocketInit>
+        ? ServiceImplementation<unknown, ServiceName, EndpointInit, WebSocketInit>
         : 'ERROR: Failed to infer service definition type parameters';

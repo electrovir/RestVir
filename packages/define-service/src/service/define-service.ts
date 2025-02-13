@@ -11,16 +11,16 @@ import {
     type EndpointInit,
     type WithFinalEndpointProps,
 } from '../endpoint/endpoint.js';
-import {
-    Socket,
-    SocketInit,
-    WithFinalSocketProps,
-    assertValidSocket,
-    attachSocketShapeTypeGetters,
-    socketInitShape,
-} from '../socket/socket.js';
 import {type NoParam} from '../util/no-param.js';
 import {type OriginRequirement} from '../util/origin.js';
+import {
+    WebSocketDefinition,
+    WebSocketInit,
+    WithFinalWebSocketProps,
+    assertValidWebSocketDefinition,
+    attachWebSocketShapeTypeGetters,
+    socketInitShape,
+} from '../web-socket/web-socket-definition.js';
 import {MinimalService} from './minimal-service.js';
 import {ensureServiceDefinitionError} from './service-definition.error.js';
 
@@ -51,7 +51,7 @@ export type BaseServiceEndpointsInit = Record<EndpointPathBase, EndpointInit>;
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export type BaseServiceSocketsInit = Record<EndpointPathBase, SocketInit>;
+export type BaseServiceWebSocketsInit = Record<EndpointPathBase, WebSocketInit>;
 
 /**
  * Init for a service. This is used as an input to {@link defineService}.
@@ -63,15 +63,15 @@ export type BaseServiceSocketsInit = Record<EndpointPathBase, SocketInit>;
 export type ServiceInit<
     ServiceName extends string,
     EndpointsInit extends BaseServiceEndpointsInit | NoParam,
-    SocketsInit extends BaseServiceSocketsInit | NoParam,
+    WebSocketsInit extends BaseServiceWebSocketsInit | NoParam,
 > = MinimalService<ServiceName> & {
     requiredClientOrigin: NonNullable<OriginRequirement>;
-    sockets?: IsEqual<SocketsInit, NoParam> extends true
-        ? Record<EndpointPathBase, SocketInit>
+    sockets?: IsEqual<WebSocketsInit, NoParam> extends true
+        ? Record<EndpointPathBase, WebSocketInit>
         : {
-              [SocketPath in keyof SocketsInit]: SocketPath extends EndpointPathBase
-                  ? SocketsInit[SocketPath]
-                  : SocketPath extends EndpointMustStartWithSlashTypeError
+              [WebSocketPath in keyof WebSocketsInit]: WebSocketPath extends EndpointPathBase
+                  ? WebSocketsInit[WebSocketPath]
+                  : WebSocketPath extends EndpointMustStartWithSlashTypeError
                     ? /** Prevent EndpointMustStartWithSlashTypeError from being used as an endpoint path. */
                       never
                     : EndpointMustStartWithSlashTypeError;
@@ -98,21 +98,21 @@ export type ServiceInit<
 export type ServiceDefinition<
     ServiceName extends string = any,
     EndpointsInit extends BaseServiceEndpointsInit | NoParam = NoParam,
-    SocketsInit extends BaseServiceSocketsInit | NoParam = NoParam,
+    WebSocketsInit extends BaseServiceWebSocketsInit | NoParam = NoParam,
 > = MinimalService<ServiceName> & {
     requiredClientOrigin: NonNullable<OriginRequirement>;
     /** Include the initial init object so a service can be composed. */
     init: SetRequired<
-        ServiceInit<ServiceName, EndpointsInit, SocketsInit>,
+        ServiceInit<ServiceName, EndpointsInit, WebSocketsInit>,
         'endpoints' | 'sockets'
     >;
-    sockets: SocketsInit extends NoParam
+    sockets: WebSocketsInit extends NoParam
         ? {
-              [SocketPath in EndpointPathBase]: Socket;
+              [WebSocketPath in EndpointPathBase]: WebSocketDefinition;
           }
         : {
-              [SocketPath in keyof SocketsInit]: SocketPath extends EndpointPathBase
-                  ? WithFinalSocketProps<SocketsInit[SocketPath], SocketPath>
+              [WebSocketPath in keyof WebSocketsInit]: WebSocketPath extends EndpointPathBase
+                  ? WithFinalWebSocketProps<WebSocketsInit[WebSocketPath], WebSocketPath>
                   : EndpointMustStartWithSlashTypeError;
           };
     endpoints: EndpointsInit extends NoParam
@@ -138,10 +138,10 @@ export type ServiceDefinition<
 export function defineService<
     const ServiceName extends string,
     EndpointsInit extends BaseServiceEndpointsInit,
-    SocketsInit extends BaseServiceSocketsInit,
+    WebSocketsInit extends BaseServiceWebSocketsInit,
 >(
-    serviceInit: ServiceInit<ServiceName, EndpointsInit, SocketsInit>,
-): ServiceDefinition<ServiceName, EndpointsInit, SocketsInit> {
+    serviceInit: ServiceInit<ServiceName, EndpointsInit, WebSocketsInit>,
+): ServiceDefinition<ServiceName, EndpointsInit, WebSocketsInit> {
     const serviceDefinition = finalizeServiceDefinition(serviceInit);
     assertValidServiceDefinition(serviceDefinition);
     return serviceDefinition;
@@ -150,10 +150,10 @@ export function defineService<
 function finalizeServiceDefinition<
     const ServiceName extends string,
     EndpointsInit extends BaseServiceEndpointsInit,
-    SocketsInit extends BaseServiceSocketsInit,
+    WebSocketsInit extends BaseServiceWebSocketsInit,
 >(
-    serviceInit: ServiceInit<ServiceName, EndpointsInit, SocketsInit>,
-): ServiceDefinition<ServiceName, EndpointsInit, SocketsInit> {
+    serviceInit: ServiceInit<ServiceName, EndpointsInit, WebSocketsInit>,
+): ServiceDefinition<ServiceName, EndpointsInit, WebSocketsInit> {
     try {
         const minimalService: MinimalService<ServiceName> = {
             serviceName: serviceInit.serviceName,
@@ -189,9 +189,9 @@ function finalizeServiceDefinition<
             return endpoint;
         });
 
-        const genericSockets = (serviceInit.sockets || {}) as BaseServiceSocketsInit;
+        const genericWebSockets = (serviceInit.sockets || {}) as BaseServiceWebSocketsInit;
 
-        const sockets = mapObjectValues(genericSockets, (socketPath, socketInit) => {
+        const sockets = mapObjectValues(genericWebSockets, (socketPath, socketInit) => {
             assertValidShape(socketInit, socketInitShape);
             const socket = {
                 ...socketInit,
@@ -206,9 +206,9 @@ function finalizeServiceDefinition<
                 customProps: socketInit.customProps,
                 endpoint: false,
                 socket: true,
-            } satisfies Omit<Socket, 'MessageFromClientType' | 'MessageFromHostType'>;
+            } satisfies Omit<WebSocketDefinition, 'MessageFromClientType' | 'MessageFromHostType'>;
 
-            attachSocketShapeTypeGetters(socket);
+            attachWebSocketShapeTypeGetters(socket);
 
             return socket;
         });
@@ -221,25 +221,25 @@ function finalizeServiceDefinition<
                 sockets: (serviceInit.sockets || {}) as ServiceDefinition<
                     ServiceName,
                     EndpointsInit,
-                    SocketsInit
+                    WebSocketsInit
                 >['init']['sockets'],
                 endpoints: (serviceInit.endpoints || {}) as ServiceDefinition<
                     ServiceName,
                     EndpointsInit,
-                    SocketsInit
+                    WebSocketsInit
                 >['init']['endpoints'],
             },
             sockets: sockets as AnyObject as ServiceDefinition<
                 ServiceName,
                 EndpointsInit,
-                SocketsInit
+                WebSocketsInit
             >['sockets'],
             requiredClientOrigin: serviceInit.requiredClientOrigin,
             /** As cast needed again to narrow the type (for the return value) after broadening it. */
             endpoints: endpoints as AnyObject as ServiceDefinition<
                 ServiceName,
                 EndpointsInit,
-                SocketsInit
+                WebSocketsInit
             >['endpoints'],
         };
     } catch (error) {
@@ -286,7 +286,7 @@ export function assertValidServiceDefinition(
                 ,
                 socket,
             ]) => {
-                assertValidSocket(socket);
+                assertValidWebSocketDefinition(socket);
             },
         );
     } catch (error) {

@@ -25,7 +25,7 @@ export type TestFetch = (
     init?: RequestInit | undefined,
 ) => Promise<Response>;
 
-export type TestConnectSocket = (
+export type TestConnectWebSocket = (
     this: void,
     path: string,
     protocols?: string | string[] | undefined,
@@ -84,7 +84,7 @@ async function setupService(scriptName: string) {
 
             return await globalThis.fetch(fetchUrl, init);
         }) as TestFetch,
-        connectSocket: (async (path, protocols) => {
+        connectWebSocket: (async (path, protocols) => {
             const socketUrl = buildUrl(serviceUrl, {
                 pathname: path,
                 protocol: 'ws',
@@ -95,7 +95,7 @@ async function setupService(scriptName: string) {
 
             await waitForOpenWebSocket(webSocket);
 
-            const finalSocket = overwriteWebSocketMethods(
+            const finalWebSocket = overwriteWebSocketMethods(
                 {
                     /**
                      * Allow any shape because in this testing framework we're not doing anything
@@ -119,8 +119,8 @@ async function setupService(scriptName: string) {
                 WebSocketLocation.OnHost,
             );
 
-            return finalSocket;
-        }) as TestConnectSocket,
+            return finalWebSocket;
+        }) as TestConnectWebSocket,
         childProcess: shellTarget.childProcess,
         stdout,
         stderr,

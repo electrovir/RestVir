@@ -51,7 +51,7 @@ export const mockServiceImplementation = implementService(
                     webSocket.send(protocols);
                 },
             },
-            '/custom-props-socket': {
+            '/custom-props-web-socket': {
                 onMessage(params) {
                     assert.tsType(params.socketDefinition.customProps).equals<{
                         hello: string;

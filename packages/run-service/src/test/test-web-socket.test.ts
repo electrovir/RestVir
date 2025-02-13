@@ -1,7 +1,7 @@
 import {assert} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
 import {mockServiceImplementation} from '@rest-vir/implement-service/src/implementation/implement-service.mock.js';
-import {withWebSocketTest} from './test-socket.js';
+import {withWebSocketTest} from './test-web-socket.js';
 
 describe(withWebSocketTest.name, () => {
     it(

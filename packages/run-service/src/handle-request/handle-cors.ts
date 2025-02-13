@@ -5,7 +5,7 @@ import {
     Endpoint,
     getAllowedEndpointMethods,
     OriginRequirement,
-    type Socket,
+    type WebSocketDefinition,
 } from '@rest-vir/define-service';
 import {HttpStatus, RestVirHandlerError} from '@rest-vir/implement-service';
 import {convertDuration} from 'date-vir';
@@ -137,7 +137,7 @@ type MatchedOrigin = string | undefined | AnyOrigin;
 async function matchOrigin(
     endpoint: Readonly<
         SelectFrom<
-            Endpoint | Socket,
+            Endpoint | WebSocketDefinition,
             {
                 requiredClientOrigin: true;
                 path: true;

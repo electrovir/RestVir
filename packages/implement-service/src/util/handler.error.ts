@@ -36,7 +36,7 @@ export function createRestVirHandlerErrorPrefix(
         endpoint: boolean | undefined;
     }>,
 ) {
-    const routeNoun = route.socket ? 'Socket ' : route.endpoint ? 'Endpoint ' : '';
+    const routeNoun = route.socket ? 'WebSocket ' : route.endpoint ? 'Endpoint ' : '';
 
     return `${routeNoun}'${route.path}' failed in service '${route.service.serviceName}'`;
 }

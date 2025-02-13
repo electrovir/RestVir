@@ -41,7 +41,7 @@ export function handleRequestMethod(
     const allowedMethods =
         'methods' in route
             ? route.methods
-            : /** Sockets only allow get requests. */
+            : /** WebSockets only allow get requests. */
               {
                   [HttpMethod.Get]: true,
               };
