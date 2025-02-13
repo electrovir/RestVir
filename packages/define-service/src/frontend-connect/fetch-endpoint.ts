@@ -13,7 +13,7 @@ import {assertValidShape} from 'object-shape-tester';
 import {type IsEqual, type IsNever} from 'type-fest';
 import {buildUrl} from 'url-vir';
 import {type PathParams} from '../endpoint/endpoint-path.js';
-import {EndpointExecutorData, type Endpoint} from '../endpoint/endpoint.js';
+import {EndpointExecutorData, type EndpointDefinition} from '../endpoint/endpoint.js';
 import {type NoParam} from '../util/no-param.js';
 
 /**
@@ -45,7 +45,7 @@ export type GenericFetchEndpointParams = {
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export type FetchMethod<EndpointToFetch extends Pick<Endpoint, 'methods'>> =
+export type FetchMethod<EndpointToFetch extends Pick<EndpointDefinition, 'methods'>> =
     IsEqual<
         KeyCount<Record<ExtractKeysWithMatchingValues<EndpointToFetch['methods'], true>, boolean>>,
         1
@@ -64,7 +64,7 @@ export type FetchMethod<EndpointToFetch extends Pick<Endpoint, 'methods'>> =
  */
 export type FetchEndpointParams<
     EndpointToFetch extends SelectFrom<
-        Endpoint,
+        EndpointDefinition,
         {
             path: true;
             requestDataShape: true;
@@ -73,7 +73,7 @@ export type FetchEndpointParams<
         }
     >,
     AllowFetchMock extends boolean = true,
-> = EndpointToFetch extends Endpoint
+> = EndpointToFetch extends EndpointDefinition
     ? Readonly<
           (IsNever<PathParams<EndpointToFetch['path']>> extends true
               ? {
@@ -127,7 +127,7 @@ export type FetchEndpointOutput<
     EndpointToFetch extends
         | Readonly<
               SelectFrom<
-                  Endpoint,
+                  EndpointDefinition,
                   {
                       requestDataShape: true;
                       responseDataShape: true;
@@ -137,7 +137,7 @@ export type FetchEndpointOutput<
         | NoParam,
 > = Readonly<{
     data: EndpointToFetch extends SelectFrom<
-        Endpoint,
+        EndpointDefinition,
         {
             requestDataShape: true;
             responseDataShape: true;
@@ -156,7 +156,7 @@ export type FetchEndpointOutput<
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export function getAllowedEndpointMethods(
-    endpoint: Readonly<Pick<Endpoint, 'methods'>>,
+    endpoint: Readonly<Pick<EndpointDefinition, 'methods'>>,
 ): HttpMethod[] {
     return filterMap(
         getObjectTypedEntries(endpoint.methods),
@@ -176,7 +176,7 @@ export function getAllowedEndpointMethods(
 function filterToValidMethod(
     endpoint: Readonly<
         SelectFrom<
-            Endpoint,
+            EndpointDefinition,
             {
                 methods: true;
                 path: true;
@@ -223,7 +223,7 @@ export type CollapsedFetchEndpointParams<
     EndpointToFetch extends
         | Readonly<
               SelectFrom<
-                  Endpoint,
+                  EndpointDefinition,
                   {
                       path: true;
                       requestDataShape: true;
@@ -265,7 +265,7 @@ export async function fetchEndpoint<
     const EndpointToFetch extends
         | Readonly<
               SelectFrom<
-                  Endpoint,
+                  EndpointDefinition,
                   {
                       requestDataShape: true;
                       path: true;
@@ -280,10 +280,10 @@ export async function fetchEndpoint<
           >
         | NoParam,
 >(
-    endpoint: EndpointToFetch extends Endpoint
+    endpoint: EndpointToFetch extends EndpointDefinition
         ? EndpointToFetch
         : SelectFrom<
-              Endpoint,
+              EndpointDefinition,
               {
                   requestDataShape: true;
                   path: true;
@@ -338,7 +338,7 @@ export function buildEndpointRequestInit<
     const EndpointToFetch extends
         | Readonly<
               SelectFrom<
-                  Endpoint,
+                  EndpointDefinition,
                   {
                       requestDataShape: true;
                       path: true;
@@ -353,10 +353,10 @@ export function buildEndpointRequestInit<
           >
         | NoParam,
 >(
-    endpoint: EndpointToFetch extends Endpoint
+    endpoint: EndpointToFetch extends EndpointDefinition
         ? EndpointToFetch
         : SelectFrom<
-              Endpoint,
+              EndpointDefinition,
               {
                   requestDataShape: true;
                   path: true;
@@ -417,7 +417,7 @@ export function buildEndpointUrl<
     const EndpointToFetch extends
         | Readonly<
               SelectFrom<
-                  Endpoint,
+                  EndpointDefinition,
                   {
                       path: true;
                       service: {
@@ -432,10 +432,10 @@ export function buildEndpointUrl<
           >
         | NoParam = NoParam,
 >(
-    endpoint: EndpointToFetch extends Endpoint
+    endpoint: EndpointToFetch extends EndpointDefinition
         ? EndpointToFetch
         : SelectFrom<
-              Endpoint,
+              EndpointDefinition,
               {
                   path: true;
                   service: {

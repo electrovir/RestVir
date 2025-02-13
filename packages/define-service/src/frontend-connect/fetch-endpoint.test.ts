@@ -1,7 +1,7 @@
 import {assert} from '@augment-vir/assert';
 import {HttpMethod} from '@augment-vir/common';
 import {describe, it, itCases} from '@augment-vir/test';
-import {type Endpoint} from '../endpoint/endpoint.js';
+import {type EndpointDefinition} from '../endpoint/endpoint.js';
 import {mockService} from '../service/define-service.mock.js';
 import {createMockFetch, createMockFetchResponse} from '../util/mock-fetch.js';
 import {type NoParam} from '../util/no-param.js';
@@ -24,7 +24,7 @@ describe('CollapsedFetchEndpointParams', () => {
 
 describe(buildEndpointUrl.name, () => {
     function testBuildEndpointUrl(
-        endpoint: Pick<Endpoint, 'path'>,
+        endpoint: Pick<EndpointDefinition, 'path'>,
         pathParams?: Record<string, string> | undefined,
     ) {
         return buildEndpointUrl(
@@ -167,7 +167,7 @@ describe(fetchEndpoint.name, () => {
     });
 
     async function testFetchEndpoint(
-        endpoint: Endpoint,
+        endpoint: EndpointDefinition,
         params: Readonly<GenericFetchEndpointParams>,
     ) {
         let url = '';

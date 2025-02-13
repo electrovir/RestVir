@@ -14,7 +14,7 @@ import {
     buildEndpointRequestInit,
     buildWebSocketUrl,
     CollapsedFetchEndpointParams,
-    Endpoint,
+    EndpointDefinition,
     finalizeWebSocket,
     WebSocketLocation,
     type ClientWebSocket,
@@ -92,7 +92,7 @@ export async function condenseResponse(
  * @category Package : @rest-vir/run-service
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
-export type FetchTestEndpoint<EndpointToTest extends Endpoint> = (
+export type FetchTestEndpoint<EndpointToTest extends EndpointDefinition> = (
     ...params: CollapsedFetchEndpointParams<EndpointToTest, false>
 ) => Promise<Response>;
 
@@ -122,7 +122,7 @@ export type FetchTestService<
         }
     >,
 > = {
-    [EndpointPath in keyof Service['endpoints']]: Service['endpoints'][EndpointPath] extends Endpoint
+    [EndpointPath in keyof Service['endpoints']]: Service['endpoints'][EndpointPath] extends EndpointDefinition
         ? FetchTestEndpoint<Service['endpoints'][EndpointPath]>
         : never;
 };
@@ -285,7 +285,7 @@ export async function testExistingServer<
             ): Promise<Response> => {
                 await server.ready();
                 const overwrittenOriginEndpoint = mergeDeep(
-                    endpoint as Endpoint,
+                    endpoint as EndpointDefinition,
                     fetchOrigin
                         ? {
                               service: {

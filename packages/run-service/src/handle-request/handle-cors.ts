@@ -2,7 +2,7 @@ import {check} from '@augment-vir/assert';
 import {HttpMethod, SelectFrom} from '@augment-vir/common';
 import {
     AnyOrigin,
-    Endpoint,
+    EndpointDefinition,
     getAllowedEndpointMethods,
     OriginRequirement,
     type WebSocketDefinition,
@@ -137,7 +137,7 @@ type MatchedOrigin = string | undefined | AnyOrigin;
 async function matchOrigin(
     endpoint: Readonly<
         SelectFrom<
-            Endpoint | WebSocketDefinition,
+            EndpointDefinition | WebSocketDefinition,
             {
                 requiredClientOrigin: true;
                 path: true;

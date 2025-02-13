@@ -10,7 +10,7 @@ import {
 } from '@augment-vir/common';
 import {
     BaseServiceEndpointsInit,
-    Endpoint,
+    EndpointDefinition,
     EndpointInit,
     EndpointPathBase,
     MinimalService,
@@ -78,7 +78,7 @@ export type EndpointImplementationOutput<ResponseDataType = unknown> =
 export type EndpointImplementationParams<
     Context = any,
     ServiceName extends string = any,
-    SpecificEndpoint extends Endpoint | NoParam = NoParam,
+    SpecificEndpoint extends EndpointDefinition | NoParam = NoParam,
 > = {
     context: Context;
     method: IsEqual<Extract<SpecificEndpoint, NoParam>, NoParam> extends true
@@ -92,7 +92,7 @@ export type EndpointImplementationParams<
               : AvailableMethod
           : never;
     endpoint: IsEqual<Extract<SpecificEndpoint, NoParam>, NoParam> extends true
-        ? Endpoint
+        ? EndpointDefinition
         : SpecificEndpoint;
     service: MinimalService<ServiceName>;
     requestHeaders: IncomingHttpHeaders;
@@ -136,7 +136,7 @@ export type GenericEndpointImplementationParams = {
 export type EndpointImplementation<
     Context = any,
     ServiceName extends string = any,
-    SpecificEndpoint extends Endpoint | NoParam = NoParam,
+    SpecificEndpoint extends EndpointDefinition | NoParam = NoParam,
 > =
     IsEqual<Extract<SpecificEndpoint, NoParam>, NoParam> extends true
         ? (params: GenericEndpointImplementationParams) => any

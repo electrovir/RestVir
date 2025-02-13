@@ -1,7 +1,7 @@
 import {check} from '@augment-vir/assert';
 import {HttpStatus, isErrorHttpStatus} from '@augment-vir/common';
 import {type IsNever} from 'type-fest';
-import {type Endpoint} from '../endpoint/endpoint.js';
+import {type EndpointDefinition} from '../endpoint/endpoint.js';
 
 /**
  * Options for {@link createMockFetchResponse} and {@link createMockFetch}.
@@ -10,7 +10,7 @@ import {type Endpoint} from '../endpoint/endpoint.js';
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export type MockFetchResponseOptions<EndpointToMock extends Endpoint> = (IsNever<
+export type MockFetchResponseOptions<EndpointToMock extends EndpointDefinition> = (IsNever<
     Extract<EndpointToMock['ResponseType'], undefined>
 > extends true
     ? {
@@ -31,7 +31,7 @@ export type MockFetchResponseOptions<EndpointToMock extends Endpoint> = (IsNever
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export function createMockFetchResponse<const EndpointToMock extends Endpoint>(
+export function createMockFetchResponse<const EndpointToMock extends EndpointDefinition>(
     endpoint: EndpointToMock,
     {
         responseData = undefined,
@@ -65,7 +65,7 @@ export function createMockFetchResponse<const EndpointToMock extends Endpoint>(
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export function createMockFetch<const EndpointToMock extends Endpoint>(
+export function createMockFetch<const EndpointToMock extends EndpointDefinition>(
     endpoint: EndpointToMock,
     options: Omit<MockFetchResponseOptions<EndpointToMock>, 'url'>,
 ) {

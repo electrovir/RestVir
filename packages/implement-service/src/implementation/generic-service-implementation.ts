@@ -1,6 +1,6 @@
 import {type Overwrite} from '@augment-vir/common';
 import {
-    Endpoint,
+    EndpointDefinition,
     EndpointPathBase,
     ServiceDefinition,
     WebSocketDefinition,
@@ -21,7 +21,7 @@ import {type ContextInit} from './service-context-init.js';
 export type ImplementedEndpoint<
     Context = any,
     ServiceName extends string = any,
-    SpecificEndpoint extends Endpoint = Endpoint,
+    SpecificEndpoint extends EndpointDefinition = EndpointDefinition,
 > = Overwrite<
     SpecificEndpoint,
     {

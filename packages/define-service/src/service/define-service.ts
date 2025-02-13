@@ -7,7 +7,7 @@ import {
     assertValidEndpoint,
     attachEndpointShapeTypeGetters,
     endpointInitShape,
-    type Endpoint,
+    type EndpointDefinition,
     type EndpointInit,
     type WithFinalEndpointProps,
 } from '../endpoint/endpoint.js';
@@ -117,7 +117,7 @@ export type ServiceDefinition<
           };
     endpoints: EndpointsInit extends NoParam
         ? {
-              [EndpointPath in EndpointPathBase]: Endpoint;
+              [EndpointPath in EndpointPathBase]: EndpointDefinition;
           }
         : {
               [EndpointPath in keyof EndpointsInit]: EndpointPath extends EndpointPathBase
@@ -182,7 +182,7 @@ function finalizeServiceDefinition<
                 customProps: endpointInit.customProps,
                 endpoint: true,
                 socket: false,
-            } satisfies Omit<Endpoint, 'ResponseType' | 'RequestType'>;
+            } satisfies Omit<EndpointDefinition, 'ResponseType' | 'RequestType'>;
 
             attachEndpointShapeTypeGetters(endpoint);
 

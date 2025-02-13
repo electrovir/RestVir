@@ -6,7 +6,7 @@ import {
     type SelectFrom,
 } from '@augment-vir/common';
 import {
-    type Endpoint,
+    type EndpointDefinition,
     type EndpointPathBase,
     type WebSocketDefinition,
 } from '@rest-vir/define-service';
@@ -144,7 +144,7 @@ function extractRequestData(
     body: unknown,
     route: Readonly<
         SelectFrom<
-            Endpoint | WebSocketDefinition,
+            EndpointDefinition | WebSocketDefinition,
             {
                 requestDataShape: true;
                 path: true;

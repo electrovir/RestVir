@@ -11,7 +11,7 @@ import {
     NoParam,
     ServiceDefinition,
     type BaseServiceWebSocketsInit,
-    type Endpoint,
+    type EndpointDefinition,
     type WebSocketDefinition,
 } from '@rest-vir/define-service';
 import {type IsEqual, type OmitIndexSignature} from 'type-fest';
@@ -166,7 +166,7 @@ export function implementService<
          * created, we attach the correct service to all endpoints.
          */
         return {
-            ...(endpoint as Endpoint),
+            ...(endpoint as EndpointDefinition),
             implementation,
         } satisfies Omit<ImplementedEndpoint, 'service'>;
     }) as AnyObject as ServiceImplementation<

@@ -1,4 +1,4 @@
-import {CollapsedFetchEndpointParams, Endpoint} from '@rest-vir/define-service';
+import {CollapsedFetchEndpointParams, EndpointDefinition} from '@rest-vir/define-service';
 import {type ImplementedEndpoint} from '@rest-vir/implement-service';
 import {testService} from './test-service.js';
 
@@ -9,7 +9,7 @@ import {testService} from './test-service.js';
  * @category Package : @rest-vir/run-service
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
-export type TestEndpoint = <EndpointToTest extends Endpoint>(
+export type TestEndpoint = <EndpointToTest extends EndpointDefinition>(
     endpoint: EndpointToTest,
     ...args: CollapsedFetchEndpointParams<EndpointToTest, false>
 ) => Promise<Response>;

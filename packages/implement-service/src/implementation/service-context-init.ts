@@ -2,7 +2,7 @@ import {HttpMethod, MaybePromise, Values} from '@augment-vir/common';
 import {
     type BaseServiceEndpointsInit,
     type BaseServiceWebSocketsInit,
-    type Endpoint,
+    type EndpointDefinition,
     type EndpointPathBase,
     type MinimalService,
     type NoParam,
@@ -68,7 +68,7 @@ export type ContextInitParameters<
 
     endpoint?:
         | (EndpointsInit extends NoParam
-              ? Endpoint
+              ? EndpointDefinition
               : WithFinalEndpointProps<
                     Values<EndpointsInit>,
                     Extract<keyof EndpointsInit, EndpointPathBase>

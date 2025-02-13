@@ -1,6 +1,5 @@
 ## Required
 
--   change `Endpoint` to `EndpointDefinition`
 -   add typed web socket protocols
 -   add typed search params
 -   fill in mono-repo README

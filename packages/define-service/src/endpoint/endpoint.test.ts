@@ -2,11 +2,11 @@ import {HttpMethod} from '@augment-vir/common';
 import {describe, it, itCases} from '@augment-vir/test';
 import {mockService} from '../service/define-service.mock.js';
 import {ServiceDefinitionError} from '../service/service-definition.error.js';
-import {assertValidEndpoint, Endpoint, EndpointInit} from './endpoint.js';
+import {assertValidEndpoint, EndpointDefinition, EndpointInit} from './endpoint.js';
 
-describe('Endpoint', () => {
+describe('EndpointDefinition', () => {
     it('can be assigned to from any endpoint', () => {
-        const myEndpoint: Endpoint = mockService.endpoints['/empty'];
+        const myEndpoint: EndpointDefinition = mockService.endpoints['/empty'];
     });
 });
 

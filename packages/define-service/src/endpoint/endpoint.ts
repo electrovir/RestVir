@@ -114,7 +114,7 @@ export const endpointInitShape = defineShape({
 } satisfies Record<keyof EndpointInit, any>);
 
 /**
- * Adds final properties to {@link EndpointInit} so it becomes {@link Endpoint}.
+ * Adds final properties to {@link EndpointInit} so it becomes {@link EndpointDefinition}.
  *
  * @category Internal
  * @category Package : @rest-vir/define-service
@@ -172,7 +172,7 @@ export type WithFinalEndpointProps<
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export type Endpoint<
+export type EndpointDefinition<
     AllowedMethods extends RequireAtLeastOne<Record<HttpMethod, boolean>> = RequireAtLeastOne<
         Record<HttpMethod, boolean>
     >,
@@ -191,7 +191,10 @@ export type Endpoint<
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export type BaseEndpointForExecutorData = Pick<Endpoint, 'requestDataShape' | 'responseDataShape'>;
+export type BaseEndpointForExecutorData = Pick<
+    EndpointDefinition,
+    'requestDataShape' | 'responseDataShape'
+>;
 
 /**
  * Extracts response and request data from an endpoint definition into different properties.
@@ -200,9 +203,9 @@ export type BaseEndpointForExecutorData = Pick<Endpoint, 'requestDataShape' | 'r
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export type EndpointExecutorData<Endpoint extends BaseEndpointForExecutorData> = {
-    request: ShapeToRuntimeType<Endpoint['requestDataShape'], false, true>;
-    response: ShapeToRuntimeType<Endpoint['responseDataShape'], false, true>;
+export type EndpointExecutorData<SpecificEndpoint extends BaseEndpointForExecutorData> = {
+    request: ShapeToRuntimeType<SpecificEndpoint['requestDataShape'], false, true>;
+    response: ShapeToRuntimeType<SpecificEndpoint['responseDataShape'], false, true>;
 };
 
 /**
@@ -214,7 +217,7 @@ export type EndpointExecutorData<Endpoint extends BaseEndpointForExecutorData> =
  */
 export function attachEndpointShapeTypeGetters<const T extends AnyObject>(
     endpoint: T,
-): asserts endpoint is T & Pick<Endpoint, 'RequestType' | 'ResponseType'> {
+): asserts endpoint is T & Pick<EndpointDefinition, 'RequestType' | 'ResponseType'> {
     Object.defineProperties(endpoint, {
         RequestType: {
             enumerable: false,
@@ -232,7 +235,7 @@ export function attachEndpointShapeTypeGetters<const T extends AnyObject>(
 }
 
 /**
- * Asserts that the given finalized {@link Endpoint} instance is valid.
+ * Asserts that the given finalized {@link EndpointDefinition} instance is valid.
  *
  * @category Internal
  * @category Package : @rest-vir/define-service
@@ -241,7 +244,7 @@ export function attachEndpointShapeTypeGetters<const T extends AnyObject>(
 export function assertValidEndpoint(
     endpoint: Readonly<
         SelectFrom<
-            Endpoint,
+            EndpointDefinition,
             {
                 path: true;
                 methods: true;
