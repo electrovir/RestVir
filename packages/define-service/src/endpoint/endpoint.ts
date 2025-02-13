@@ -72,7 +72,7 @@ export type EndpointInit<
      *   service's origin requirement).
      * - Any other set value overrides the service's origin requirement (if it has any).
      */
-    requiredOrigin?: OriginRequirement;
+    requiredClientOrigin?: OriginRequirement;
 
     customProps?: Record<PropertyKey, unknown> | undefined;
 };
@@ -95,7 +95,7 @@ export const endpointInitShape = defineShape({
      *   service's origin requirement).
      * - Any other set value overrides the service's origin requirement (if it has any).
      */
-    requiredOrigin: originRequirementShape,
+    requiredClientOrigin: originRequirementShape,
     methods: indexedKeys({
         keys: enumShape(HttpMethod),
         values: false,

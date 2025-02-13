@@ -65,7 +65,7 @@ export type ServiceInit<
     EndpointsInit extends BaseServiceEndpointsInit | NoParam,
     SocketsInit extends BaseServiceSocketsInit | NoParam,
 > = MinimalService<ServiceName> & {
-    requiredOrigin: NonNullable<OriginRequirement>;
+    requiredClientOrigin: NonNullable<OriginRequirement>;
     sockets?: IsEqual<SocketsInit, NoParam> extends true
         ? Record<EndpointPathBase, SocketInit>
         : {
@@ -100,7 +100,7 @@ export type ServiceDefinition<
     EndpointsInit extends BaseServiceEndpointsInit | NoParam = NoParam,
     SocketsInit extends BaseServiceSocketsInit | NoParam = NoParam,
 > = MinimalService<ServiceName> & {
-    requiredOrigin: NonNullable<OriginRequirement>;
+    requiredClientOrigin: NonNullable<OriginRequirement>;
     /** Include the initial init object so a service can be composed. */
     init: SetRequired<
         ServiceInit<ServiceName, EndpointsInit, SocketsInit>,
@@ -158,7 +158,7 @@ function finalizeServiceDefinition<
         const minimalService: MinimalService<ServiceName> = {
             serviceName: serviceInit.serviceName,
             serviceOrigin: serviceInit.serviceOrigin,
-            requiredOrigin: serviceInit.requiredOrigin,
+            requiredClientOrigin: serviceInit.requiredClientOrigin,
         };
 
         /**
@@ -234,7 +234,7 @@ function finalizeServiceDefinition<
                 EndpointsInit,
                 SocketsInit
             >['sockets'],
-            requiredOrigin: serviceInit.requiredOrigin,
+            requiredClientOrigin: serviceInit.requiredClientOrigin,
             /** As cast needed again to narrow the type (for the return value) after broadening it. */
             endpoints: endpoints as AnyObject as ServiceDefinition<
                 ServiceName,
@@ -270,7 +270,7 @@ export function assertValidServiceDefinition(
             );
         }
 
-        assert.isDefined(serviceDefinition.requiredOrigin);
+        assert.isDefined(serviceDefinition.requiredClientOrigin);
 
         getObjectTypedEntries(serviceDefinition.endpoints).forEach(
             ([

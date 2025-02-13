@@ -20,5 +20,5 @@ export type MinimalService<ServiceName extends string = string> = {
      */
     serviceOrigin: string;
     /** The service's origin requirement for all request clients. */
-    requiredOrigin: NonNullable<OriginRequirement>;
+    requiredClientOrigin: NonNullable<OriginRequirement>;
 };

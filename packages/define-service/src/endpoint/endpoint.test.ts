@@ -19,7 +19,7 @@ describe('EndpointInit', () => {
         > = {
             requestDataShape: {inputTest: 'a'},
             responseDataShape: undefined,
-            requiredOrigin: '',
+            requiredClientOrigin: '',
             methods: {[HttpMethod.Get]: true},
         };
     });
@@ -31,7 +31,7 @@ describe('EndpointInit', () => {
         > = {
             requestDataShape: undefined,
             responseDataShape: {outputTest: 'b', anotherProp: 4},
-            requiredOrigin: '',
+            requiredClientOrigin: '',
             methods: {[HttpMethod.Get]: true},
         };
     });
@@ -43,7 +43,7 @@ describe('EndpointInit', () => {
         > = {
             requestDataShape: {inputTest: 'a'},
             responseDataShape: {outputTest: 'b', anotherProp: 4},
-            requiredOrigin: '',
+            requiredClientOrigin: '',
             methods: {[HttpMethod.Get]: true},
         };
     });
@@ -51,7 +51,7 @@ describe('EndpointInit', () => {
         const testAssignment: EndpointInit<{[HttpMethod.Get]: true}, undefined, undefined> = {
             requestDataShape: undefined,
             responseDataShape: undefined,
-            requiredOrigin: '',
+            requiredClientOrigin: '',
             methods: {[HttpMethod.Get]: true},
         };
     });

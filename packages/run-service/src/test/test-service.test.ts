@@ -54,7 +54,7 @@ const plainService = implementService(
                     responseDataShape: undefined,
                 },
             },
-            requiredOrigin: AnyOrigin,
+            requiredClientOrigin: AnyOrigin,
             serviceName: 'plain service',
             serviceOrigin: 'https://example.com',
         }),

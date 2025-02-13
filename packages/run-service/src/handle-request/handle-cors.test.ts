@@ -24,7 +24,7 @@ describe(handleCors.name, () => {
                         },
                         service: {
                             // @ts-expect-error: this cannot be `undefined` in the service
-                            requiredOrigin: undefined,
+                            requiredClientOrigin: undefined,
                             serviceName: 'example service',
                         },
                     },
@@ -51,7 +51,7 @@ describe(handleCors.name, () => {
                         [HttpMethod.Get]: true,
                     },
                     service: {
-                        requiredOrigin: 'https://example.com',
+                        requiredClientOrigin: 'https://example.com',
                         serviceName: 'example service',
                     },
                 },
@@ -78,7 +78,7 @@ describe(handleCors.name, () => {
                         [HttpMethod.Get]: true,
                     },
                     service: {
-                        requiredOrigin: 'http://example.com',
+                        requiredClientOrigin: 'http://example.com',
                         serviceName: 'example service',
                     },
                 },
@@ -109,10 +109,10 @@ describe(handleCors.name, () => {
                         [HttpMethod.Get]: true,
                     },
                     service: {
-                        requiredOrigin: 'https://example.com',
+                        requiredClientOrigin: 'https://example.com',
                         serviceName: 'example service',
                     },
-                    requiredOrigin: AnyOrigin,
+                    requiredClientOrigin: AnyOrigin,
                 },
             }),
             {

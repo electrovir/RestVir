@@ -71,7 +71,7 @@ export async function startService(
                 serviceName: true;
                 createContext: true;
                 serviceOrigin: true;
-                requiredOrigin: true;
+                requiredClientOrigin: true;
                 logger: true;
             }
         >
@@ -155,7 +155,7 @@ async function startServer(
                 serviceName: true;
                 createContext: true;
                 serviceOrigin: true;
-                requiredOrigin: true;
+                requiredClientOrigin: true;
                 logger: true;
             }
         >

@@ -1,6 +1,5 @@
 ## Required
 
--   rename `requiredOrigin` to `requiredClientOrigin`
 -   change `Socket` to `WebSocketDefinition`
 -   change `Endpoint` to `EndpointDefinition`
 -   add typed web socket protocols

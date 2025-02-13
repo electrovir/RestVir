@@ -19,7 +19,7 @@ describe(preHandler.name, () => {
                             '/missing': undefined as unknown as ImplementedEndpoint,
                         },
                         serviceName: 'derp',
-                        requiredOrigin: AnyOrigin,
+                        requiredClientOrigin: AnyOrigin,
                         serviceOrigin: '',
                         sockets: {},
                     },

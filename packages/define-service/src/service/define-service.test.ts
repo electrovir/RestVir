@@ -76,7 +76,7 @@ describe(defineService.name, () => {
             endpoints: {
                 '/path': {
                     requestDataShape: undefined,
-                    requiredOrigin: undefined,
+                    requiredClientOrigin: undefined,
                     responseDataShape: undefined,
                     methods: {
                         GET: true,
@@ -85,7 +85,7 @@ describe(defineService.name, () => {
             },
             serviceName: 'my-service',
             serviceOrigin: 'some origin',
-            requiredOrigin: AnyOrigin,
+            requiredClientOrigin: AnyOrigin,
         });
 
         assert.tsType<(typeof myService.endpoints)['/path']['methods']>().equals<{
@@ -97,7 +97,7 @@ describe(defineService.name, () => {
             endpoints: {
                 '/path': {
                     requestDataShape: undefined,
-                    requiredOrigin: undefined,
+                    requiredClientOrigin: undefined,
                     responseDataShape: undefined,
                     methods: {
                         [HttpMethod.Get]: true,
@@ -105,7 +105,7 @@ describe(defineService.name, () => {
                 },
                 '/path2': {
                     requestDataShape: undefined,
-                    requiredOrigin: undefined,
+                    requiredClientOrigin: undefined,
                     responseDataShape: undefined,
                     methods: {
                         [HttpMethod.Get]: true,
@@ -114,7 +114,7 @@ describe(defineService.name, () => {
             },
             serviceName: 'my-service',
             serviceOrigin: 'some origin',
-            requiredOrigin: AnyOrigin,
+            requiredClientOrigin: AnyOrigin,
         });
 
         function acceptsDefinition(input: ServiceDefinition) {}
@@ -132,7 +132,7 @@ describe(defineService.name, () => {
                         '/valid-path': {
                             requestDataShape: undefined,
                             responseDataShape: undefined,
-                            requiredOrigin: undefined,
+                            requiredClientOrigin: undefined,
                             methods: {
                                 [HttpMethod.Get]: true,
                             },
@@ -141,7 +141,7 @@ describe(defineService.name, () => {
                         'invalid-path': {
                             requestDataShape: undefined,
                             responseDataShape: undefined,
-                            requiredOrigin: undefined,
+                            requiredClientOrigin: undefined,
                             methods: {
                                 [HttpMethod.Get]: true,
                             },
@@ -205,7 +205,7 @@ describe(defineService.name, () => {
                     serviceName: '',
                     serviceOrigin: '',
                     endpoints: {},
-                    requiredOrigin: AnyOrigin,
+                    requiredClientOrigin: AnyOrigin,
                 });
             },
             {
@@ -222,7 +222,7 @@ describe(defineService.name, () => {
                     serviceName: 54,
                     serviceOrigin: '',
                     endpoints: {},
-                    requiredOrigin: AnyOrigin,
+                    requiredClientOrigin: AnyOrigin,
                 });
             },
             {
@@ -281,13 +281,13 @@ describe(defineService.name, () => {
     it('requires errorMessage when returning an error-based status code', () => {
         defineService({
             serviceName: 'test-endpoint-service',
-            requiredOrigin: AnyOrigin,
+            requiredClientOrigin: AnyOrigin,
             serviceOrigin: '',
             endpoints: {
                 '/test-endpoint': {
                     requestDataShape: undefined,
                     responseDataShape: undefined,
-                    requiredOrigin: undefined,
+                    requiredClientOrigin: undefined,
                     methods: {
                         [HttpMethod.Get]: true,
                     },
@@ -299,13 +299,13 @@ describe(defineService.name, () => {
     it('requires data when returning a successful status code', () => {
         defineService({
             serviceName: 'test-endpoint-service',
-            requiredOrigin: AnyOrigin,
+            requiredClientOrigin: AnyOrigin,
             serviceOrigin: '',
             endpoints: {
                 '/test-endpoint': {
                     requestDataShape: undefined,
                     responseDataShape: undefined,
-                    requiredOrigin: undefined,
+                    requiredClientOrigin: undefined,
                     methods: {
                         [HttpMethod.Get]: true,
                     },
@@ -320,12 +320,12 @@ describe(defineService.name, () => {
                 defineService({
                     serviceName: 'test-endpoint-service',
                     serviceOrigin: '',
-                    requiredOrigin: AnyOrigin,
+                    requiredClientOrigin: AnyOrigin,
                     endpoints: {
                         '/test-endpoint': {
                             requestDataShape: undefined,
                             responseDataShape: undefined,
-                            requiredOrigin: undefined,
+                            requiredClientOrigin: undefined,
                             // @ts-expect-error: needs at least once method
                             methods: {},
                         },
@@ -341,7 +341,7 @@ describe(defineService.name, () => {
             () =>
                 defineService({
                     serviceName: 'test-service',
-                    requiredOrigin: AnyOrigin,
+                    requiredClientOrigin: AnyOrigin,
                     serviceOrigin: '',
                     endpoints: {
                         // @ts-expect-error: invalid endpoint
@@ -359,13 +359,13 @@ describe(defineService.name, () => {
             () =>
                 defineService({
                     serviceName: 'test-endpoint-service',
-                    requiredOrigin: AnyOrigin,
+                    requiredClientOrigin: AnyOrigin,
                     serviceOrigin: '',
                     endpoints: {
                         '/test-endpoint/': {
                             requestDataShape: undefined,
                             responseDataShape: undefined,
-                            requiredOrigin: undefined,
+                            requiredClientOrigin: undefined,
                             methods: {
                                 [HttpMethod.Get]: true,
                             },
@@ -380,7 +380,7 @@ describe(defineService.name, () => {
     it('can define sockets without endpoints', () => {
         const service = defineService({
             serviceName: 'test-endpoint-service',
-            requiredOrigin: AnyOrigin,
+            requiredClientOrigin: AnyOrigin,
             serviceOrigin: '',
             sockets: {
                 '/my-socket': {
@@ -393,7 +393,7 @@ describe(defineService.name, () => {
                             code: exact(2),
                         },
                     ),
-                    requiredOrigin: 'http://example.com',
+                    requiredClientOrigin: 'http://example.com',
                 },
             },
         });
@@ -438,7 +438,7 @@ describe(defineService.name, () => {
     it('can define no sockets or endpoints', () => {
         const service = defineService({
             serviceName: 'test-endpoint-service',
-            requiredOrigin: AnyOrigin,
+            requiredClientOrigin: AnyOrigin,
             serviceOrigin: '',
         });
 
@@ -449,7 +449,7 @@ describe(defineService.name, () => {
         assert.throws(() =>
             defineService({
                 serviceName: 'test-endpoint-service',
-                requiredOrigin: AnyOrigin,
+                requiredClientOrigin: AnyOrigin,
                 serviceOrigin: '',
                 sockets: {
                     '/invalid/': {
@@ -470,7 +470,7 @@ describe(assertValidServiceDefinition.name, () => {
             it: 'allows a service with no endpoints',
             input: defineService({
                 serviceName: 'test-service',
-                requiredOrigin: AnyOrigin,
+                requiredClientOrigin: AnyOrigin,
                 serviceOrigin: '',
                 endpoints: {},
             }),
@@ -483,13 +483,13 @@ describe(assertValidServiceDefinition.name, () => {
                 serviceName: 'test-service',
                 serviceOrigin: '',
                 sockets: {},
-                requiredOrigin: AnyOrigin,
+                requiredClientOrigin: AnyOrigin,
                 init: {
                     sockets: {},
                     endpoints: {},
                     serviceName: 'test-service',
                     serviceOrigin: '',
-                    requiredOrigin: AnyOrigin,
+                    requiredClientOrigin: AnyOrigin,
                 },
             },
             throws: undefined,
@@ -499,13 +499,13 @@ describe(assertValidServiceDefinition.name, () => {
             input: {
                 serviceName: 'test-service',
                 serviceOrigin: '',
-                requiredOrigin: AnyOrigin,
+                requiredClientOrigin: AnyOrigin,
                 init: {
                     sockets: {},
                     endpoints: {},
                     serviceName: 'test-service',
                     serviceOrigin: '',
-                    requiredOrigin: AnyOrigin,
+                    requiredClientOrigin: AnyOrigin,
                 },
                 endpoints: {
                     // @ts-expect-error: endpoint path is not valid (must start with a slash
@@ -530,7 +530,7 @@ describe(assertValidServiceDefinition.name, () => {
                 endpoints: {
                     // @ts-expect-error: endpoint path must be a string
                     [endpointSymbol]: {
-                        requiredOrigin: '',
+                        requiredClientOrigin: '',
                         requestDataShape: undefined,
                         responseDataShape: undefined,
                         RequestType: undefined,
@@ -548,9 +548,9 @@ describe(assertValidServiceDefinition.name, () => {
                     serviceName: 'test-service',
                     serviceOrigin: '',
                     endpoints: {},
-                    requiredOrigin: AnyOrigin,
+                    requiredClientOrigin: AnyOrigin,
                 },
-                requiredOrigin: AnyOrigin,
+                requiredClientOrigin: AnyOrigin,
             },
             throws: {
                 matchConstructor: ServiceDefinitionError,

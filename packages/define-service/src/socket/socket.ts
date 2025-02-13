@@ -33,7 +33,7 @@ export type SocketInit<MessageFromClientShape = unknown, MessageFromServerShape 
      *   service's origin requirement).
      * - Any other set value overrides the service's origin requirement (if it has any).
      */
-    requiredOrigin?: OriginRequirement;
+    requiredClientOrigin?: OriginRequirement;
 
     customProps?: Record<PropertyKey, unknown> | undefined;
 };
@@ -125,7 +125,7 @@ export const socketInitShape = defineShape({
      *   service's origin requirement).
      * - Any other set value overrides the service's origin requirement (if it has any).
      */
-    requiredOrigin: originRequirementShape,
+    requiredClientOrigin: originRequirementShape,
     customProps: optional(
         or(
             undefined,

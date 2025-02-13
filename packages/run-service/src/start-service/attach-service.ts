@@ -53,7 +53,7 @@ export async function attachService(
                 serviceName: true;
                 createContext: true;
                 serviceOrigin: true;
-                requiredOrigin: true;
+                requiredClientOrigin: true;
                 logger: true;
             }
         >

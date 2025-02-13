@@ -106,7 +106,7 @@ async function setupService(scriptName: string) {
                     path: '/test',
                     service: {
                         serviceName: 'test',
-                        requiredOrigin: AnyOrigin,
+                        requiredClientOrigin: AnyOrigin,
                         serviceOrigin: '',
                     },
                     customProps: undefined,

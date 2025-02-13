@@ -184,7 +184,7 @@ export async function testService<
                 serviceName: true;
                 createContext: true;
                 serviceOrigin: true;
-                requiredOrigin: true;
+                requiredClientOrigin: true;
                 logger: true;
             }
         >
@@ -255,7 +255,7 @@ export async function testExistingServer<
                 serviceName: true;
                 createContext: true;
                 serviceOrigin: true;
-                requiredOrigin: true;
+                requiredClientOrigin: true;
                 logger: true;
             }
         >
@@ -421,7 +421,7 @@ export function describeService<
                 serviceName: true;
                 createContext: true;
                 serviceOrigin: true;
-                requiredOrigin: true;
+                requiredClientOrigin: true;
                 logger: true;
             }
         >

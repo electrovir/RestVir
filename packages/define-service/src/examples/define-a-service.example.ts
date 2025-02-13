@@ -7,12 +7,12 @@ export const myService = defineService({
      * sent to this origin.
      */
     serviceOrigin: 'https://example.com',
-    requiredOrigin: AnyOrigin,
+    requiredClientOrigin: AnyOrigin,
     endpoints: {
         '/my-endpoint': {
             requestDataShape: undefined,
             responseDataShape: undefined,
-            requiredOrigin: undefined,
+            requiredClientOrigin: undefined,
             methods: {
                 GET: true,
             },
@@ -27,7 +27,7 @@ export const myService = defineService({
             methods: {
                 GET: true,
             },
-            requiredOrigin: 'https://my-website.com',
+            requiredClientOrigin: 'https://my-website.com',
         },
     },
 });

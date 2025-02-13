@@ -42,11 +42,11 @@ export async function handleCors(
                     method: true;
                 };
                 route: {
-                    requiredOrigin: true;
+                    requiredClientOrigin: true;
                     path: true;
                     service: {
                         serviceName: true;
-                        requiredOrigin: true;
+                        requiredClientOrigin: true;
                     };
                     methods: true;
                     endpoint: true;
@@ -139,11 +139,11 @@ async function matchOrigin(
         SelectFrom<
             Endpoint | Socket,
             {
-                requiredOrigin: true;
+                requiredClientOrigin: true;
                 path: true;
                 service: {
                     serviceName: true;
-                    requiredOrigin: true;
+                    requiredClientOrigin: true;
                 };
                 endpoint: true;
                 socket: true;
@@ -152,7 +152,7 @@ async function matchOrigin(
     >,
     origin: string | undefined,
 ): Promise<MatchedOrigin> {
-    const endpointRequirement = await checkOriginRequirement(endpoint.requiredOrigin, origin);
+    const endpointRequirement = await checkOriginRequirement(endpoint.requiredClientOrigin, origin);
 
     if (endpointRequirement === AnyOrigin) {
         return AnyOrigin;
@@ -165,7 +165,7 @@ async function matchOrigin(
     /** If the endpoint requirement is `undefined`, then we check the service requirement. */
 
     const serviceRequirement = await checkOriginRequirement(
-        endpoint.service.requiredOrigin,
+        endpoint.service.requiredClientOrigin,
         origin,
     );
 

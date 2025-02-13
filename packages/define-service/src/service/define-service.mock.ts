@@ -11,7 +11,7 @@ export const mockWebsiteOrigin = 'https://example.com';
 export const mockService = defineService({
     serviceName: 'mock-service',
     serviceOrigin: 'https://example.com',
-    requiredOrigin: AnyOrigin,
+    requiredClientOrigin: AnyOrigin,
     sockets: {
         '/origin-locked': {
             messageFromServerShape: exact('ok'),
@@ -19,7 +19,7 @@ export const mockService = defineService({
                 a: '',
                 b: -1,
             },
-            requiredOrigin: mockWebsiteOrigin,
+            requiredClientOrigin: mockWebsiteOrigin,
         },
         '/no-origin': {
             messageFromServerShape: exact('ok'),
@@ -69,7 +69,7 @@ export const mockService = defineService({
             },
             requestDataShape: undefined,
             responseDataShape: undefined,
-            async requiredOrigin(origin) {
+            async requiredClientOrigin(origin) {
                 await wait({milliseconds: 1});
                 return !!origin?.includes('example.com');
             },
@@ -80,7 +80,7 @@ export const mockService = defineService({
             },
             requestDataShape: undefined,
             responseDataShape: undefined,
-            requiredOrigin: [
+            requiredClientOrigin: [
                 'http://example.com',
                 /example\.com/,
                 (origin) => {
@@ -127,7 +127,7 @@ export const mockService = defineService({
                 [HttpMethod.Get]: true,
             },
             responseDataShape: undefined,
-            requiredOrigin: mockWebsiteOrigin,
+            requiredClientOrigin: mockWebsiteOrigin,
         },
         '/long-running': {
             requestDataShape: or(undefined, {count: -1}),
@@ -195,7 +195,7 @@ export const mockService = defineService({
         '/returns-error-status': {
             requestDataShape: undefined,
             responseDataShape: undefined,
-            requiredOrigin: mockWebsiteOrigin,
+            requiredClientOrigin: mockWebsiteOrigin,
             methods: {
                 [HttpMethod.Get]: true,
             },

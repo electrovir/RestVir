@@ -39,7 +39,7 @@ export async function preHandler(
                 serviceName: true;
                 createContext: true;
                 serviceOrigin: true;
-                requiredOrigin: true;
+                requiredClientOrigin: true;
             }
         >
     >,
