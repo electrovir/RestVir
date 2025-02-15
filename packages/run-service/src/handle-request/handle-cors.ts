@@ -1,5 +1,5 @@
 import {check} from '@augment-vir/assert';
-import {HttpMethod, log, SelectFrom} from '@augment-vir/common';
+import {HttpMethod, SelectFrom} from '@augment-vir/common';
 import {
     AnyOrigin,
     EndpointDefinition,
@@ -10,7 +10,7 @@ import {
 import {HttpStatus, RestVirHandlerError} from '@rest-vir/implement-service';
 import {convertDuration} from 'date-vir';
 import {type OutgoingHttpHeaders} from 'node:http';
-import {EndpointHandlerParams, HandledOutput, HandleRouteOptions} from './endpoint-handler.js';
+import {EndpointHandlerParams, HandledOutput} from './endpoint-handler.js';
 
 /**
  * Determines the required origin for the endpoint and compares it with the given request.
@@ -48,6 +48,7 @@ export async function handleCors(
                     service: {
                         serviceName: true;
                         requiredClientOrigin: true;
+                        logger: true;
                     };
                     methods: true;
                     isEndpoint: true;
@@ -56,7 +57,6 @@ export async function handleCors(
             }
         >
     >,
-    options: Readonly<Pick<HandleRouteOptions, 'debug'>> = {},
 ): Promise<HandledOutput> {
     const origin = request.headers.origin;
     const matchedOrigin = await matchOrigin(route, origin);
@@ -72,7 +72,9 @@ export async function handleCors(
             headers: buildStandardCorsHeaders(matchedOrigin),
         };
     } else {
-        log.if(!!options.debug).error(`CORS rejected: '${request.originalUrl}'`);
+        route.service.logger.error(
+            new RestVirHandlerError(route, `CORS rejected for origin '${origin}'.`),
+        );
         /** The CORS requirements for this request have not been met. */
         return {
             statusCode: HttpStatus.Forbidden,

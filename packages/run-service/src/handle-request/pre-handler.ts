@@ -22,7 +22,7 @@ import {
     ServerResponse,
 } from '@rest-vir/implement-service';
 import {assertValidShape, isValidShape} from 'object-shape-tester';
-import {handleHandlerResult, HandleRouteOptions} from './endpoint-handler.js';
+import {handleHandlerResult} from './endpoint-handler.js';
 import {handleCors} from './handle-cors.js';
 import {handleRequestMethod} from './handle-request-method.js';
 
@@ -46,18 +46,15 @@ export async function preHandler(
                 createContext: true;
                 serviceOrigin: true;
                 requiredClientOrigin: true;
+                logger: true;
             }
         >
     >,
     attachId: string,
-    options: Readonly<Pick<HandleRouteOptions, 'debug'>> = {},
 ) {
     const pathMatch = matchUrlToService(service, request.originalUrl);
 
     if (!pathMatch) {
-        log.if(!!options.debug).error(
-            `Request path not matched in preHandler: '${request.originalUrl}'`,
-        );
         /** Nothing to do. */
         return;
     }
@@ -86,23 +83,17 @@ export async function preHandler(
 
     if (
         handleHandlerResult(
-            await handleCors(
-                {
-                    request,
-                    route,
-                },
-                options,
-            ),
+            await handleCors({
+                request,
+                route,
+            }),
             response,
         ).responseSent ||
         handleHandlerResult(
-            handleRequestMethod(
-                {
-                    request,
-                    route,
-                },
-                options,
-            ),
+            handleRequestMethod({
+                request,
+                route,
+            }),
             response,
         ).responseSent
     ) {
@@ -112,8 +103,11 @@ export async function preHandler(
     const requestData = wrapInTry(() => extractRequestData(request.body, route));
 
     if (requestData instanceof Error) {
-        log.if(!!options.debug).error(
-            `Rejected request body from '${request.originalUrl}': ${stringify(requestData)}`,
+        service.logger.error(
+            new RestVirHandlerError(
+                route,
+                `Rejected request body from '${request.originalUrl}': ${stringify(requestData)}`,
+            ),
         );
         response.statusCode = HttpStatus.BadRequest;
         response.send('Invalid body.');
@@ -139,17 +133,15 @@ export async function preHandler(
         webSocketDefinition?.protocolsShape &&
         !isValidShape(protocols, webSocketDefinition.protocolsShape)
     ) {
-        if (options.debug) {
-            try {
-                assertValidShape(protocols, webSocketDefinition.protocolsShape);
-            } catch (error) {
-                log.error(
-                    ensureErrorAndPrependMessage(
-                        error,
-                        `WebSocket protocols rejected (${stringify(protocols)}):`,
-                    ),
-                );
-            }
+        try {
+            assertValidShape(protocols, webSocketDefinition.protocolsShape);
+        } catch (error) {
+            log.error(
+                ensureErrorAndPrependMessage(
+                    error,
+                    `WebSocket protocols rejected (${stringify(protocols)}):`,
+                ),
+            );
         }
 
         response.statusCode = HttpStatus.BadRequest;
@@ -161,8 +153,11 @@ export async function preHandler(
         const contextOutput = await service.createContext?.(contextParams);
 
         if (contextOutput?.reject) {
-            log.if(!!options.debug).error(
-                `Rejected rejected from context creation: '${request.originalUrl}'`,
+            service.logger.error(
+                new RestVirHandlerError(
+                    route,
+                    `Context creation rejected: '${request.originalUrl}'`,
+                ),
             );
             handleHandlerResult(
                 {

@@ -2,6 +2,7 @@ import {assert} from '@augment-vir/assert';
 import {HttpMethod} from '@augment-vir/common';
 import {describe, it} from '@augment-vir/test';
 import {mockService} from '@rest-vir/define-service/src/service/define-service.mock.js';
+import {defaultServiceLogger} from '@rest-vir/implement-service';
 import {handleRequestMethod} from './handle-request-method.js';
 
 describe(handleRequestMethod.name, () => {
@@ -17,6 +18,13 @@ describe(handleRequestMethod.name, () => {
                     methods: {
                         /** Even this can't stop it. */
                         [HttpMethod.Options]: false,
+                    },
+                    isEndpoint: true,
+                    isWebSocket: false,
+                    path: '/empty',
+                    service: {
+                        serviceName: 'whatever',
+                        logger: defaultServiceLogger,
                     },
                 },
             }),

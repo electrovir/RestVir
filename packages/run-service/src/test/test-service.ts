@@ -1,5 +1,6 @@
 import {assert, assertWrap, check} from '@augment-vir/assert';
 import {
+    ensureErrorAndPrependMessage,
     log,
     mapObjectValues,
     mergeDeep,
@@ -31,7 +32,11 @@ import {type OutgoingHttpHeaders} from 'node:http';
 import {buildUrl, parseUrl} from 'url-vir';
 import {HandleRouteOptions} from '../handle-request/endpoint-handler.js';
 import {attachService} from '../start-service/attach-service.js';
-import {type StartServiceUserOptions} from '../start-service/start-service-options.js';
+import {
+    StartServiceOptions,
+    type StartServiceUserOptions,
+} from '../start-service/start-service-options.js';
+import {applyDebugLogger} from '../util/debug.js';
 
 /**
  * Options for {@link condenseResponse}.
@@ -195,7 +200,10 @@ export async function testService<
 >(
     service: Readonly<Service>,
     testServiceOptions: Readonly<
-        Omit<PartialWithUndefined<TestServiceOptions>, 'workerCount' | 'preventWorkerRespawn'>
+        Omit<
+            PartialWithUndefined<StartServiceUserOptions>,
+            'workerCount' | 'preventWorkerRespawn' | ''
+        >
     > = {},
 ) {
     const {
@@ -215,10 +223,12 @@ export async function testService<
     );
 
     const server = fastify();
-    /* node:coverage ignore next 3: this is just here to cover edge cases */
-    server.setErrorHandler((error) => {
-        log.if(!!debug).error(error);
-    });
+    /* node:coverage ignore next 5: this is just here to cover edge cases */
+    if (debug) {
+        server.setErrorHandler((error) => {
+            log.error(ensureErrorAndPrependMessage(error, 'Fastify error handler caught:'));
+        });
+    }
 
     assert.isDefined(server, 'Service server was not started.');
 
@@ -276,8 +286,12 @@ export async function testExistingServer<
 >(
     server: Readonly<FastifyInstance>,
     service: Readonly<Service>,
-    options: Readonly<HandleRouteOptions> & PartialWithUndefined<{host: string; port: number}> = {},
+    options: Readonly<
+        HandleRouteOptions &
+            Omit<PartialWithUndefined<StartServiceOptions>, 'workerCount' | 'preventWorkerRespawn'>
+    > = {},
 ) {
+    applyDebugLogger(options.debug, service);
     await attachService(server, service, options);
 
     const fetchOrigin =

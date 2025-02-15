@@ -28,14 +28,6 @@ export type HandleRouteOptions = PartialWithUndefined<{
      * @default false
      */
     throwErrorsForExternalHandling: boolean;
-
-    /**
-     * Set this to true to enable extra logging. This should only be used in dev as it will fill up
-     * production log files if you have a decent amount of traffic.
-     *
-     * @default false
-     */
-    debug: boolean;
 }>;
 
 /**

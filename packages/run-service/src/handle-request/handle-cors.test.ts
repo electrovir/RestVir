@@ -2,6 +2,7 @@ import {assert} from '@augment-vir/assert';
 import {HttpMethod, HttpStatus} from '@augment-vir/common';
 import {describe, it} from '@augment-vir/test';
 import {AnyOrigin} from '@rest-vir/define-service';
+import {defaultServiceLogger} from '@rest-vir/implement-service';
 import {handleCors} from './handle-cors.js';
 
 describe(handleCors.name, () => {
@@ -55,6 +56,7 @@ describe(handleCors.name, () => {
                     service: {
                         requiredClientOrigin: 'https://example.com',
                         serviceName: 'example service',
+                        logger: defaultServiceLogger,
                     },
                 },
             }),
@@ -83,6 +85,7 @@ describe(handleCors.name, () => {
                     service: {
                         requiredClientOrigin: 'http://example.com',
                         serviceName: 'example service',
+                        logger: defaultServiceLogger,
                     },
                 },
             }),
@@ -115,6 +118,7 @@ describe(handleCors.name, () => {
                     service: {
                         requiredClientOrigin: 'https://example.com',
                         serviceName: 'example service',
+                        logger: defaultServiceLogger,
                     },
                     requiredClientOrigin: AnyOrigin,
                 },

@@ -1,5 +1,5 @@
 import {assert, check} from '@augment-vir/assert';
-import {ensureError, HttpStatus, log} from '@augment-vir/common';
+import {ensureError, HttpStatus} from '@augment-vir/common';
 import {
     ImplementedEndpoint,
     RestVirHandlerError,
@@ -28,7 +28,7 @@ export async function handleRoute(
     response: ServerResponse | undefined,
     route: Readonly<ImplementedEndpoint | ImplementedWebSocket>,
     attachId: string,
-    options: Readonly<HandleRouteOptions> = {},
+    options: Readonly<Pick<HandleRouteOptions, 'throwErrorsForExternalHandling'>> = {},
 ) {
     try {
         const workerPid = cluster.isPrimary ? '' : process.pid;
@@ -71,7 +71,6 @@ export async function handleRoute(
         /* node:coverage ignore next: this can't actually be triggered but it should be covered as a potential future edge case. */
         throw new RestVirHandlerError(route, 'Request was not handled.');
     } catch (error) {
-        log.if(!!options.debug).error(error);
         route.service.logger.error(ensureError(error));
         if (options.throwErrorsForExternalHandling) {
             throw error;

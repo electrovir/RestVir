@@ -1,4 +1,4 @@
-import {ensureError, HttpStatus, log, randomString, SelectFrom} from '@augment-vir/common';
+import {ensureError, HttpStatus, randomString, SelectFrom} from '@augment-vir/common';
 import fastifyWs from '@fastify/websocket';
 import {GenericServiceImplementation, ServiceImplementation} from '@rest-vir/implement-service';
 import {type FastifyInstance} from 'fastify';
@@ -74,9 +74,8 @@ export async function attachService(
 
         server.addHook('preValidation', async (request, response) => {
             try {
-                await preHandler(request, response, service, attachId, options);
+                await preHandler(request, response, service, attachId);
             } catch (error) {
-                log.if(!!options.debug).error(error);
                 service.logger.error(ensureError(error));
                 if (options.throwErrorsForExternalHandling) {
                     throw error;
@@ -117,7 +116,7 @@ export async function attachService(
         );
         /* node:coverage ignore next 4: this is just here to cover edge cases. */
     } catch (error) {
-        log.if(!!options.debug).error(error);
+        service.logger.error(ensureError(error));
         throw error;
     }
 }

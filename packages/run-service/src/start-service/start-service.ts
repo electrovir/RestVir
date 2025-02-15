@@ -160,12 +160,11 @@ async function startServer(
             }
         >
     >,
-    {host, port, debug}: Readonly<Pick<StartServiceOptions, 'host' | 'port' | 'debug'>>,
+    {host, port}: Readonly<Pick<StartServiceOptions, 'host' | 'port'>>,
 ): Promise<StartServiceOutput> {
     const server = fastify();
 
     await attachService(server, service, {
-        debug,
         throwErrorsForExternalHandling: false,
     });
 

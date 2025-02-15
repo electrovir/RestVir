@@ -1,4 +1,4 @@
-import {ensureErrorClass, extractErrorMessage, log, stringify} from '@augment-vir/common';
+import {ensureErrorClass, extractErrorMessage, stringify} from '@augment-vir/common';
 import {
     overwriteWebSocketMethods,
     parseJsonWithUndefined,
@@ -11,7 +11,6 @@ import {
 } from '@rest-vir/implement-service';
 import {assertValidShape} from 'object-shape-tester';
 import {type WebSocket as WsWebSocket} from 'ws';
-import {HandleRouteOptions} from './endpoint-handler.js';
 
 /**
  * Handles a WebSocket request.
@@ -33,7 +32,6 @@ export async function handleWebSocketRequest(
         implementedWebSocket: Readonly<ImplementedWebSocket>;
         webSocket: WsWebSocket;
     }>,
-    options: Readonly<HandleRouteOptions> = {},
 ) {
     const restVirContext = request.restVirContext?.[attachId];
 
@@ -84,7 +82,6 @@ export async function handleWebSocketRequest(
             } catch (error) {
                 const errorMessage = `Failed to receive WebSocket message '${String(rawMessage as unknown)}': ${extractErrorMessage(error)}`;
 
-                log.if(!!options.debug).error(errorMessage);
                 implementedWebSocket.service.logger.error(
                     ensureErrorClass(
                         error,
