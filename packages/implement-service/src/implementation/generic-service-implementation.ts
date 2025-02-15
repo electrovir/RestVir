@@ -4,6 +4,7 @@ import {
     EndpointPathBase,
     ServiceDefinition,
     WebSocketDefinition,
+    type GenericWebSocketDefinition,
     type NoParam,
 } from '@rest-vir/define-service';
 import {type ServiceLogger} from '../util/service-logger.js';
@@ -39,15 +40,18 @@ export type ImplementedEndpoint<
  * @category Package : @rest-vir/implement-service
  * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
  */
-export type GenericServiceImplementation = Omit<ServiceDefinition, 'endpoints'> & {
+export type GenericServiceImplementation = Omit<ServiceDefinition, 'endpoints' | 'webSockets'> & {
     endpoints: Record<EndpointPathBase, ImplementedEndpoint>;
-    sockets: Record<EndpointPathBase, ImplementedWebSocket>;
+    webSockets: Record<
+        EndpointPathBase,
+        Overwrite<ImplementedWebSocket, {protocolsShape: any; ProtocolsType: any}>
+    >;
     createContext: ContextInit<any, any, any, any> | undefined;
     logger: ServiceLogger;
 };
 
 /**
- * A fully implemented socket.
+ * A fully implemented WebSocket.
  *
  * @category Internal
  * @category Package : @rest-vir/implement-service
@@ -58,7 +62,7 @@ export type ImplementedWebSocket<
     ServiceName extends string = any,
     SpecificWebSocket extends WebSocketDefinition | NoParam = NoParam,
 > = Overwrite<
-    SpecificWebSocket extends NoParam ? WebSocketDefinition : SpecificWebSocket,
+    SpecificWebSocket extends NoParam ? GenericWebSocketDefinition : SpecificWebSocket,
     {
         service: GenericServiceImplementation;
     }

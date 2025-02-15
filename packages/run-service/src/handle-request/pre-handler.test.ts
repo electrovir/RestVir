@@ -2,7 +2,7 @@ import {assert} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
 import {AnyOrigin} from '@rest-vir/define-service';
 import type {ImplementedEndpoint, ServerRequest, ServerResponse} from '@rest-vir/implement-service';
-import {preHandler} from './request-handler.js';
+import {preHandler} from './pre-handler.js';
 
 describe(preHandler.name, () => {
     it('it errors out on a missing implementation', async () => {
@@ -21,7 +21,7 @@ describe(preHandler.name, () => {
                         serviceName: 'derp',
                         requiredClientOrigin: AnyOrigin,
                         serviceOrigin: '',
-                        sockets: {},
+                        webSockets: {},
                     },
                     '',
                 ),

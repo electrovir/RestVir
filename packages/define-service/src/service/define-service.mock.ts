@@ -2,7 +2,7 @@
 /** This is just a mock file. */
 
 import {HttpMethod, wait} from '@augment-vir/common';
-import {exact, or} from 'object-shape-tester';
+import {exact, or, tupleShape} from 'object-shape-tester';
 import {AnyOrigin} from '../util/origin.js';
 import {defineService} from './define-service.js';
 
@@ -12,9 +12,14 @@ export const mockService = defineService({
     serviceName: 'mock-service',
     serviceOrigin: 'https://example.com',
     requiredClientOrigin: AnyOrigin,
-    sockets: {
+    webSockets: {
+        '/required-protocols': {
+            messageFromClientShape: exact('hello'),
+            messageFromHostShape: exact('ok'),
+            protocolsShape: tupleShape('', '', exact('hi')),
+        },
         '/origin-locked': {
-            messageFromServerShape: exact('ok'),
+            messageFromHostShape: exact('ok'),
             messageFromClientShape: {
                 a: '',
                 b: -1,
@@ -22,33 +27,33 @@ export const mockService = defineService({
             requiredClientOrigin: mockWebsiteOrigin,
         },
         '/no-origin': {
-            messageFromServerShape: exact('ok'),
+            messageFromHostShape: exact('ok'),
             messageFromClientShape: {
                 a: '',
                 b: -1,
             },
         },
         '/no-client-data': {
-            messageFromServerShape: exact('ok'),
+            messageFromHostShape: exact('ok'),
             messageFromClientShape: undefined,
         },
         '/no-server-data': {
-            messageFromServerShape: undefined,
+            messageFromHostShape: undefined,
             messageFromClientShape: undefined,
         },
         '/sends-protocol': {
             messageFromClientShape: undefined,
-            messageFromServerShape: [''],
+            messageFromHostShape: [''],
         },
         '/custom-props-web-socket': {
-            messageFromServerShape: exact('ok'),
+            messageFromHostShape: exact('ok'),
             messageFromClientShape: undefined,
             customProps: {
                 hello: '',
             },
         },
         '/with-all-listeners': {
-            messageFromServerShape: exact('ok'),
+            messageFromHostShape: exact('ok'),
             messageFromClientShape: undefined,
         },
     },

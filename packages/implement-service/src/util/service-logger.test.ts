@@ -13,8 +13,8 @@ describe('defaultServiceLogger', () => {
                     service: {
                         serviceName: 'fake service',
                     },
-                    endpoint: true,
-                    socket: false,
+                    isEndpoint: true,
+                    isWebSocket: false,
                 },
                 'fake error',
             ),

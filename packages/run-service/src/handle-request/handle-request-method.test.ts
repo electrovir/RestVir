@@ -10,6 +10,7 @@ describe(handleRequestMethod.name, () => {
             handleRequestMethod({
                 request: {
                     method: HttpMethod.Options,
+                    originalUrl: 'some url',
                 },
                 route: {
                     ...mockService.endpoints['/empty'],

@@ -2,6 +2,8 @@ import {assertWrap} from '@augment-vir/assert';
 import {
     ensureErrorAndPrependMessage,
     HttpStatus,
+    log,
+    stringify,
     wrapInTry,
     type SelectFrom,
 } from '@augment-vir/common';
@@ -19,8 +21,8 @@ import {
     ServerRequest,
     ServerResponse,
 } from '@rest-vir/implement-service';
-import {isValidShape} from 'object-shape-tester';
-import {handleHandlerResult} from './endpoint-handler.js';
+import {assertValidShape, isValidShape} from 'object-shape-tester';
+import {handleHandlerResult, HandleRouteOptions} from './endpoint-handler.js';
 import {handleCors} from './handle-cors.js';
 import {handleRequestMethod} from './handle-request-method.js';
 
@@ -38,7 +40,7 @@ export async function preHandler(
         SelectFrom<
             GenericServiceImplementation,
             {
-                sockets: true;
+                webSockets: true;
                 endpoints: true;
                 serviceName: true;
                 createContext: true;
@@ -48,27 +50,35 @@ export async function preHandler(
         >
     >,
     attachId: string,
+    options: Readonly<Pick<HandleRouteOptions, 'debug'>> = {},
 ) {
     const pathMatch = matchUrlToService(service, request.originalUrl);
 
     if (!pathMatch) {
+        log.if(!!options.debug).error(
+            `Request path not matched in preHandler: '${request.originalUrl}'`,
+        );
         /** Nothing to do. */
         return;
     }
 
-    const endpoint = pathMatch.endpointPath ? service.endpoints[pathMatch.endpointPath] : undefined;
-    const socket =
-        request.ws && pathMatch.socketPath ? service.sockets[pathMatch.socketPath] : undefined;
+    const endpointDefinition = pathMatch.endpointPath
+        ? service.endpoints[pathMatch.endpointPath]
+        : undefined;
+    const webSocketDefinition =
+        request.ws && pathMatch.webSocketPath
+            ? service.webSockets[pathMatch.webSocketPath]
+            : undefined;
 
-    const route = endpoint || socket;
+    const route = endpointDefinition || webSocketDefinition;
 
     if (!route) {
         throw new RestVirHandlerError(
             {
                 service,
                 path: request.originalUrl as EndpointPathBase,
-                endpoint: false,
-                socket: false,
+                isEndpoint: false,
+                isWebSocket: false,
             },
             'No implementation found.',
         );
@@ -76,17 +86,23 @@ export async function preHandler(
 
     if (
         handleHandlerResult(
-            await handleCors({
-                request,
-                route,
-            }),
+            await handleCors(
+                {
+                    request,
+                    route,
+                },
+                options,
+            ),
             response,
         ).responseSent ||
         handleHandlerResult(
-            handleRequestMethod({
-                request,
-                route,
-            }),
+            handleRequestMethod(
+                {
+                    request,
+                    route,
+                },
+                options,
+            ),
             response,
         ).responseSent
     ) {
@@ -96,8 +112,11 @@ export async function preHandler(
     const requestData = wrapInTry(() => extractRequestData(request.body, route));
 
     if (requestData instanceof Error) {
+        log.if(!!options.debug).error(
+            `Rejected request body from '${request.originalUrl}': ${stringify(requestData)}`,
+        );
         response.statusCode = HttpStatus.BadRequest;
-        response.send();
+        response.send('Invalid body.');
         return;
     }
 
@@ -108,14 +127,43 @@ export async function preHandler(
         requestHeaders: request.headers,
         response,
         service,
-        endpoint,
-        socket,
+        endpointDefinition: endpointDefinition,
+        webSocketDefinition: webSocketDefinition,
     };
+
+    const protocols = webSocketDefinition
+        ? (request.headers['sec-websocket-protocol'] || '').split(', ')
+        : undefined;
+
+    if (
+        webSocketDefinition?.protocolsShape &&
+        !isValidShape(protocols, webSocketDefinition.protocolsShape)
+    ) {
+        if (options.debug) {
+            try {
+                assertValidShape(protocols, webSocketDefinition.protocolsShape);
+            } catch (error) {
+                log.error(
+                    ensureErrorAndPrependMessage(
+                        error,
+                        `WebSocket protocols rejected (${stringify(protocols)}):`,
+                    ),
+                );
+            }
+        }
+
+        response.statusCode = HttpStatus.BadRequest;
+        response.send('Invalid protocols.');
+        return;
+    }
 
     try {
         const contextOutput = await service.createContext?.(contextParams);
 
         if (contextOutput?.reject) {
+            log.if(!!options.debug).error(
+                `Rejected rejected from context creation: '${request.originalUrl}'`,
+            );
             handleHandlerResult(
                 {
                     body: contextOutput.reject.responseErrorMessage,
@@ -134,6 +182,7 @@ export async function preHandler(
         request.restVirContext[attachId] = {
             context: contextOutput?.context,
             requestData,
+            protocols,
         };
     } catch (error) {
         throw ensureErrorAndPrependMessage(error, 'Failed to generate request context.');
@@ -151,8 +200,8 @@ function extractRequestData(
                 service: {
                     serviceName: true;
                 };
-                endpoint: true;
-                socket: true;
+                isEndpoint: true;
+                isWebSocket: true;
             }
         >
     >,

@@ -3,8 +3,8 @@ import {mockService} from '../service/define-service.mock.js';
 import type {WebSocketDefinition} from './web-socket-definition.js';
 
 describe('WebSocketDefinition', () => {
-    it('is assignable to from any socket definition', () => {
+    it('is assignable to from any WebSocket definition', () => {
         const genericWebSocket: WebSocketDefinition =
-            mockService.sockets['/custom-props-web-socket'];
+            mockService.webSockets['/custom-props-web-socket'];
     });
 });

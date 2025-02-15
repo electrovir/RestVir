@@ -1,6 +1,6 @@
 import {checkWrap} from '@augment-vir/assert';
-import {HttpMethod, HttpStatus, SelectFrom} from '@augment-vir/common';
-import {HandledOutput, type EndpointHandlerParams} from './endpoint-handler.js';
+import {HttpMethod, HttpStatus, SelectFrom, log} from '@augment-vir/common';
+import {HandleRouteOptions, HandledOutput, type EndpointHandlerParams} from './endpoint-handler.js';
 
 /**
  * Verifies that a request's method matches the given endpoint's expectations. If it does not, an
@@ -21,6 +21,7 @@ export function handleRequestMethod(
             {
                 request: {
                     method: true;
+                    originalUrl: true;
                 };
                 route: {
                     methods: true;
@@ -30,6 +31,7 @@ export function handleRequestMethod(
             }
         >
     >,
+    options: Readonly<Pick<HandleRouteOptions, 'debug'>> = {},
 ): HandledOutput {
     const requestMethod = checkWrap.isEnumValue(request.method.toUpperCase(), HttpMethod);
 
@@ -47,6 +49,9 @@ export function handleRequestMethod(
               };
 
     if (!requestMethod || !allowedMethods[requestMethod]) {
+        log.if(!!options.debug).error(
+            `Method '${requestMethod}' rejected: '${request.originalUrl}'`,
+        );
         return {
             statusCode: HttpStatus.MethodNotAllowed,
         };

@@ -32,10 +32,10 @@ describeService({service: mockServiceImplementation}, ({fetchService}) => {
 const plainService = implementService(
     {
         service: defineService({
-            sockets: {
+            webSockets: {
                 '/socket': {
                     messageFromClientShape: exact('from client'),
-                    messageFromServerShape: exact('from server'),
+                    messageFromHostShape: exact('from server'),
                 },
             },
             endpoints: {
@@ -81,7 +81,7 @@ const plainService = implementService(
                 throw new Error('Intentional error.');
             },
         },
-        sockets: {
+        webSockets: {
             '/socket': {
                 onMessage({message, webSocket}) {
                     assert.strictEquals(message, 'from client');
@@ -124,12 +124,12 @@ describe(testService.name, () => {
                 status: HttpStatus.Ok,
             });
 
-            const socketMessageReceived = new DeferredPromise<string>();
+            const webSocketMessageReceived = new DeferredPromise<string>();
 
             const webSocket = await connectWebSocket['/socket']({
                 listeners: {
-                    message({message, webSocket}) {
-                        socketMessageReceived.resolve(message);
+                    message({message}) {
+                        webSocketMessageReceived.resolve(message);
                     },
                 },
             });
@@ -139,7 +139,7 @@ describe(testService.name, () => {
                 assert.strictEquals(reply, 'from server');
                 webSocket.send('from client');
 
-                const messageReceived = await socketMessageReceived.promise;
+                const messageReceived = await webSocketMessageReceived.promise;
 
                 assert.strictEquals(messageReceived, 'from server');
             } finally {
@@ -160,12 +160,12 @@ describe(testService.name, () => {
                 status: HttpStatus.Ok,
             });
 
-            const socketMessageReceived = new DeferredPromise<string>();
+            const webSocketMessageReceived = new DeferredPromise<string>();
 
             const webSocket = await connectWebSocket['/socket']({
                 listeners: {
-                    message({message, webSocket}) {
-                        socketMessageReceived.resolve(message);
+                    message({message}) {
+                        webSocketMessageReceived.resolve(message);
                     },
                 },
             });
@@ -175,7 +175,7 @@ describe(testService.name, () => {
                 assert.strictEquals(reply, 'from server');
                 webSocket.send('from client');
 
-                const messageReceived = await socketMessageReceived.promise;
+                const messageReceived = await webSocketMessageReceived.promise;
 
                 assert.strictEquals(messageReceived, 'from server');
             } finally {

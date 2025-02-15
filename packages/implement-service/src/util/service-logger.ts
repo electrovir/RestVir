@@ -1,5 +1,4 @@
 import {log, mapObjectValues, type PartialWithUndefined} from '@augment-vir/common';
-import {RestVirHandlerError} from './handler.error.js';
 
 /**
  * A service logger. All internal service logs will go through this and endpoint implementations are
@@ -38,11 +37,7 @@ export type ServiceLoggerOption = PartialWithUndefined<ServiceLogger>;
  */
 export const defaultServiceLogger: ServiceLogger = {
     error(error) {
-        if (error instanceof RestVirHandlerError) {
-            log.error(error.message);
-        } else {
-            log.error(error);
-        }
+        log.error(error);
     },
     info: log.faint,
 };

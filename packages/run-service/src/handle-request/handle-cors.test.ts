@@ -14,11 +14,12 @@ describe(handleCors.name, () => {
                             origin: 'http://example.com',
                         },
                         method: HttpMethod.Get,
+                        originalUrl: 'some path',
                     },
                     route: {
                         path: '/example-path',
-                        endpoint: true,
-                        socket: false,
+                        isEndpoint: true,
+                        isWebSocket: false,
                         methods: {
                             [HttpMethod.Get]: true,
                         },
@@ -42,11 +43,12 @@ describe(handleCors.name, () => {
                         origin: 'http://example.com',
                     },
                     method: HttpMethod.Get,
+                    originalUrl: 'some path',
                 },
                 route: {
                     path: '/example-path',
-                    endpoint: true,
-                    socket: false,
+                    isEndpoint: true,
+                    isWebSocket: false,
                     methods: {
                         [HttpMethod.Get]: true,
                     },
@@ -69,11 +71,12 @@ describe(handleCors.name, () => {
                         origin: 'http://example.com',
                     },
                     method: HttpMethod.Get,
+                    originalUrl: 'some path',
                 },
                 route: {
                     path: '/example-path',
-                    endpoint: true,
-                    socket: false,
+                    isEndpoint: true,
+                    isWebSocket: false,
                     methods: {
                         [HttpMethod.Get]: true,
                     },
@@ -100,11 +103,12 @@ describe(handleCors.name, () => {
                         origin: 'http://example.com',
                     },
                     method: HttpMethod.Get,
+                    originalUrl: 'some path',
                 },
                 route: {
                     path: '/example-path',
-                    endpoint: true,
-                    socket: false,
+                    isEndpoint: true,
+                    isWebSocket: false,
                     methods: {
                         [HttpMethod.Get]: true,
                     },

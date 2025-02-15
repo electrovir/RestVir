@@ -2,7 +2,7 @@ import {combineErrorMessages} from '@augment-vir/common';
 
 /**
  * An error thrown internally from rest-vir while handling an request. This will not include errors
- * thrown by an endpoint or socket implementation itself.
+ * thrown by an endpoint or WebSocket implementation itself.
  *
  * The default service logger will only log the message of these errors, not the whole stack track
  * (so logs are easier to read).
@@ -32,11 +32,11 @@ export function createRestVirHandlerErrorPrefix(
         service: {
             serviceName: string;
         };
-        socket: boolean | undefined;
-        endpoint: boolean | undefined;
+        isWebSocket: boolean | undefined;
+        isEndpoint: boolean | undefined;
     }>,
 ) {
-    const routeNoun = route.socket ? 'WebSocket ' : route.endpoint ? 'Endpoint ' : '';
+    const routeNoun = route.isWebSocket ? 'WebSocket ' : route.isEndpoint ? 'Endpoint ' : '';
 
     return `${routeNoun}'${route.path}' failed in service '${route.service.serviceName}'`;
 }

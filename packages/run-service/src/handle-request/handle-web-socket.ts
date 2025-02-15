@@ -1,4 +1,4 @@
-import {ensureErrorClass, extractErrorMessage, stringify} from '@augment-vir/common';
+import {ensureErrorClass, extractErrorMessage, log, stringify} from '@augment-vir/common';
 import {
     overwriteWebSocketMethods,
     parseJsonWithUndefined,
@@ -11,6 +11,7 @@ import {
 } from '@rest-vir/implement-service';
 import {assertValidShape} from 'object-shape-tester';
 import {type WebSocket as WsWebSocket} from 'ws';
+import {HandleRouteOptions} from './endpoint-handler.js';
 
 /**
  * Handles a WebSocket request.
@@ -24,50 +25,54 @@ export async function handleWebSocketRequest(
     {
         attachId,
         request,
-        socket,
+        implementedWebSocket,
         webSocket: wsWebSocket,
     }: Readonly<{
         request: ServerRequest;
         attachId: string;
-        socket: Readonly<ImplementedWebSocket>;
+        implementedWebSocket: Readonly<ImplementedWebSocket>;
         webSocket: WsWebSocket;
     }>,
+    options: Readonly<HandleRouteOptions> = {},
 ) {
     const restVirContext = request.restVirContext?.[attachId];
 
-    const protocols: string[] = (request.headers['sec-websocket-protocol'] || '').split(', ');
+    const webSocket = overwriteWebSocketMethods(
+        implementedWebSocket,
+        wsWebSocket,
+        WebSocketLocation.OnHost,
+    );
 
-    const webSocket = overwriteWebSocketMethods(socket, wsWebSocket, WebSocketLocation.OnHost);
-
-    const socketCallbackParams = {
+    const webSocketCallbackParams = {
         context: restVirContext?.context,
         headers: request.headers,
-        log: socket.service.logger,
+        log: implementedWebSocket.service.logger,
         request,
-        service: socket.service,
-        socketDefinition: socket,
+        service: implementedWebSocket.service,
+        webSocketDefinition: implementedWebSocket,
         webSocket,
-        protocols,
+        protocols: restVirContext?.protocols,
     };
 
-    if (socket.implementation.onClose) {
+    if (implementedWebSocket.implementation.onClose) {
         webSocket.on('close', async () => {
-            await socket.implementation.onClose?.(socketCallbackParams);
+            await implementedWebSocket.implementation.onClose?.(webSocketCallbackParams);
         });
     }
 
-    if (socket.implementation.onMessage) {
+    if (implementedWebSocket.implementation.onMessage) {
         webSocket.on('message', async (rawMessage) => {
+            let message: unknown;
             try {
                 // eslint-disable-next-line @typescript-eslint/no-base-to-string
                 const stringRawMessage = String(rawMessage);
 
-                const message = parseJsonWithUndefined(stringRawMessage);
+                message = parseJsonWithUndefined(stringRawMessage);
 
-                if (socket.messageFromClientShape) {
+                if (implementedWebSocket.messageFromClientShape) {
                     assertValidShape(
                         message,
-                        socket.messageFromClientShape,
+                        implementedWebSocket.messageFromClientShape,
                         {allowExtraKeys: true},
                         'Invalid message send shape.',
                     );
@@ -76,25 +81,38 @@ export async function handleWebSocketRequest(
                         `Did not expect any data from the client but got ${stringify(message)}.`,
                     );
                 }
-
-                await socket.implementation.onMessage?.({
-                    ...socketCallbackParams,
-                    message,
-                });
             } catch (error) {
-                socket.service.logger.error(
+                const errorMessage = `Failed to receive WebSocket message '${String(rawMessage as unknown)}': ${extractErrorMessage(error)}`;
+
+                log.if(!!options.debug).error(errorMessage);
+                implementedWebSocket.service.logger.error(
                     ensureErrorClass(
                         error,
                         RestVirHandlerError,
-                        socket,
-                        extractErrorMessage(error),
+                        implementedWebSocket,
+                        errorMessage,
+                    ),
+                );
+            }
+            try {
+                await implementedWebSocket.implementation.onMessage?.({
+                    ...webSocketCallbackParams,
+                    message,
+                });
+            } catch (error) {
+                implementedWebSocket.service.logger.error(
+                    ensureErrorClass(
+                        error,
+                        RestVirHandlerError,
+                        implementedWebSocket,
+                        `Failed to handle WebSocket message '${String(rawMessage as unknown)}': ${extractErrorMessage(error)}`,
                     ),
                 );
             }
         });
     }
 
-    if (socket.implementation.onConnection) {
-        await socket.implementation.onConnection(socketCallbackParams);
+    if (implementedWebSocket.implementation.onConnection) {
+        await implementedWebSocket.implementation.onConnection(webSocketCallbackParams);
     }
 }

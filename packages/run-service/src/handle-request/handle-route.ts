@@ -1,5 +1,5 @@
 import {assert, check} from '@augment-vir/assert';
-import {ensureError, HttpStatus} from '@augment-vir/common';
+import {ensureError, HttpStatus, log} from '@augment-vir/common';
 import {
     ImplementedEndpoint,
     RestVirHandlerError,
@@ -9,29 +9,9 @@ import {
 } from '@rest-vir/implement-service';
 import cluster from 'node:cluster';
 import {type WebSocket as WsWebSocket} from 'ws';
-import {handleHandlerResult} from './endpoint-handler.js';
+import {handleHandlerResult, HandleRouteOptions} from './endpoint-handler.js';
 import {handleEndpointRequest} from './handle-endpoint.js';
 import {handleWebSocketRequest} from './handle-web-socket.js';
-
-/**
- * Options for {@link handleRoute}.
- *
- * @category Internal
- * @category Package : @rest-vir/run-service
- * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
- */
-export type HandleRouteOptions = Partial<{
-    /**
-     * If set to `true`, all service endpoint handlers will throw any errors, allowing your existing
-     * server setup to catch them and handle them as you wish.
-     *
-     * If set to `false`, all service endpoint handlers will handle the errors internally to prevent
-     * accidentally leaking error messages to the frontend.
-     *
-     * @default `false`
-     */
-    throwErrorsForExternalHandling: boolean;
-}>;
 
 /**
  * Handles a WebSocket or Endpoint request.
@@ -48,11 +28,11 @@ export async function handleRoute(
     response: ServerResponse | undefined,
     route: Readonly<ImplementedEndpoint | ImplementedWebSocket>,
     attachId: string,
-    {throwErrorsForExternalHandling}: HandleRouteOptions = {},
+    options: Readonly<HandleRouteOptions> = {},
 ) {
     try {
         const workerPid = cluster.isPrimary ? '' : process.pid;
-        const webSocketMarker = route.socket ? '(ws)' : '';
+        const webSocketMarker = route.isWebSocket ? '(ws)' : '';
 
         const logParts = [
             workerPid,
@@ -62,7 +42,7 @@ export async function handleRoute(
         ].filter(check.isTruthy);
         route.service.logger.info(logParts.join('\t'));
 
-        if (route.endpoint) {
+        if (route.isEndpoint) {
             assert.isDefined(response);
 
             const result = await handleEndpointRequest({
@@ -75,12 +55,12 @@ export async function handleRoute(
             if (handleHandlerResult(result, response).responseSent) {
                 return;
             }
-        } else if (route.socket as boolean) {
+        } else if (route.isWebSocket as boolean) {
             assert.isDefined(webSocket);
 
             await handleWebSocketRequest({
                 request,
-                socket: route,
+                implementedWebSocket: route,
                 webSocket,
                 attachId,
             });
@@ -88,11 +68,12 @@ export async function handleRoute(
             return;
         }
 
-        /* node:coverage ignore next: cover a potential future edge case. */
+        /* node:coverage ignore next: this can't actually be triggered but it should be covered as a potential future edge case. */
         throw new RestVirHandlerError(route, 'Request was not handled.');
     } catch (error) {
+        log.if(!!options.debug).error(error);
         route.service.logger.error(ensureError(error));
-        if (throwErrorsForExternalHandling) {
+        if (options.throwErrorsForExternalHandling) {
             throw error;
         } else if (response && !response.sent) {
             response.statusCode = HttpStatus.InternalServerError;

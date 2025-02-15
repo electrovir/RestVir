@@ -1,9 +1,10 @@
-import {ensureError, HttpStatus, randomString, SelectFrom} from '@augment-vir/common';
+import {ensureError, HttpStatus, log, randomString, SelectFrom} from '@augment-vir/common';
 import fastifyWs from '@fastify/websocket';
 import {GenericServiceImplementation, ServiceImplementation} from '@rest-vir/implement-service';
 import {type FastifyInstance} from 'fastify';
-import {handleRoute, HandleRouteOptions} from '../handle-request/handle-route.js';
-import {preHandler} from '../handle-request/request-handler.js';
+import {HandleRouteOptions} from '../handle-request/endpoint-handler.js';
+import {handleRoute} from '../handle-request/handle-route.js';
+import {preHandler} from '../handle-request/pre-handler.js';
 
 declare module 'fastify' {
     interface FastifyRequest {
@@ -17,6 +18,7 @@ declare module 'fastify' {
                   [AttachId in string]: {
                       context: unknown;
                       requestData: unknown;
+                      protocols: unknown;
                   };
               }
             | undefined;
@@ -48,7 +50,7 @@ export async function attachService(
         SelectFrom<
             GenericServiceImplementation,
             {
-                sockets: true;
+                webSockets: true;
                 endpoints: true;
                 serviceName: true;
                 createContext: true;
@@ -58,50 +60,64 @@ export async function attachService(
             }
         >
     >,
-    options: HandleRouteOptions = {},
+    options: Readonly<HandleRouteOptions> = {},
 ): Promise<void> {
-    const attachId = randomString(32);
+    try {
+        const attachId = randomString(32);
 
-    if (!server.hasRequestDecorator('restVirContext')) {
-        server.decorateRequest('restVirContext');
-    }
-    if (!server.hasRequestDecorator('ws')) {
-        await server.register(fastifyWs);
-    }
-
-    server.addHook('preValidation', async (request, response) => {
-        try {
-            await preHandler(request, response, service, attachId);
-        } catch (error) {
-            service.logger.error(ensureError(error));
-            if (options.throwErrorsForExternalHandling) {
-                throw error;
-            } else if (!response.sent) {
-                response.statusCode = HttpStatus.InternalServerError;
-                response.send();
-            }
+        if (!server.hasRequestDecorator('restVirContext')) {
+            server.decorateRequest('restVirContext');
         }
-    });
+        if (!server.hasRequestDecorator('ws')) {
+            await server.register(fastifyWs);
+        }
 
-    Object.entries(service.sockets).forEach(
-        ([
-            path,
-            socket,
-        ]) => {
-            server.get(path, {websocket: true}, async (webSocket, request) => {
-                await handleRoute(webSocket, request, undefined, socket, attachId, options);
-            });
-        },
-    );
+        server.addHook('preValidation', async (request, response) => {
+            try {
+                await preHandler(request, response, service, attachId, options);
+            } catch (error) {
+                log.if(!!options.debug).error(error);
+                service.logger.error(ensureError(error));
+                if (options.throwErrorsForExternalHandling) {
+                    throw error;
+                } else if (!response.sent) {
+                    response.statusCode = HttpStatus.InternalServerError;
+                    response.send();
+                }
+            }
+        });
 
-    Object.entries(service.endpoints).forEach(
-        ([
-            path,
-            endpoint,
-        ]) => {
-            server.all(path, async (request, response) => {
-                await handleRoute(undefined, request, response, endpoint, attachId, options);
-            });
-        },
-    );
+        Object.entries(service.webSockets).forEach(
+            ([
+                path,
+                webSocketDefinition,
+            ]) => {
+                server.get(path, {websocket: true}, async (webSocket, request) => {
+                    await handleRoute(
+                        webSocket,
+                        request,
+                        undefined,
+                        webSocketDefinition,
+                        attachId,
+                        options,
+                    );
+                });
+            },
+        );
+
+        Object.entries(service.endpoints).forEach(
+            ([
+                path,
+                endpoint,
+            ]) => {
+                server.all(path, async (request, response) => {
+                    await handleRoute(undefined, request, response, endpoint, attachId, options);
+                });
+            },
+        );
+        /* node:coverage ignore next 4: this is just here to cover edge cases. */
+    } catch (error) {
+        log.if(!!options.debug).error(error);
+        throw error;
+    }
 }

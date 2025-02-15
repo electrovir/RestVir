@@ -5,8 +5,8 @@ import {EndpointPathBase} from '../endpoint/endpoint-path.js';
 import {match} from '../util/path-to-regexp.js';
 
 /**
- * Given a raw path or URL, finds an endpoint or socket path that will match in the given service.
- * If no match is found, this returns `undefined`.
+ * Given a raw path or URL, finds an endpoint or WebSocket path that will match in the given
+ * service. If no match is found, this returns `undefined`.
  *
  * @category Util
  * @category Package : @rest-vir/implement-service
@@ -14,7 +14,7 @@ import {match} from '../util/path-to-regexp.js';
  */
 export function matchUrlToService<
     const Service extends Readonly<{
-        sockets: Record<EndpointPathBase, any>;
+        webSockets: Record<EndpointPathBase, any>;
         endpoints: Record<EndpointPathBase, any>;
     }>,
 >(
@@ -28,16 +28,16 @@ export function matchUrlToService<
     const endpointPath = getObjectTypedKeys(service.endpoints).find((endpointPath) => {
         return match(endpointPath)(pathname);
     });
-    const socketPath = getObjectTypedKeys(service.sockets).find((socketPath) => {
-        return match(socketPath)(pathname);
+    const webSocketPath = getObjectTypedKeys(service.webSockets).find((webSocketPath) => {
+        return match(webSocketPath)(pathname);
     });
 
-    if (!endpointPath && !socketPath) {
+    if (!endpointPath && !webSocketPath) {
         return undefined;
     } else {
         return {
             ...(endpointPath ? {endpointPath} : {}),
-            ...(socketPath ? {socketPath} : {}),
+            ...(webSocketPath ? {webSocketPath: webSocketPath} : {}),
         } satisfies Partial<MatchedServicePath<Service>> as MatchedServicePath<Service>;
     }
 }
@@ -51,10 +51,10 @@ export function matchUrlToService<
  */
 export type MatchedServicePath<
     Service extends Readonly<{
-        sockets: Record<EndpointPathBase, any>;
+        webSockets: Record<EndpointPathBase, any>;
         endpoints: Record<EndpointPathBase, any>;
     }>,
 > = RequireAtLeastOne<{
-    socketPath: keyof Service['sockets'];
+    webSocketPath: keyof Service['webSockets'];
     endpointPath: keyof Service['endpoints'];
 }>;

@@ -22,7 +22,7 @@ import {type ServerRequest, type ServerWebSocket} from '../util/data.js';
 import {type ServiceLogger} from '../util/service-logger.js';
 
 /**
- * A socket implementation, with callbacks for WebSocket events.
+ * A WebSocket implementation, with callbacks for WebSocket events.
  *
  * @category Internal
  * @category Package : @rest-vir/implement-service
@@ -35,12 +35,12 @@ export type WebSocketImplementation<
 > = SpecificWebSocket extends NoParam
     ? any
     : Partial<{
-          /** This will be called when the socket is connected and created. */
+          /** This will be called when the WebSocket is connected and created. */
           onConnection: (
               params: WebSocketImplementationParams<Context, ServiceName, SpecificWebSocket, false>,
           ) => MaybePromise<void>;
           /**
-           * This will be called on every received socket message.
+           * This will be called on every received WebSocket message.
            *
            * @see https://github.com/websockets/ws/blob/HEAD/doc/ws.md#event-message
            */
@@ -48,7 +48,7 @@ export type WebSocketImplementation<
               params: WebSocketImplementationParams<Context, ServiceName, SpecificWebSocket, true>,
           ) => MaybePromise<void>;
           /**
-           * This will be called when the socket is closed.
+           * This will be called when the WebSocket is closed.
            *
            * @see https://github.com/websockets/ws/blob/HEAD/doc/ws.md#event-close-1
            */
@@ -72,14 +72,16 @@ export type WebSocketImplementationParams<
 > = {
     context: Context;
     webSocket: ServerWebSocket<SpecificWebSocket>;
-    socketDefinition: IsEqual<Extract<SpecificWebSocket, NoParam>, NoParam> extends true
+    webSocketDefinition: IsEqual<Extract<SpecificWebSocket, NoParam>, NoParam> extends true
         ? WebSocketDefinition
         : SpecificWebSocket;
     log: Readonly<ServiceLogger>;
     service: MinimalService<ServiceName>;
     headers: IncomingHttpHeaders;
     request: ServerRequest;
-    protocols: string[];
+    protocols: SpecificWebSocket extends NoParam
+        ? string[]
+        : Exclude<SpecificWebSocket, NoParam>['ProtocolsType'];
 } & (IsEqual<WithMessage, true> extends true
     ? {
           message: SpecificWebSocket extends NoParam
@@ -89,7 +91,7 @@ export type WebSocketImplementationParams<
     : unknown);
 
 /**
- * All sockets implementations to match the service definition's sockets.
+ * All WebSockets implementations to match the service definition's WebSockets.
  *
  * @category Internal
  * @category Package : @rest-vir/implement-service
@@ -114,30 +116,30 @@ export type WebSocketImplementations<
       };
 
 /**
- * Asserts that all socket implementations are valid.
+ * Asserts that all WebSocket implementations are valid.
  *
  * @category Internal
  * @category Package : @rest-vir/implement-service
  * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
  */
 export function assertValidWebSocketImplementations(
-    service: Pick<ServiceDefinition, 'sockets' | 'serviceName'>,
-    socketImplementations: WebSocketImplementations,
+    service: Pick<ServiceDefinition, 'webSockets' | 'serviceName'>,
+    webSocketImplementations: WebSocketImplementations,
 ) {
     const nonFunctionImplementations = filterMap(
-        getObjectTypedEntries(socketImplementations),
+        getObjectTypedEntries(webSocketImplementations),
         ([
-            socketPath,
-            implementation,
+            webSocketPath,
+            webSocketImplementation,
         ]) => {
-            const nonFunctionKeys = getObjectTypedKeys(implementation).filter((key) => {
-                const callback = implementation[key];
+            const nonFunctionKeys = getObjectTypedKeys(webSocketImplementation).filter((key) => {
+                const callback = webSocketImplementation[key];
                 return callback && check.isNotFunction(callback as unknown);
             });
 
             if (nonFunctionKeys.length) {
                 return {
-                    path: socketPath,
+                    path: webSocketPath,
                     nonFunctionKeys,
                 };
             } else {
@@ -161,22 +163,22 @@ export function assertValidWebSocketImplementations(
             path: undefined,
             errorMessage: `WebSockets implementations are not functions for:\n${invalidFunctionsString}`,
             serviceName: service.serviceName,
-            endpoint: undefined,
-            socket: undefined,
+            isEndpoint: undefined,
+            isWebSocket: undefined,
         });
     }
 
     const missingImplementationPaths: string[] = [];
     const extraImplementationPaths: string[] = [];
 
-    Object.keys(service.sockets).forEach((key) => {
-        if (!(key in socketImplementations)) {
+    Object.keys(service.webSockets).forEach((key) => {
+        if (!(key in webSocketImplementations)) {
             missingImplementationPaths.push(key);
         }
     });
 
-    Object.keys(socketImplementations).forEach((key) => {
-        if (!(key in service.sockets)) {
+    Object.keys(webSocketImplementations).forEach((key) => {
+        if (!(key in service.webSockets)) {
             extraImplementationPaths.push(key);
         }
     });
@@ -188,8 +190,8 @@ export function assertValidWebSocketImplementations(
                 ',',
             )}'`,
             serviceName: service.serviceName,
-            endpoint: undefined,
-            socket: undefined,
+            isEndpoint: undefined,
+            isWebSocket: undefined,
         });
     }
 
@@ -200,8 +202,8 @@ export function assertValidWebSocketImplementations(
                 ',',
             )}'`,
             serviceName: service.serviceName,
-            endpoint: undefined,
-            socket: undefined,
+            isEndpoint: undefined,
+            isWebSocket: undefined,
         });
     }
 }

@@ -7,7 +7,7 @@ describe(withWebSocketTest.name, () => {
     it(
         'tests a basic WebSocket connection',
         withWebSocketTest(
-            mockServiceImplementation.sockets['/no-client-data'],
+            mockServiceImplementation.webSockets['/no-client-data'],
             {},
             async (webSocket) => {
                 const response = await webSocket.sendAndWaitForReply();
@@ -15,4 +15,75 @@ describe(withWebSocketTest.name, () => {
             },
         ),
     );
+    it('requires protocols', async () => {
+        await assert.throws(
+            withWebSocketTest(
+                mockServiceImplementation.webSockets['/required-protocols'],
+                // @ts-expect-error: protocols are missing
+                {},
+                async () => {},
+            ),
+            {
+                matchMessage: 'Unexpected server response: 400',
+            },
+        );
+    });
+    it(
+        'accepts protocols',
+        withWebSocketTest(
+            mockServiceImplementation.webSockets['/required-protocols'],
+            {
+                protocols: [
+                    'a',
+                    'yo',
+                    'hi',
+                ],
+            },
+            async (webSocket) => {
+                const response = await webSocket.sendAndWaitForReply({
+                    message: 'hello',
+                });
+                assert.strictEquals(response, 'ok');
+            },
+        ),
+    );
+    it('requires protocols', async () => {
+        await assert.throws(
+            withWebSocketTest(
+                mockServiceImplementation.webSockets['/required-protocols'],
+                {
+                    protocols: [
+                        'a',
+                        // @ts-expect-error: this should be a string, but it'll get stringified anyway
+                        -1,
+                        // @ts-expect-error: this should be 'hi'
+                        'wrong',
+                    ],
+                },
+                async () => {},
+            ),
+            {
+                matchMessage: 'Unexpected server response: 400',
+            },
+        );
+    });
+    it('rejects empty string protocols', async () => {
+        await assert.throws(
+            withWebSocketTest(
+                mockServiceImplementation.webSockets['/required-protocols'],
+                {
+                    protocols: [
+                        '',
+                        'a',
+                        'hi',
+                    ],
+                },
+                async () => {},
+            ),
+            {
+                matchMessage:
+                    "Invalid protocols given (', a, hi'): Unexpected character at index 0",
+            },
+        );
+    });
 });

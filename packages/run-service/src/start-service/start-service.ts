@@ -66,7 +66,7 @@ export async function startService(
         SelectFrom<
             GenericServiceImplementation,
             {
-                sockets: true;
+                webSockets: true;
                 endpoints: true;
                 serviceName: true;
                 createContext: true;
@@ -150,7 +150,7 @@ async function startServer(
         SelectFrom<
             GenericServiceImplementation,
             {
-                sockets: true;
+                webSockets: true;
                 endpoints: true;
                 serviceName: true;
                 createContext: true;
@@ -160,11 +160,14 @@ async function startServer(
             }
         >
     >,
-    {host, port}: Readonly<Pick<StartServiceOptions, 'host' | 'port'>>,
+    {host, port, debug}: Readonly<Pick<StartServiceOptions, 'host' | 'port' | 'debug'>>,
 ): Promise<StartServiceOutput> {
     const server = fastify();
 
-    await attachService(server, service);
+    await attachService(server, service, {
+        debug,
+        throwErrorsForExternalHandling: false,
+    });
 
     await server.listen({port, host});
 

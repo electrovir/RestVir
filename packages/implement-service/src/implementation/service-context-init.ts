@@ -66,7 +66,7 @@ export type ContextInitParameters<
     request: ServerRequest;
     response: ServerResponse;
 
-    endpoint?:
+    endpointDefinition?:
         | (EndpointsInit extends NoParam
               ? EndpointDefinition
               : WithFinalEndpointProps<
@@ -74,7 +74,7 @@ export type ContextInitParameters<
                     Extract<keyof EndpointsInit, EndpointPathBase>
                 >)
         | undefined;
-    socket?:
+    webSocketDefinition?:
         | (WebSocketsInit extends NoParam
               ? WebSocketDefinition
               : WithFinalWebSocketProps<

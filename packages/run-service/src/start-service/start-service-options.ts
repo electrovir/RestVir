@@ -47,6 +47,14 @@ export const startServiceOptionsShape = defineShape({
      * @default false
      */
     preventWorkerRespawn: false,
+
+    /**
+     * Set this to true to enable extra logging. This should only be used in dev as it will fill up
+     * production log files if you have a decent amount of traffic.
+     *
+     * @default false
+     */
+    debug: false,
 });
 
 /**

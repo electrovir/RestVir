@@ -3,7 +3,7 @@ import type WsWebSocket from 'ws';
 import {CommonWebSocket} from './common-web-socket.js';
 
 describe(CommonWebSocket.name, () => {
-    it('is assignable to from both client and server web sockets', () => {
+    it('is assignable to from both client and server WebSockets', () => {
         const wsTest: CommonWebSocket = {} as any as WsWebSocket;
 
         const webTest: CommonWebSocket = {} as any as globalThis.WebSocket;

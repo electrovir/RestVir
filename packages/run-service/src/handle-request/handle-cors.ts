@@ -1,5 +1,5 @@
 import {check} from '@augment-vir/assert';
-import {HttpMethod, SelectFrom} from '@augment-vir/common';
+import {HttpMethod, log, SelectFrom} from '@augment-vir/common';
 import {
     AnyOrigin,
     EndpointDefinition,
@@ -10,7 +10,7 @@ import {
 import {HttpStatus, RestVirHandlerError} from '@rest-vir/implement-service';
 import {convertDuration} from 'date-vir';
 import {type OutgoingHttpHeaders} from 'node:http';
-import {EndpointHandlerParams, HandledOutput} from './endpoint-handler.js';
+import {EndpointHandlerParams, HandledOutput, HandleRouteOptions} from './endpoint-handler.js';
 
 /**
  * Determines the required origin for the endpoint and compares it with the given request.
@@ -40,6 +40,7 @@ export async function handleCors(
                 request: {
                     headers: true;
                     method: true;
+                    originalUrl: true;
                 };
                 route: {
                     requiredClientOrigin: true;
@@ -49,16 +50,17 @@ export async function handleCors(
                         requiredClientOrigin: true;
                     };
                     methods: true;
-                    endpoint: true;
-                    socket: true;
+                    isEndpoint: true;
+                    isWebSocket: true;
                 };
             }
         >
     >,
+    options: Readonly<Pick<HandleRouteOptions, 'debug'>> = {},
 ): Promise<HandledOutput> {
     const origin = request.headers.origin;
     const matchedOrigin = await matchOrigin(route, origin);
-    const allowedMethods = route.endpoint ? getAllowedEndpointMethods(route) : [HttpMethod.Get];
+    const allowedMethods = route.isEndpoint ? getAllowedEndpointMethods(route) : [HttpMethod.Get];
 
     if (request.method.toUpperCase() === HttpMethod.Options) {
         return {
@@ -70,6 +72,7 @@ export async function handleCors(
             headers: buildStandardCorsHeaders(matchedOrigin),
         };
     } else {
+        log.if(!!options.debug).error(`CORS rejected: '${request.originalUrl}'`);
         /** The CORS requirements for this request have not been met. */
         return {
             statusCode: HttpStatus.Forbidden,
@@ -145,8 +148,8 @@ async function matchOrigin(
                     serviceName: true;
                     requiredClientOrigin: true;
                 };
-                endpoint: true;
-                socket: true;
+                isEndpoint: true;
+                isWebSocket: true;
             }
         >
     >,

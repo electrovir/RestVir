@@ -28,8 +28,8 @@ export type ServerRequest = FastifyRequest;
 export type ServerResponse = FastifyReply;
 
 /**
- * A type alias for the web socket objects used by rest-vir. Currently this is the `WebSocket`
- * object from the ws package.
+ * A type alias for the WebSocket objects used by rest-vir. Currently this is the `WebSocket` object
+ * from the ws package.
  *
  * @category Internal
  * @category Package : @rest-vir/implement-service

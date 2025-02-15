@@ -1,4 +1,4 @@
-import {ensureErrorClass, extractErrorMessage, stringify} from '@augment-vir/common';
+import {ensureErrorClass, extractErrorMessage} from '@augment-vir/common';
 import {type NoParam} from '../util/no-param.js';
 
 /**
@@ -13,8 +13,8 @@ export type ServiceDefinitionErrorParams = {
     errorMessage: string;
 
     path: string | undefined;
-    socket: boolean | undefined;
-    endpoint: boolean | undefined;
+    isWebSocket: boolean | undefined;
+    isEndpoint: boolean | undefined;
 };
 
 /**
@@ -26,14 +26,20 @@ export type ServiceDefinitionErrorParams = {
  */
 export class ServiceDefinitionError extends Error {
     public override name = 'ServiceDefinitionError';
-    constructor({serviceName, path, errorMessage, endpoint, socket}: ServiceDefinitionErrorParams) {
-        const serviceNameMessage = `service '${String(serviceName)}'`;
+    constructor({
+        serviceName,
+        path,
+        errorMessage,
+        isEndpoint,
+        isWebSocket,
+    }: ServiceDefinitionErrorParams) {
+        const serviceNameMessage = `Service '${String(serviceName)}'`;
 
-        const routeType = endpoint ? 'endpoint' : socket ? 'socket' : undefined;
+        const routeType = isEndpoint ? 'Endpoint' : isWebSocket ? 'WebSocket' : undefined;
 
         const nameMessage =
             path && routeType
-                ? `${routeType} '${stringify(path)}' on ${serviceNameMessage}`
+                ? `${routeType} '${path}' on ${serviceNameMessage}`
                 : serviceNameMessage;
 
         const fullErrorMessage = `Failed to define ${nameMessage}: ${errorMessage}`;

@@ -17,7 +17,7 @@ describe('CollapsedConnectWebSocketParams', () => {
     it('uses NoParam for generic params', () => {
         const genericParams: CollapsedConnectWebSocketParams =
             {} as CollapsedConnectWebSocketParams<
-                (typeof mockService.sockets)['/custom-props-web-socket']
+                (typeof mockService.webSockets)['/custom-props-web-socket']
             >;
     });
 });
@@ -25,7 +25,10 @@ describe('CollapsedConnectWebSocketParams', () => {
 describe(connectWebSocket.name, () => {
     it('receives events', async () => {
         const events: string[] = [];
-        const clientWebSocket = await connectWebSocket(mockService.sockets['/no-client-data'], {
+
+        assert.tsType(mockService.webSockets['/no-client-data'].protocolsShape).equals<undefined>();
+
+        const clientWebSocket = await connectWebSocket(mockService.webSockets['/no-client-data'], {
             listeners: {
                 close({event}) {
                     events.push(event.type);
@@ -40,7 +43,7 @@ describe(connectWebSocket.name, () => {
                     events.push(event.type);
                 },
             },
-            WebSocket: MockClientWebSocket<(typeof mockService.sockets)['/no-client-data']>,
+            WebSocket: MockClientWebSocket<(typeof mockService.webSockets)['/no-client-data']>,
         });
 
         const messageListener = () => {
@@ -70,8 +73,8 @@ describe(connectWebSocket.name, () => {
         ]);
     });
     it('rejects invalid messages', async () => {
-        const clientWebSocket = await connectWebSocket(mockService.sockets['/no-server-data'], {
-            WebSocket: MockClientWebSocket<(typeof mockService.sockets)['/no-server-data']>,
+        const clientWebSocket = await connectWebSocket(mockService.webSockets['/no-server-data'], {
+            WebSocket: MockClientWebSocket<(typeof mockService.webSockets)['/no-server-data']>,
         });
 
         assert.throws(
@@ -98,8 +101,8 @@ describe(connectWebSocket.name, () => {
         );
     });
     it('waits for a reply', async () => {
-        const clientWebSocket = await connectWebSocket(mockService.sockets['/no-client-data'], {
-            WebSocket: MockClientWebSocket<(typeof mockService.sockets)['/no-client-data']>,
+        const clientWebSocket = await connectWebSocket(mockService.webSockets['/no-client-data'], {
+            WebSocket: MockClientWebSocket<(typeof mockService.webSockets)['/no-client-data']>,
         });
 
         const replyPromise = clientWebSocket.sendAndWaitForReply();
@@ -109,9 +112,116 @@ describe(connectWebSocket.name, () => {
 
         assert.strictEquals(await replyPromise, 'ok');
     });
+    it('passes protocols', async () => {
+        const clientWebSocket = await connectWebSocket(mockService.webSockets['/no-client-data'], {
+            WebSocket: MockClientWebSocket<(typeof mockService.webSockets)['/no-client-data']>,
+            protocols: [
+                'a',
+                'b',
+                'c',
+            ],
+        });
+
+        const replyPromise = clientWebSocket.sendAndWaitForReply();
+
+        await wait({milliseconds: 100});
+        clientWebSocket.sendFromServer('ok');
+
+        assert.strictEquals(await replyPromise, 'ok');
+    });
+    it('rejects empty protocol', async () => {
+        await assert.throws(
+            () =>
+                connectWebSocket(mockService.webSockets['/no-client-data'], {
+                    WebSocket: MockClientWebSocket<
+                        (typeof mockService.webSockets)['/no-client-data']
+                    >,
+                    protocols: [
+                        '',
+                        'b',
+                        'c',
+                    ],
+                }),
+            {
+                matchMessage: 'Invalid protocols given',
+            },
+        );
+    });
+    it('rejects duplicate start protocols', async () => {
+        await assert.throws(
+            () =>
+                connectWebSocket(mockService.webSockets['/no-client-data'], {
+                    WebSocket: MockClientWebSocket<
+                        (typeof mockService.webSockets)['/no-client-data']
+                    >,
+                    protocols: [
+                        'a',
+                        'a',
+                        'c',
+                    ],
+                }),
+            {
+                matchMessage: 'Invalid protocols given',
+            },
+        );
+    });
+    it('rejects duplicate end protocols', async () => {
+        await assert.throws(
+            () =>
+                connectWebSocket(mockService.webSockets['/no-client-data'], {
+                    WebSocket: MockClientWebSocket<
+                        (typeof mockService.webSockets)['/no-client-data']
+                    >,
+                    protocols: [
+                        'a',
+                        'b',
+                        'a',
+                    ],
+                }),
+            {
+                matchMessage: 'Invalid protocols given',
+            },
+        );
+    });
+    it('rejects comma protocol', async () => {
+        await assert.throws(
+            () =>
+                connectWebSocket(mockService.webSockets['/no-client-data'], {
+                    WebSocket: MockClientWebSocket<
+                        (typeof mockService.webSockets)['/no-client-data']
+                    >,
+                    protocols: [
+                        ',',
+                        'b',
+                        'a',
+                    ],
+                }),
+            {
+                matchMessage: 'Invalid protocols given',
+            },
+        );
+    });
+    it('rejects first empty string protocol', async () => {
+        await assert.throws(
+            () =>
+                connectWebSocket(mockService.webSockets['/no-client-data'], {
+                    WebSocket: MockClientWebSocket<
+                        (typeof mockService.webSockets)['/no-client-data']
+                    >,
+                    protocols: [
+                        ' ',
+                        'b',
+                        'a',
+                    ],
+                }),
+            {
+                matchMessage: 'Invalid protocols given',
+            },
+        );
+    });
     it('times out with no reply', async () => {
-        const clientWebSocket = await connectWebSocket(mockService.sockets['/no-client-data'], {
-            WebSocket: MockClientWebSocket<(typeof mockService.sockets)['/no-client-data']>,
+        const clientWebSocket = await connectWebSocket(mockService.webSockets['/no-client-data'], {
+            WebSocket: MockClientWebSocket<(typeof mockService.webSockets)['/no-client-data']>,
         });
 
         await assert.throws(

@@ -19,7 +19,7 @@ import {
     WithFinalWebSocketProps,
     assertValidWebSocketDefinition,
     attachWebSocketShapeTypeGetters,
-    socketInitShape,
+    webSocketInitShape,
 } from '../web-socket/web-socket-definition.js';
 import {MinimalService} from './minimal-service.js';
 import {ensureServiceDefinitionError} from './service-definition.error.js';
@@ -66,7 +66,7 @@ export type ServiceInit<
     WebSocketsInit extends BaseServiceWebSocketsInit | NoParam,
 > = MinimalService<ServiceName> & {
     requiredClientOrigin: NonNullable<OriginRequirement>;
-    sockets?: IsEqual<WebSocketsInit, NoParam> extends true
+    webSockets?: IsEqual<WebSocketsInit, NoParam> extends true
         ? Record<EndpointPathBase, WebSocketInit>
         : {
               [WebSocketPath in keyof WebSocketsInit]: WebSocketPath extends EndpointPathBase
@@ -104,9 +104,9 @@ export type ServiceDefinition<
     /** Include the initial init object so a service can be composed. */
     init: SetRequired<
         ServiceInit<ServiceName, EndpointsInit, WebSocketsInit>,
-        'endpoints' | 'sockets'
+        'endpoints' | 'webSockets'
     >;
-    sockets: WebSocketsInit extends NoParam
+    webSockets: WebSocketsInit extends NoParam
         ? {
               [WebSocketPath in EndpointPathBase]: WebSocketDefinition;
           }
@@ -180,8 +180,8 @@ function finalizeServiceDefinition<
                 path: endpointPath,
                 service: minimalService,
                 customProps: endpointInit.customProps,
-                endpoint: true,
-                socket: false,
+                isEndpoint: true,
+                isWebSocket: false,
             } satisfies Omit<EndpointDefinition, 'ResponseType' | 'RequestType'>;
 
             attachEndpointShapeTypeGetters(endpoint);
@@ -189,28 +189,34 @@ function finalizeServiceDefinition<
             return endpoint;
         });
 
-        const genericWebSockets = (serviceInit.sockets || {}) as BaseServiceWebSocketsInit;
+        const genericWebSockets = (serviceInit.webSockets || {}) as BaseServiceWebSocketsInit;
 
-        const sockets = mapObjectValues(genericWebSockets, (socketPath, socketInit) => {
-            assertValidShape(socketInit, socketInitShape);
-            const socket = {
-                ...socketInit,
-                messageFromClientShape: socketInit.messageFromClientShape
-                    ? defineShape(socketInit.messageFromClientShape)
+        const webSockets = mapObjectValues(genericWebSockets, (webSocketPath, webSocketInit) => {
+            assertValidShape({protocolsShape: undefined, ...webSocketInit}, webSocketInitShape);
+            const webSocketDefinition = {
+                ...webSocketInit,
+                messageFromClientShape: webSocketInit.messageFromClientShape
+                    ? defineShape(webSocketInit.messageFromClientShape)
                     : undefined,
-                messageFromServerShape: socketInit.messageFromServerShape
-                    ? defineShape(socketInit.messageFromServerShape)
+                messageFromHostShape: webSocketInit.messageFromHostShape
+                    ? defineShape(webSocketInit.messageFromHostShape)
                     : undefined,
+                protocolsShape: (webSocketInit.protocolsShape
+                    ? defineShape(webSocketInit.protocolsShape)
+                    : undefined) as WebSocketDefinition['protocolsShape'],
                 service: minimalService,
-                path: socketPath,
-                customProps: socketInit.customProps,
-                endpoint: false,
-                socket: true,
-            } satisfies Omit<WebSocketDefinition, 'MessageFromClientType' | 'MessageFromHostType'>;
+                path: webSocketPath,
+                customProps: webSocketInit.customProps,
+                isEndpoint: false,
+                isWebSocket: true,
+            } satisfies Omit<
+                WebSocketDefinition,
+                'MessageFromClientType' | 'MessageFromHostType' | 'ProtocolsType'
+            >;
 
-            attachWebSocketShapeTypeGetters(socket);
+            attachWebSocketShapeTypeGetters(webSocketDefinition);
 
-            return socket;
+            return webSocketDefinition;
         });
 
         return {
@@ -218,22 +224,22 @@ function finalizeServiceDefinition<
             serviceOrigin: serviceInit.serviceOrigin,
             init: {
                 ...serviceInit,
-                sockets: (serviceInit.sockets || {}) as ServiceDefinition<
+                webSockets: (serviceInit.webSockets || {}) as ServiceDefinition<
                     ServiceName,
                     EndpointsInit,
                     WebSocketsInit
-                >['init']['sockets'],
+                >['init']['webSockets'],
                 endpoints: (serviceInit.endpoints || {}) as ServiceDefinition<
                     ServiceName,
                     EndpointsInit,
                     WebSocketsInit
                 >['init']['endpoints'],
             },
-            sockets: sockets as AnyObject as ServiceDefinition<
+            webSockets: webSockets as AnyObject as ServiceDefinition<
                 ServiceName,
                 EndpointsInit,
                 WebSocketsInit
-            >['sockets'],
+            >['webSockets'],
             requiredClientOrigin: serviceInit.requiredClientOrigin,
             /** As cast needed again to narrow the type (for the return value) after broadening it. */
             endpoints: endpoints as AnyObject as ServiceDefinition<
@@ -246,8 +252,8 @@ function finalizeServiceDefinition<
         throw ensureServiceDefinitionError(error, {
             path: undefined,
             serviceName: serviceInit.serviceName,
-            endpoint: undefined,
-            socket: undefined,
+            isEndpoint: undefined,
+            isWebSocket: undefined,
         });
     }
 }
@@ -281,20 +287,20 @@ export function assertValidServiceDefinition(
             },
         );
 
-        getObjectTypedEntries(serviceDefinition.sockets).forEach(
+        getObjectTypedEntries(serviceDefinition.webSockets).forEach(
             ([
                 ,
-                socket,
+                webSocketDefinition,
             ]) => {
-                assertValidWebSocketDefinition(socket);
+                assertValidWebSocketDefinition(webSocketDefinition);
             },
         );
     } catch (error) {
         throw ensureServiceDefinitionError(error, {
             path: undefined,
             serviceName: serviceDefinition.serviceName,
-            endpoint: undefined,
-            socket: undefined,
+            isEndpoint: undefined,
+            isWebSocket: undefined,
         });
     }
 }

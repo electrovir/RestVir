@@ -225,14 +225,14 @@ describe(implementService.name, () => {
             ),
         );
     });
-    it('requires socket to be implemented', () => {
+    it('requires WebSocket to be implemented', () => {
         assert.throws(() =>
             implementService(
                 {
                     service: defineService({
-                        sockets: {
+                        webSockets: {
                             '/test': {
-                                messageFromServerShape: undefined,
+                                messageFromHostShape: undefined,
                                 messageFromClientShape: undefined,
                             },
                         },
@@ -240,7 +240,7 @@ describe(implementService.name, () => {
                         serviceName: 'test',
                         serviceOrigin: '',
                     }),
-                    // @ts-expect-error: for some reason the missing socket implementation error shows up here
+                    // @ts-expect-error: for some reason the missing WebSocket implementation error shows up here
                     createContext() {
                         return 'hi';
                     },
@@ -249,13 +249,13 @@ describe(implementService.name, () => {
             ),
         );
     });
-    it('implements sockets', () => {
+    it('implements WebSockets', () => {
         implementService(
             {
                 service: defineService({
-                    sockets: {
+                    webSockets: {
                         '/test': {
-                            messageFromServerShape: undefined,
+                            messageFromHostShape: undefined,
                             messageFromClientShape: undefined,
                         },
                     },
@@ -270,21 +270,21 @@ describe(implementService.name, () => {
                 },
             },
             {
-                sockets: {
+                webSockets: {
                     '/test': {},
                 },
             },
         );
     });
-    it('rejects a non function socket listener', () => {
+    it('rejects a non function WebSocket listener', () => {
         assert.throws(
             () =>
                 implementService(
                     {
                         service: defineService({
-                            sockets: {
+                            webSockets: {
                                 '/test': {
-                                    messageFromServerShape: undefined,
+                                    messageFromHostShape: undefined,
                                     messageFromClientShape: undefined,
                                 },
                             },
@@ -298,7 +298,7 @@ describe(implementService.name, () => {
                         },
                     },
                     {
-                        sockets: {
+                        webSockets: {
                             '/test': {
                                 onClose: 'hi',
                             },
@@ -310,15 +310,15 @@ describe(implementService.name, () => {
             },
         );
     });
-    it('rejects extra socket implementations', () => {
+    it('rejects extra WebSocket implementations', () => {
         assert.throws(
             () =>
                 implementService(
                     {
                         service: defineService({
-                            sockets: {
+                            webSockets: {
                                 '/test': {
-                                    messageFromServerShape: undefined,
+                                    messageFromHostShape: undefined,
                                     messageFromClientShape: undefined,
                                 },
                             },
@@ -333,9 +333,9 @@ describe(implementService.name, () => {
                         },
                     },
                     {
-                        sockets: {
+                        webSockets: {
                             '/test': {},
-                            // @ts-expect-error: this is an unexpected socket path
+                            // @ts-expect-error: this is an unexpected WebSocket path
                             '/fake': {},
                         },
                     },

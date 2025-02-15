@@ -12,7 +12,7 @@ export type MockServiceContext = {
 export const mockServiceImplementation = implementService(
     {
         service: mockService,
-        createContext({requestHeaders, endpoint}) {
+        createContext({requestHeaders, endpointDefinition: endpoint}) {
             assert.tsType(endpoint?.customProps).equals<undefined | {somethingElse: string}>();
 
             if (requestHeaders.authorization === 'reject') {
@@ -33,7 +33,15 @@ export const mockServiceImplementation = implementService(
         },
     },
     {
-        sockets: {
+        webSockets: {
+            '/required-protocols': {
+                onConnection({protocols}) {
+                    assert.tsType(protocols).equals<[string, string, 'hi']>();
+                },
+                onMessage({webSocket}) {
+                    webSocket.send('ok');
+                },
+            },
             '/no-server-data': {},
             '/with-all-listeners': {
                 onClose() {
@@ -53,7 +61,7 @@ export const mockServiceImplementation = implementService(
             },
             '/custom-props-web-socket': {
                 onMessage(params) {
-                    assert.tsType(params.socketDefinition.customProps).equals<{
+                    assert.tsType(params.webSocketDefinition.customProps).equals<{
                         hello: string;
                     }>();
                     params.webSocket.send('ok');
@@ -65,7 +73,7 @@ export const mockServiceImplementation = implementService(
                     assert.tsType(params.message).equals<undefined>();
                     assert.isUndefined(params.message);
                     assert.tsType<'message'>().matches<keyof typeof params>();
-                    assert.tsType(params.socketDefinition.customProps).equals<undefined>();
+                    assert.tsType(params.webSocketDefinition.customProps).equals<undefined>();
                     params.webSocket.send('ok');
                 },
                 onClose(params) {
@@ -224,10 +232,7 @@ export const mockServiceImplementation = implementService(
                 };
             },
             '/throws-error'() {
-                return {
-                    statusCode: HttpStatus.Accepted,
-                    responseData: undefined,
-                };
+                throw new Error('fake error');
             },
             '/with/:param1/:param2'() {
                 return {

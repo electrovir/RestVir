@@ -10,20 +10,20 @@ describe(createRestVirHandlerErrorPrefix.name, () => {
                 service: {
                     serviceName: 'test service',
                 },
-                endpoint: true,
-                socket: false,
+                isEndpoint: true,
+                isWebSocket: false,
             },
             expect: "Endpoint '/path' failed in service 'test service'",
         },
         {
-            it: 'creates a socket prefix string',
+            it: 'creates a WebSocket prefix string',
             input: {
                 path: '/path',
                 service: {
                     serviceName: 'test service',
                 },
-                endpoint: false,
-                socket: true,
+                isEndpoint: false,
+                isWebSocket: true,
             },
             expect: "WebSocket '/path' failed in service 'test service'",
         },
@@ -34,8 +34,8 @@ describe(createRestVirHandlerErrorPrefix.name, () => {
                 service: {
                     serviceName: 'test service',
                 },
-                endpoint: false,
-                socket: false,
+                isEndpoint: false,
+                isWebSocket: false,
             },
             expect: "'/path' failed in service 'test service'",
         },

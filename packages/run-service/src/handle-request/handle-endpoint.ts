@@ -1,5 +1,10 @@
 import {assertWrap} from '@augment-vir/assert';
-import {ensureErrorAndPrependMessage, HttpStatus, isErrorHttpStatus} from '@augment-vir/common';
+import {
+    ensureErrorAndPrependMessage,
+    HttpStatus,
+    isErrorHttpStatus,
+    log,
+} from '@augment-vir/common';
 import {
     createRestVirHandlerErrorPrefix,
     EndpointImplementationOutput,
@@ -9,7 +14,7 @@ import {
     RestVirHandlerError,
 } from '@rest-vir/implement-service';
 import {assertValidShape} from 'object-shape-tester';
-import {EndpointHandlerParams, type HandledOutput} from './endpoint-handler.js';
+import {EndpointHandlerParams, HandleRouteOptions, type HandledOutput} from './endpoint-handler.js';
 
 /**
  * Handles an endpoint's implementation execution.
@@ -31,6 +36,7 @@ export async function handleEndpointRequest(
             endpoint: Readonly<ImplementedEndpoint>;
         }
     >,
+    options: Readonly<HandleRouteOptions> = {},
 ): Promise<HandledOutput> {
     try {
         const context = request.restVirContext?.[attachId]?.context;
@@ -53,6 +59,9 @@ export async function handleEndpointRequest(
         )) as EndpointImplementationOutput;
 
         if (isErrorHttpStatus(endpointResult.statusCode)) {
+            log.if(!!options.debug).error(
+                `Endpoint implementation return error status: ${endpointResult.statusCode}`,
+            );
             return {
                 statusCode: endpointResult.statusCode,
                 body: endpointResult.responseErrorMessage,

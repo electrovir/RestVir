@@ -16,20 +16,31 @@ import {describeServiceScript, getMockScriptCommand} from './test-start-service.
 describe(startService.name, () => {
     describeServiceScript('single-thread', ({it}) => {
         it('accepts a valid socket message', async ({connectWebSocket}) => {
-            const webSocket = await connectWebSocket(mockService.sockets['/no-client-data'].path);
+            const webSocket = await connectWebSocket(
+                mockService.webSockets['/no-client-data'].path,
+            );
             const serverMessage = await webSocket.sendAndWaitForReply();
 
             assert.strictEquals(serverMessage, 'ok');
         });
         it('fires websocket listeners', async ({connectWebSocket}) => {
             const webSocket = await connectWebSocket(
-                mockService.sockets['/with-all-listeners'].path,
+                mockService.webSockets['/with-all-listeners'].path,
             );
 
             webSocket.send();
         });
         it('handles client message data that should not exist', async ({connectWebSocket}) => {
-            const webSocket = await connectWebSocket(mockService.sockets['/no-client-data'].path);
+            const webSocket = await connectWebSocket(
+                mockService.webSockets['/no-client-data'].path,
+            );
+
+            webSocket.send('something here');
+        });
+        it('rejects invalid protocols', async ({connectWebSocket}) => {
+            const webSocket = await connectWebSocket(
+                mockService.webSockets['/no-client-data'].path,
+            );
 
             webSocket.send('something here');
         });
@@ -41,7 +52,7 @@ describe(startService.name, () => {
             ];
 
             const webSocket = await connectWebSocket(
-                mockService.sockets['/sends-protocol'].path,
+                mockService.webSockets['/sends-protocol'].path,
                 mockProtocols,
             );
 
@@ -398,8 +409,10 @@ describe(startService.name, () => {
                 ),
                 {
                     status: HttpStatus.BadRequest,
+                    body: 'Invalid body.',
                     headers: {
                         'access-control-allow-origin': '*',
+                        'content-type': 'text/plain; charset=utf-8',
                     },
                 },
             );

@@ -1,6 +1,6 @@
 /* node:coverage disable: this file is just types */
 
-import {type HttpStatus, type MaybePromise} from '@augment-vir/common';
+import {type HttpStatus, type MaybePromise, type PartialWithUndefined} from '@augment-vir/common';
 import {
     ServerRequest,
     ServerResponse,
@@ -9,6 +9,34 @@ import {
 } from '@rest-vir/implement-service';
 import {OutgoingHttpHeaders} from 'node:http';
 import {setResponseHeaders} from '../util/headers.js';
+
+/**
+ * Options for `handleRoute`.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/run-service
+ * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
+ */
+export type HandleRouteOptions = PartialWithUndefined<{
+    /**
+     * If set to `true`, all service endpoint handlers will throw their errors, allowing your
+     * existing server setup to catch them and handle them as you wish.
+     *
+     * If set to `false`, all service endpoint handlers will handle the errors internally to prevent
+     * accidentally leaking error messages to the frontend.
+     *
+     * @default false
+     */
+    throwErrorsForExternalHandling: boolean;
+
+    /**
+     * Set this to true to enable extra logging. This should only be used in dev as it will fill up
+     * production log files if you have a decent amount of traffic.
+     *
+     * @default false
+     */
+    debug: boolean;
+}>;
 
 /**
  * Output from {@link EndpointHandler}.

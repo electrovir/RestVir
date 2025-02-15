@@ -85,12 +85,12 @@ async function setupService(scriptName: string) {
             return await globalThis.fetch(fetchUrl, init);
         }) as TestFetch,
         connectWebSocket: (async (path, protocols) => {
-            const socketUrl = buildUrl(serviceUrl, {
+            const webSocketUrl = buildUrl(serviceUrl, {
                 pathname: path,
                 protocol: 'ws',
             }).href;
 
-            const webSocket = new WebSocket(socketUrl, protocols);
+            const webSocket = new WebSocket(webSocketUrl, protocols);
             allWebSockets.push(webSocket);
 
             await waitForOpenWebSocket(webSocket);
@@ -102,7 +102,7 @@ async function setupService(scriptName: string) {
                      * specific to one endpoint.
                      */
                     messageFromClientShape: defineShape(unknownShape()),
-                    messageFromServerShape: defineShape(unknownShape()),
+                    messageFromHostShape: defineShape(unknownShape()),
                     path: '/test',
                     service: {
                         serviceName: 'test',
@@ -110,13 +110,15 @@ async function setupService(scriptName: string) {
                         serviceOrigin: '',
                     },
                     customProps: undefined,
-                    endpoint: false,
-                    socket: true,
+                    isEndpoint: false,
+                    isWebSocket: true,
                     MessageFromClientType: undefined,
                     MessageFromHostType: undefined,
+                    protocolsShape: undefined,
+                    ProtocolsType: [],
                 },
                 webSocket,
-                WebSocketLocation.OnHost,
+                WebSocketLocation.OnClient,
             );
 
             return finalWebSocket;

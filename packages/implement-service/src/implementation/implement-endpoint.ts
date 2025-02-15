@@ -202,8 +202,8 @@ export function assertValidEndpointImplementations(
                 .map(([endpointPath]) => endpointPath)
                 .join(',')}'`,
             serviceName: service.serviceName,
-            endpoint: undefined,
-            socket: undefined,
+            isEndpoint: undefined,
+            isWebSocket: undefined,
         });
     }
 
@@ -229,8 +229,8 @@ export function assertValidEndpointImplementations(
                 ',',
             )}'`,
             serviceName: service.serviceName,
-            endpoint: undefined,
-            socket: undefined,
+            isEndpoint: undefined,
+            isWebSocket: undefined,
         });
     }
 
@@ -241,8 +241,8 @@ export function assertValidEndpointImplementations(
                 ',',
             )}'`,
             serviceName: service.serviceName,
-            endpoint: undefined,
-            socket: undefined,
+            isEndpoint: undefined,
+            isWebSocket: undefined,
         });
     }
 }

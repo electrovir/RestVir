@@ -28,7 +28,7 @@ export type PathParams<EndpointPath extends string> = string extends EndpointPat
 export type EndpointPathBase = `/${string}` | '/';
 
 /**
- * Asserts that the given endpoint or socket path is valid.
+ * Asserts that the given endpoint or WebSocket path is valid.
  *
  * @category Internal
  * @category Package : @rest-vir/define-service

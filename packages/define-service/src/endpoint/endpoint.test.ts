@@ -66,8 +66,8 @@ describe(assertValidEndpoint.name, () => {
         methods: {
             [HttpMethod.Get]: true,
         },
-        endpoint: true,
-        socket: false,
+        isEndpoint: true,
+        isWebSocket: false,
         service: {
             serviceName: 'test-service',
         },

@@ -109,10 +109,10 @@ export type ServiceImplementationsParams<
       }) &
     (KeyCount<OmitIndexSignature<WebSocketsInit>> extends 0
         ? {
-              sockets?: never;
+              webSockets?: never;
           }
         : {
-              sockets: WebSocketImplementations<
+              webSockets: WebSocketImplementations<
                   NoInfer<Context>,
                   NoInfer<ServiceName>,
                   NoInfer<WebSocketsInit>
@@ -143,7 +143,7 @@ export function implementService<
     }: ServiceImplementationInit<Context, ServiceName, EndpointsInit, WebSocketsInit>,
     {
         endpoints: endpointImplementations,
-        sockets: socketImplementations,
+        webSockets: webSocketImplementations,
     }: ServiceImplementationsParams<
         NoInfer<Context>,
         NoInfer<ServiceName>,
@@ -152,7 +152,7 @@ export function implementService<
     >,
 ): ServiceImplementation<Context, ServiceName, EndpointsInit, WebSocketsInit> {
     assertValidEndpointImplementations(service, endpointImplementations || {});
-    assertValidWebSocketImplementations(service, socketImplementations || {});
+    assertValidWebSocketImplementations(service, webSocketImplementations || {});
 
     const endpoints = mapObjectValues(service.endpoints, (endpointPath, endpoint) => {
         const implementation = endpointImplementations?.[endpointPath as EndpointPathBase];
@@ -176,27 +176,30 @@ export function implementService<
         WebSocketsInit
     >['endpoints'];
 
-    const sockets = mapObjectValues(service.sockets, (socketPath, socket) => {
-        const implementation = socketImplementations?.[socketPath as EndpointPathBase];
+    const webSockets = mapObjectValues(
+        service.webSockets,
+        (webSocketPath, webSocketImplementation) => {
+            const implementation = webSocketImplementations?.[webSocketPath as EndpointPathBase];
 
-        assert.isDefined(implementation);
-        assert.isNotString(socket);
+            assert.isDefined(implementation);
+            assert.isNotString(webSocketImplementation);
 
-        /**
-         * Note: this return object is actually wrong. The service property will not be correct as
-         * the `socket` here only has the minimal service. Below, after `serviceImplementation` is
-         * created, we attach the correct service to all sockets.
-         */
-        return {
-            ...(socket as WebSocketDefinition),
-            implementation,
-        } satisfies Omit<ImplementedWebSocket, 'service'>;
-    }) as AnyObject as ServiceImplementation<
+            /**
+             * Note: this return object is actually wrong. The service property will not be correct
+             * as the WebSocket here only has the minimal service. Below, after
+             * `serviceImplementation` is created, we attach the correct service to all WebSockets.
+             */
+            return {
+                ...(webSocketImplementation as WebSocketDefinition),
+                implementation,
+            } satisfies Omit<ImplementedWebSocket, 'service'>;
+        },
+    ) as AnyObject as ServiceImplementation<
         Context,
         ServiceName,
         EndpointsInit,
         WebSocketsInit
-    >['sockets'];
+    >['webSockets'];
 
     const serviceImplementation: ServiceImplementation<
         Context,
@@ -206,7 +209,7 @@ export function implementService<
     > = {
         ...service,
         endpoints,
-        sockets,
+        webSockets,
         createContext,
         logger: createServiceLogger(logger),
     };
@@ -214,8 +217,8 @@ export function implementService<
     Object.values(endpoints).forEach((endpoint) => {
         endpoint.service = serviceImplementation;
     });
-    Object.values(sockets).forEach((socket) => {
-        socket.service = serviceImplementation;
+    Object.values(webSockets).forEach((webSocket) => {
+        webSocket.service = serviceImplementation;
     });
 
     return serviceImplementation;
@@ -233,7 +236,10 @@ export type ServiceImplementation<
     ServiceName extends string = any,
     EndpointsInit extends BaseServiceEndpointsInit | NoParam = NoParam,
     WebSocketsInit extends BaseServiceWebSocketsInit | NoParam = NoParam,
-> = Omit<ServiceDefinition<ServiceName, EndpointsInit, WebSocketsInit>, 'endpoints' | 'sockets'> & {
+> = Omit<
+    ServiceDefinition<ServiceName, EndpointsInit, WebSocketsInit>,
+    'endpoints' | 'webSockets'
+> & {
     endpoints: {
         [EndpointPath in keyof ServiceDefinition<
             ServiceName,
@@ -251,12 +257,12 @@ export type ServiceImplementation<
               >
             : never;
     };
-    sockets: {
+    webSockets: {
         [WebSocketPath in keyof ServiceDefinition<
             ServiceName,
             EndpointsInit,
             WebSocketsInit
-        >['sockets']]: WebSocketPath extends EndpointPathBase
+        >['webSockets']]: WebSocketPath extends EndpointPathBase
             ? ImplementedWebSocket<
                   Context,
                   ServiceName,
@@ -264,7 +270,7 @@ export type ServiceImplementation<
                       ServiceName,
                       EndpointsInit,
                       WebSocketsInit
-                  >['sockets'][WebSocketPath]
+                  >['webSockets'][WebSocketPath]
               >
             : never;
     };

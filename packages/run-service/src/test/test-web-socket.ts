@@ -1,4 +1,4 @@
-import type {AnyFunction, MaybePromise} from '@augment-vir/common';
+import {type AnyFunction, type MaybePromise} from '@augment-vir/common';
 import {
     type ClientWebSocket,
     type CollapsedConnectWebSocketParams,
@@ -10,7 +10,7 @@ import {type ImplementedWebSocket} from '@rest-vir/implement-service';
 import {testService} from './test-service.js';
 
 export type TestWebSocket = <WebSocketToTest extends WebSocketDefinition>(
-    socket: WebSocketToTest,
+    webSocketDefinition: WebSocketToTest,
     ...args: CollapsedConnectWebSocketParams<WebSocketToTest, false>
 ) => Promise<ClientWebSocket<WebSocketToTest>>;
 
@@ -27,13 +27,18 @@ export const testWebSocket = async function testWebSocket<
     webSocketImplementation: WebSocketToTest,
     params: ConnectWebSocketParams<Exclude<WebSocketToTest, NoParam>, false>,
 ) {
-    const {connectWebSocket, kill} = await testService({
-        ...webSocketImplementation.service,
-        sockets: {
-            [webSocketImplementation.path]: webSocketImplementation,
+    const {connectWebSocket, kill} = await testService(
+        {
+            ...webSocketImplementation.service,
+            webSockets: {
+                [webSocketImplementation.path]: webSocketImplementation,
+            },
+            endpoints: {},
         },
-        endpoints: {},
-    });
+        {
+            debug: true,
+        },
+    );
 
     const webSocket = await (connectWebSocket[webSocketImplementation.path] as AnyFunction)(params);
 
@@ -58,11 +63,11 @@ export type WithWebSocketTestCallback<WebSocketToTest extends ImplementedWebSock
  * import {withWebSocketTest} from '@rest-vir/run-service';
  * import {describe, it} from '@augment-vir/test'; // or use mocha, jest, etc. values
  *
- * describe('my web socket', () => {
+ * describe('my WebSocket', () => {
  *     it(
  *         'does a thing',
  *         withWebSocketTest(
- *             myServiceImplementation.sockets['/my-web-socket-path'],
+ *             myServiceImplementation.webSockets['/my-web-socket-path'],
  *             {},
  *             (webSocket) => {
  *                 const response = await webSocket.sendAndWaitForReply();

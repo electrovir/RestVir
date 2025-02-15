@@ -1,4 +1,9 @@
-import {HttpMethod, RequiredKeysOf, SelectFrom} from '@augment-vir/common';
+import {
+    ensureErrorAndPrependMessage,
+    HttpMethod,
+    RequiredKeysOf,
+    SelectFrom,
+} from '@augment-vir/common';
 import {IsNever} from 'type-fest';
 import {buildUrl} from 'url-vir';
 import {PathParams} from '../endpoint/endpoint-path.js';
@@ -14,16 +19,38 @@ import {
 } from '../web-socket/overwrite-web-socket-methods.js';
 import {type WebSocketDefinition} from '../web-socket/web-socket-definition.js';
 import {buildEndpointUrl} from './fetch-endpoint.js';
+import {parseSecWebSocketProtocolHeader} from './web-socket-protocol-parse.js';
 
 /**
- * Builds a web socket URL.
+ * Verifies that no WebSocket protocols in the given list are invalid. This doesn't have anything to
+ * do with a `WebsocketDefinition` instance, it's just checking if the given protocols can even be
+ * sent.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
+ */
+export function assertValidWebSocketProtocols(protocols: ReadonlyArray<unknown> | undefined) {
+    if (!protocols || !protocols.length) {
+        return;
+    }
+    const joinedProtocols = protocols.join(', ');
+    try {
+        parseSecWebSocketProtocolHeader(joinedProtocols);
+    } catch (error) {
+        throw ensureErrorAndPrependMessage(error, `Invalid protocols given ('${joinedProtocols}')`);
+    }
+}
+
+/**
+ * Builds a WebSocket URL.
  *
  * @category Internal
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export function buildWebSocketUrl(
-    socket: Readonly<
+    webSocketDefinition: Readonly<
         SelectFrom<
             WebSocketDefinition,
             {
@@ -44,10 +71,10 @@ export function buildWebSocketUrl(
             methods: {
                 [HttpMethod.Get]: true,
             },
-            path: socket.path,
+            path: webSocketDefinition.path,
             requestDataShape: undefined,
             responseDataShape: undefined,
-            service: socket.service,
+            service: webSocketDefinition.service,
         },
         {pathParams},
     );
@@ -72,6 +99,8 @@ export type ConnectWebSocketParams<
                 path: true;
                 MessageFromClientType: true;
                 MessageFromHostType: true;
+                protocolsShape: true;
+                ProtocolsType: true;
             }
         >
     >,
@@ -85,21 +114,28 @@ export type ConnectWebSocketParams<
     listeners?: ConnectWebSocketListeners<WebSocketToConnect, WebSocketClass>;
 } & (IsNever<PathParams<WebSocketToConnect['path']>> extends true
     ? {
-          /** This socket has no path parameters to configure. */
+          /** This WebSocket has no path parameters to configure. */
           pathParams?: undefined;
       }
     : PathParams<WebSocketToConnect['path']> extends string
       ? {
-            /** Required path params for this socket's path. */
+            /** Required path params for this WebSocket's path. */
             pathParams: Readonly<Record<PathParams<WebSocketToConnect['path']>, string>>;
         }
       : {
-            /** This socket has no path parameters to configure. */
+            /** This WebSocket has no path parameters to configure. */
             pathParams?: undefined;
         }) &
     (AllowWebSocketMock extends true
-        ? Pick<GenericConnectWebSocketParams<WebSocketClass>, 'protocols' | 'WebSocket'>
-        : Pick<GenericConnectWebSocketParams<WebSocketClass>, 'protocols'>);
+        ? Pick<GenericConnectWebSocketParams<WebSocketClass>, 'WebSocket'>
+        : unknown) &
+    (WebSocketToConnect['protocolsShape'] extends undefined
+        ? {
+              protocols?: string[];
+          }
+        : {
+              protocols: WebSocketToConnect['ProtocolsType'];
+          });
 
 /**
  * Collapsed version of {@link ConnectWebSocketParams} for {@link connectWebSocket} that only
@@ -118,6 +154,8 @@ export type CollapsedConnectWebSocketParams<
                       path: true;
                       MessageFromClientType: true;
                       MessageFromHostType: true;
+                      protocolsShape: true;
+                      ProtocolsType: true;
                   }
               >
           >
@@ -149,7 +187,7 @@ export async function connectWebSocket<
     const WebSocketToConnect extends Readonly<WebSocketDefinition> | NoParam,
     WebSocketClass extends CommonWebSocket,
 >(
-    socket: WebSocketToConnect extends WebSocketDefinition
+    webSocketDefinition: WebSocketToConnect extends WebSocketDefinition
         ? WebSocketToConnect
         : Readonly<WebSocketDefinition>,
     ...params: CollapsedConnectWebSocketParams<WebSocketToConnect, true, WebSocketClass>
@@ -158,15 +196,17 @@ export async function connectWebSocket<
         {WebSocket = globalThis.WebSocket, protocols, listeners} = {},
     ] = params;
 
-    const url = buildWebSocketUrl(socket, ...(params as any));
+    assertValidWebSocketProtocols(protocols);
+
+    const url = buildWebSocketUrl(webSocketDefinition, ...(params as any));
 
     const clientWebSocket: OverwriteWebSocketMethods<
         WebSocketClass,
         WebSocketLocation.OnClient,
         WebSocketToConnect
     > = await finalizeWebSocket<WebSocketToConnect, WebSocketClass, WebSocketLocation.OnClient>(
-        socket as any,
-        new WebSocket(url, protocols) as WebSocketClass,
+        webSocketDefinition as any,
+        new WebSocket(url, protocols?.length ? protocols : undefined) as WebSocketClass,
         listeners,
         WebSocketLocation.OnClient,
     );

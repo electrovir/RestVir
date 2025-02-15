@@ -29,13 +29,23 @@ describe(defineService.name, () => {
             .tsType<(typeof mockService.endpoints)['/long-running']['RequestType']>()
             .equals<undefined | Readonly<{count: number}>>();
     });
+    it('preserves WebSocket protocols', () => {
+        assert
+            .tsType<(typeof mockService.webSockets)['/required-protocols']['ProtocolsType']>()
+            .equals<[string, string, 'hi']>();
+    });
+    it('defaults WebSocket protocols', () => {
+        assert
+            .tsType<(typeof mockService.webSockets)['/no-client-data']['ProtocolsType']>()
+            .equals<string[]>();
+    });
     it('finds a matching endpoint path', () => {
         const result = matchUrlToService(mockService, '/with/one/two');
 
         assert.tsType(result).equals<
             | undefined
             | RequireAtLeastOne<{
-                  socketPath: keyof typeof mockService.sockets;
+                  webSocketPath: keyof typeof mockService.webSockets;
                   endpointPath: keyof typeof mockService.endpoints;
               }>
         >();
@@ -44,26 +54,26 @@ describe(defineService.name, () => {
             endpointPath: mockService.endpoints['/with/:param1/:param2'].path,
         });
     });
-    it('finds a matching socket path', () => {
+    it('finds a matching WebSocket path', () => {
         const result = matchUrlToService(mockService, '/no-origin');
 
         assert.tsType(result).equals<
             | undefined
             | RequireAtLeastOne<{
-                  socketPath: keyof typeof mockService.sockets;
+                  webSocketPath: keyof typeof mockService.webSockets;
                   endpointPath: keyof typeof mockService.endpoints;
               }>
         >();
 
         assert.deepEquals(result, {
-            socketPath: mockService.sockets['/no-origin'].path,
+            webSocketPath: mockService.webSockets['/no-origin'].path,
         });
     });
-    it('finds a matching full socket url', () => {
+    it('finds a matching full WebSocket url', () => {
         const result = matchUrlToService(mockService, 'http://example.com/no-origin');
 
         assert.deepEquals(result, {
-            socketPath: mockService.sockets['/no-origin'].path,
+            webSocketPath: mockService.webSockets['/no-origin'].path,
         });
     });
     it('finds no matching paths', () => {
@@ -377,14 +387,14 @@ describe(defineService.name, () => {
             },
         );
     });
-    it('can define sockets without endpoints', () => {
+    it('can define WebSockets without endpoints', () => {
         const service = defineService({
             serviceName: 'test-endpoint-service',
             requiredClientOrigin: AnyOrigin,
             serviceOrigin: '',
-            sockets: {
+            webSockets: {
                 '/my-web-socket': {
-                    messageFromServerShape: undefined,
+                    messageFromHostShape: undefined,
                     messageFromClientShape: or(
                         {
                             code: exact(1),
@@ -399,43 +409,56 @@ describe(defineService.name, () => {
         });
 
         assert.throws(
-            () => service.sockets['/my-web-socket'].MessageFromClientType,
-            undefined,
-            'Should not be able to access socket.MessageFromClientType',
+            () => service.webSockets['/my-web-socket'].MessageFromClientType,
+            {
+                matchMessage: 'should not be used as a value',
+            },
+            'Should not be able to access webSocket.MessageFromClientType',
         );
         assert.throws(
-            () => service.sockets['/my-web-socket'].MessageFromHostType,
-            undefined,
-            'Should not be able to access socket.MessageFromHostType',
+            () => service.webSockets['/my-web-socket'].MessageFromHostType,
+            {
+                matchMessage: 'should not be used as a value',
+            },
+            'Should not be able to access webSocket.MessageFromHostType',
+        );
+        assert.throws(
+            () => service.webSockets['/my-web-socket'].ProtocolsType,
+            {
+                matchMessage: 'should not be used as a value',
+            },
+            'Should not be able to access webSocket.ProtocolsType',
         );
 
         assertValidShape(
             {
                 code: 1,
             },
-            service.sockets['/my-web-socket'].messageFromClientShape,
+            service.webSockets['/my-web-socket'].messageFromClientShape,
         );
         assert.throws(() =>
             assertValidShape(
                 {
                     code: 3,
                 },
-                service.sockets['/my-web-socket'].messageFromClientShape,
+                service.webSockets['/my-web-socket'].messageFromClientShape,
             ),
         );
 
-        assert.tsType<(typeof service.sockets)['/my-web-socket']['MessageFromClientType']>().equals<
-            Readonly<
-                | {
-                      code: 1;
-                  }
-                | {
-                      code: 2;
-                  }
-            >
-        >();
+        assert
+            .tsType<(typeof service.webSockets)['/my-web-socket']['MessageFromClientType']>()
+            .equals<
+                Readonly<
+                    | {
+                          code: 1;
+                      }
+                    | {
+                          code: 2;
+                      }
+                >
+            >();
     });
-    it('can define no sockets or endpoints', () => {
+    it('can define no webSockets or endpoints', () => {
         const service = defineService({
             serviceName: 'test-endpoint-service',
             requiredClientOrigin: AnyOrigin,
@@ -443,17 +466,17 @@ describe(defineService.name, () => {
         });
 
         assert.tsType<keyof typeof service.endpoints>().equals<EndpointPathBase>();
-        assert.tsType<keyof typeof service.sockets>().equals<EndpointPathBase>();
+        assert.tsType<keyof typeof service.webSockets>().equals<EndpointPathBase>();
     });
-    it('rejects a socket with an invalid path', () => {
+    it('rejects a WebSocket with an invalid path', () => {
         assert.throws(() =>
             defineService({
                 serviceName: 'test-endpoint-service',
                 requiredClientOrigin: AnyOrigin,
                 serviceOrigin: '',
-                sockets: {
+                webSockets: {
                     '/invalid/': {
-                        messageFromServerShape: undefined,
+                        messageFromHostShape: undefined,
                         messageFromClientShape: {},
                     },
                 },
@@ -482,10 +505,10 @@ describe(assertValidServiceDefinition.name, () => {
                 endpoints: {},
                 serviceName: 'test-service',
                 serviceOrigin: '',
-                sockets: {},
+                webSockets: {},
                 requiredClientOrigin: AnyOrigin,
                 init: {
-                    sockets: {},
+                    webSockets: {},
                     endpoints: {},
                     serviceName: 'test-service',
                     serviceOrigin: '',
@@ -501,7 +524,7 @@ describe(assertValidServiceDefinition.name, () => {
                 serviceOrigin: '',
                 requiredClientOrigin: AnyOrigin,
                 init: {
-                    sockets: {},
+                    webSockets: {},
                     endpoints: {},
                     serviceName: 'test-service',
                     serviceOrigin: '',
@@ -544,7 +567,7 @@ describe(assertValidServiceDefinition.name, () => {
                 serviceName: 'test-service',
                 serviceOrigin: '',
                 init: {
-                    sockets: {},
+                    webSockets: {},
                     serviceName: 'test-service',
                     serviceOrigin: '',
                     endpoints: {},

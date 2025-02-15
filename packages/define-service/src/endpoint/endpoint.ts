@@ -160,8 +160,8 @@ export type WithFinalEndpointProps<
       >
     : never) & {
     path: EndpointPath;
-    socket: false;
-    endpoint: true;
+    isWebSocket: false;
+    isEndpoint: true;
     service: MinimalService;
 };
 
@@ -248,8 +248,8 @@ export function assertValidEndpoint(
             {
                 path: true;
                 methods: true;
-                socket: true;
-                endpoint: true;
+                isWebSocket: true;
+                isEndpoint: true;
                 service: {
                     serviceName: true;
                 };

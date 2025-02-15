@@ -22,8 +22,20 @@ describe(testEndpoint.name, () => {
         );
 
         assert.deepEquals(await condenseResponse(response), {
-            headers: {'access-control-allow-origin': '*'},
+            headers: {
+                'access-control-allow-origin': '*',
+                'content-type': 'text/plain; charset=utf-8',
+            },
             status: HttpStatus.BadRequest,
+            body: 'Invalid body.',
+        });
+    });
+    it('handles an internal error', async () => {
+        const response = await testEndpoint(mockServiceImplementation.endpoints['/throws-error']);
+
+        assert.deepEquals(await condenseResponse(response), {
+            headers: {'access-control-allow-origin': '*'},
+            status: HttpStatus.InternalServerError,
         });
     });
     it('tests a post request', async () => {

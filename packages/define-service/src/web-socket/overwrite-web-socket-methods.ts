@@ -126,7 +126,7 @@ export type SendAndWaitForReplyParams<
             >;
         }) & {
     /**
-     * The duration to wait for a server message. If this duration is exceeded and a response still
+     * The duration to wait for a reply message. If this duration is exceeded and a response still
      * hasn't been received, an error is thrown.
      *
      * @default {seconds: 10}
@@ -291,7 +291,7 @@ export type WebSocketListenerParams<
     MessageSource extends WebSocketLocation,
     WebSocketClass extends CommonWebSocket,
 > = {
-    socket: WebSocketToConnect extends NoParam
+    webSocketDefinition: WebSocketToConnect extends NoParam
         ? Readonly<
               Overwrite<
                   WebSocketDefinition,
@@ -393,7 +393,7 @@ export type WebSocketListener<
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export type GenericConnectWebSocketParams<WebSocketClass extends CommonWebSocket> = {
-    /** Parameters for socket paths that need them, like `'/my-path/:param1/:param2'`. */
+    /** Parameters for WebSocket paths that need them, like `'/my-path/:param1/:param2'`. */
     pathParams?: Record<string, string> | undefined;
     /**
      * A list of WebSocket protocols. This is the standard built-in argument for the `WebSocket`
@@ -430,9 +430,11 @@ export function overwriteWebSocketMethods<
     const WebSocketClass extends CommonWebSocket,
     const Location extends WebSocketLocation,
 >(
-    socket: WebSocketToConnect extends NoParam ? WebSocketDefinition : WebSocketToConnect,
+    webSocketDefinition: WebSocketToConnect extends NoParam
+        ? WebSocketDefinition
+        : WebSocketToConnect,
     rawWebSocket: Readonly<WebSocketClass>,
-    socketLocation: Location,
+    webSocketLocation: Location,
 ): OverwriteWebSocketMethods<WebSocketClass, Location, WebSocketToConnect> {
     const originalSend = rawWebSocket.send;
     const originalAddEventListener = rawWebSocket.addEventListener;
@@ -475,20 +477,20 @@ export function overwriteWebSocketMethods<
                 > = {
                     event,
                     webSocket,
-                    socket,
+                    webSocketDefinition,
                 };
                 if (eventName === 'message') {
                     const message = verifyWebSocketMessage(
-                        socket,
+                        webSocketDefinition,
                         parseJsonWithUndefined(
                             String((event as CommonWebSocketEventMap['message']).data),
                         ),
                         /**
-                         * Flip the socket location because messages on the client `WebSocket` will
-                         * come from the server and messages on the server `WebSocket` will come
-                         * from the client.
+                         * Flip the WebSocket location because messages on the client WebSocket will
+                         * come from the host and messages on the host WebSocket will come from the
+                         * client.
                          */
-                        getOppositeWebSocketLocation(socketLocation),
+                        getOppositeWebSocketLocation(webSocketLocation),
                     );
                     return listener({
                         ...baseParams,
@@ -567,7 +569,11 @@ export function overwriteWebSocketMethods<
             originalSend.call(
                 webSocket,
                 /** The extra `String()` wrapper is to convert `undefined` into `'undefined'`. */
-                String(JSON.stringify(verifyWebSocketMessage(socket, message, socketLocation))),
+                String(
+                    JSON.stringify(
+                        verifyWebSocketMessage(webSocketDefinition, message, webSocketLocation),
+                    ),
+                ),
             );
         },
     });
@@ -585,22 +591,22 @@ export function overwriteWebSocketMethods<
 export async function waitForOpenWebSocket(
     webSocket: Readonly<Pick<CommonWebSocket, 'readyState'>>,
 ) {
-    const socketOpenedPromise = new DeferredPromise();
+    const webSocketOpenedPromise = new DeferredPromise();
 
     await waitUntil.isTruthy(() => {
         /* node:coverage ignore next 3: there's no way to intentionally trigger this */
         if (webSocket.readyState === CommonWebSocketState.Closed) {
-            socketOpenedPromise.reject('WebSocket closed while waiting for it to open.');
+            webSocketOpenedPromise.reject('WebSocket closed while waiting for it to open.');
             return true;
         } else if (webSocket.readyState === CommonWebSocketState.Open) {
-            socketOpenedPromise.resolve();
+            webSocketOpenedPromise.resolve();
             return true;
         } else {
             return false;
         }
     });
 
-    await socketOpenedPromise.promise;
+    await webSocketOpenedPromise.promise;
 }
 
 /**
@@ -616,14 +622,16 @@ export async function finalizeWebSocket<
     const WebSocketClass extends CommonWebSocket,
     const Location extends WebSocketLocation,
 >(
-    socket: WebSocketToConnect extends NoParam ? WebSocketDefinition : WebSocketToConnect,
+    webSocketDefinition: WebSocketToConnect extends NoParam
+        ? WebSocketDefinition
+        : WebSocketToConnect,
     /** An already-constructed WebSocket instance. */
     webSocketInput: WebSocketClass,
     listeners: ConnectWebSocketListeners<NoParam, WebSocketClass> | undefined,
     location: Location,
 ): Promise<OverwriteWebSocketMethods<WebSocketClass, Location, WebSocketToConnect>> {
     const webSocket = overwriteWebSocketMethods<WebSocketToConnect, WebSocketClass, Location>(
-        socket,
+        webSocketDefinition,
         webSocketInput,
         location,
     );
@@ -659,7 +667,7 @@ export function verifyWebSocketMessage<
         WebSocketDefinition,
         {
             MessageFromHostType: true;
-            messageFromServerShape: true;
+            messageFromHostShape: true;
             messageFromClientShape: true;
             path: true;
             service: {
@@ -669,7 +677,7 @@ export function verifyWebSocketMessage<
     >,
     Location extends WebSocketLocation,
 >(
-    socket: Readonly<SpecificWebSocket>,
+    webSocketDefinition: Readonly<SpecificWebSocket>,
     /** The raw message data. */
     message: any,
     /** The location from which the message was sent. */
@@ -677,14 +685,14 @@ export function verifyWebSocketMessage<
 ): SpecificWebSocket['MessageFromHostType'] {
     const shape =
         messageSentFrom === WebSocketLocation.OnClient
-            ? socket.messageFromClientShape
-            : socket.messageFromServerShape;
+            ? webSocketDefinition.messageFromClientShape
+            : webSocketDefinition.messageFromHostShape;
 
     if (shape) {
         assertValidShape(message, shape);
     } else if (message) {
         throw new TypeError(
-            `WebSocket '${socket.path}' in service '${socket.service.serviceName}' does not expect any message data from the ${messageSentFrom === WebSocketLocation.OnClient ? 'client' : 'server'} but received it: ${stringify(message)}.`,
+            `WebSocket '${webSocketDefinition.path}' in service '${webSocketDefinition.service.serviceName}' does not expect any message data from the ${messageSentFrom === WebSocketLocation.OnClient ? 'client' : 'host'} but received it: ${stringify(message)}.`,
         );
     }
 

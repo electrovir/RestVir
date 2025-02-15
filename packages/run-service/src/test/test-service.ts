@@ -1,5 +1,6 @@
 import {assert, assertWrap, check} from '@augment-vir/assert';
 import {
+    log,
     mapObjectValues,
     mergeDeep,
     mergeDefinedProperties,
@@ -11,6 +12,7 @@ import {
 } from '@augment-vir/common';
 import {describe, it} from '@augment-vir/test';
 import {
+    assertValidWebSocketProtocols,
     buildEndpointRequestInit,
     buildWebSocketUrl,
     CollapsedFetchEndpointParams,
@@ -27,7 +29,7 @@ import fastify, {FastifyInstance} from 'fastify';
 import {type InjectOptions} from 'light-my-request';
 import {type OutgoingHttpHeaders} from 'node:http';
 import {buildUrl, parseUrl} from 'url-vir';
-import {HandleRouteOptions} from '../handle-request/handle-route.js';
+import {HandleRouteOptions} from '../handle-request/endpoint-handler.js';
 import {attachService} from '../start-service/attach-service.js';
 import {type StartServiceUserOptions} from '../start-service/start-service-options.js';
 
@@ -139,12 +141,12 @@ export type ConnectTestServiceWebSocket<
     Service extends SelectFrom<
         GenericServiceImplementation,
         {
-            sockets: true;
+            webSockets: true;
         }
     >,
 > = {
-    [WebSocketPath in keyof Service['sockets']]: Service['sockets'][WebSocketPath] extends WebSocketDefinition
-        ? ConnectTestWebSocket<Service['sockets'][WebSocketPath]>
+    [WebSocketPath in keyof Service['webSockets']]: Service['webSockets'][WebSocketPath] extends WebSocketDefinition
+        ? ConnectTestWebSocket<Service['webSockets'][WebSocketPath]>
         : never;
 };
 
@@ -180,7 +182,7 @@ export async function testService<
         SelectFrom<
             GenericServiceImplementation,
             {
-                sockets: true;
+                webSockets: true;
                 endpoints: true;
                 serviceName: true;
                 createContext: true;
@@ -196,9 +198,14 @@ export async function testService<
         Omit<PartialWithUndefined<TestServiceOptions>, 'workerCount' | 'preventWorkerRespawn'>
     > = {},
 ) {
-    const {host = 'localhost', port} = mergeDefinedProperties<TestServiceOptions>(
+    const {
+        host = 'localhost',
+        port,
+        debug,
+    } = mergeDefinedProperties<TestServiceOptions>(
         {
             port: false,
+            debug: true,
         },
         testServiceOptions,
         {
@@ -208,6 +215,10 @@ export async function testService<
     );
 
     const server = fastify();
+    /* node:coverage ignore next 3: this is just here to cover edge cases */
+    server.setErrorHandler((error) => {
+        log.if(!!debug).error(error);
+    });
 
     assert.isDefined(server, 'Service server was not started.');
 
@@ -216,6 +227,7 @@ export async function testService<
             port: port || undefined,
             host,
             throwErrorsForExternalHandling: false,
+            debug,
         })),
         /** Kill the server being tested. This should always be called after your tests are finished. */
         async kill(this: void) {
@@ -251,7 +263,7 @@ export async function testExistingServer<
         SelectFrom<
             GenericServiceImplementation,
             {
-                sockets: true;
+                webSockets: true;
                 endpoints: true;
                 serviceName: true;
                 createContext: true;
@@ -264,7 +276,7 @@ export async function testExistingServer<
 >(
     server: Readonly<FastifyInstance>,
     service: Readonly<Service>,
-    options: HandleRouteOptions & PartialWithUndefined<{host: string; port: number}> = {},
+    options: Readonly<HandleRouteOptions> & PartialWithUndefined<{host: string; port: number}> = {},
 ) {
     await attachService(server, service, options);
 
@@ -331,7 +343,7 @@ export async function testExistingServer<
         },
     ) as AnyObject as FetchTestService<Service>;
 
-    const socketOrigin =
+    const webSocketOrigin =
         options.port == undefined
             ? undefined
             : buildUrl({
@@ -341,8 +353,8 @@ export async function testExistingServer<
               }).origin;
 
     const connectWebSocket = mapObjectValues(
-        service.sockets as GenericServiceImplementation['sockets'],
-        (socketPath, socket) => {
+        service.webSockets as GenericServiceImplementation['webSockets'],
+        (webSocketPath, webSocketDefinition) => {
             return async (
                 ...args: CollapsedConnectWebSocketParams<NoParam, false>
             ): Promise<ClientWebSocket<WebSocketDefinition>> => {
@@ -350,27 +362,36 @@ export async function testExistingServer<
                 const [{protocols = [], listeners} = {}] = args;
 
                 const overwrittenOriginWebSocket = mergeDeep(
-                    socket as WebSocketDefinition,
-                    socketOrigin
+                    webSocketDefinition as WebSocketDefinition,
+                    webSocketOrigin
                         ? {
                               service: {
-                                  serviceOrigin: socketOrigin,
+                                  serviceOrigin: webSocketOrigin,
                               },
                           }
                         : {},
                 );
 
-                const socketUrl = buildWebSocketUrl(overwrittenOriginWebSocket, ...args);
+                const webSocketUrl = buildWebSocketUrl(overwrittenOriginWebSocket, ...args);
+
+                assertValidWebSocketProtocols(protocols);
 
                 const webSocket =
-                    socketOrigin == undefined
+                    webSocketOrigin == undefined
                         ? ((await server.injectWS(
-                              parseUrl(socketUrl).pathname,
+                              parseUrl(webSocketUrl).pathname,
+                              protocols.length
+                                  ? {
+                                        headers: {
+                                            'sec-websocket-protocol': protocols.join(', '),
+                                        },
+                                    }
+                                  : {},
                           )) as unknown as globalThis.WebSocket)
-                        : new WebSocket(socketUrl, protocols);
+                        : new WebSocket(webSocketUrl, protocols);
 
                 const finalized = await finalizeWebSocket(
-                    socket,
+                    webSocketDefinition,
                     webSocket,
                     listeners,
                     WebSocketLocation.OnClient,
@@ -384,7 +405,7 @@ export async function testExistingServer<
     return {
         /** Send a request to the service. */
         fetchService,
-        /** Connect to a service socket. */
+        /** Connect to a service WebSocket. */
         connectWebSocket,
     };
 }
@@ -417,7 +438,7 @@ export function describeService<
         SelectFrom<
             GenericServiceImplementation,
             {
-                sockets: true;
+                webSockets: true;
                 endpoints: true;
                 serviceName: true;
                 createContext: true;
