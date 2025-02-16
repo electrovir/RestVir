@@ -13,8 +13,18 @@ import {type OriginRequirement} from '../util/origin.js';
 export type MinimalService<ServiceName extends string = string> = {
     serviceName: IsEqual<ServiceName, ''> extends true ? never : ServiceName;
     /**
-     * The origin through which the service can be contacted. This will be used by the endpoint
-     * fetch function to send requests to this service.
+     * The origin through which the service can be contacted. This will be used by `fetchEndpoint`
+     * to send requests to this service.
+     *
+     * @example
+     *
+     * ```ts
+     * import {defineService} from '@rest-vir/define-service';
+     *
+     * defineService({
+     *     serviceOrigin: isDev ? 'http://localhost:3000' : 'https://example.com',
+     * });
+     * ```
      *
      * @see https://developer.mozilla.org/en-US/docs/Web/API/Location for help on which part of the URL is the origin (if necessary).
      */
