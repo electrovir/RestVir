@@ -205,6 +205,24 @@ describe(startService.name, () => {
                 HttpStatus.Ok,
             );
         });
+        it('accepts endpoint with extra body data', async ({fetchEndpoint}) => {
+            assert.strictEquals(
+                (
+                    await fetchEndpoint(mockService.endpoints['/test'].path, {
+                        method: HttpMethod.Post,
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            somethingHere: 'a',
+                            testValue: -4,
+                            extraValue: 'hi',
+                        }),
+                    })
+                ).status,
+                HttpStatus.Ok,
+            );
+        });
         it('rejects fetch to WebSocket path', async ({fetchEndpoint}) => {
             assert.strictEquals(
                 (

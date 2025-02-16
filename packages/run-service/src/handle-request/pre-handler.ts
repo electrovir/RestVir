@@ -75,7 +75,11 @@ export async function preHandler(
         : [];
 
     const protocolShapeError = webSocketDefinition?.protocolsShape
-        ? wrapInTry(() => assertValidShape(protocols, webSocketDefinition.protocolsShape))
+        ? wrapInTry(() =>
+              assertValidShape(protocols, webSocketDefinition.protocolsShape, {
+                  allowExtraKeys: true,
+              }),
+          )
         : undefined;
 
     if (protocolShapeError) {

@@ -726,7 +726,9 @@ export function verifyWebSocketMessage<
             : webSocketDefinition.messageFromHostShape;
 
     if (shape) {
-        assertValidShape(message, shape);
+        assertValidShape(message, shape, {
+            allowExtraKeys: true,
+        });
     } else if (message) {
         throw new TypeError(
             `WebSocket '${webSocketDefinition.path}' in service '${webSocketDefinition.service.serviceName}' does not expect any message data from the ${messageSentFrom === WebSocketLocation.OnClient ? 'client' : 'host'} but received it: ${stringify(message)}.`,
