@@ -1,3 +1,4 @@
+import {assert} from '@augment-vir/assert';
 import {ensureErrorClass, extractErrorMessage, stringify} from '@augment-vir/common';
 import {
     overwriteWebSocketMethods,
@@ -8,6 +9,7 @@ import {
     ImplementedWebSocket,
     RestVirHandlerError,
     ServerRequest,
+    type WebSocketImplementationParams,
 } from '@rest-vir/implement-service';
 import {assertValidShape} from 'object-shape-tester';
 import {type WebSocket as WsWebSocket} from 'ws';
@@ -35,21 +37,24 @@ export async function handleWebSocketRequest(
 ) {
     const restVirContext = request.restVirContext?.[attachId];
 
+    assert.isDefined(restVirContext, 'restVirContext is not defined');
+
     const webSocket = overwriteWebSocketMethods(
         implementedWebSocket,
         wsWebSocket,
         WebSocketLocation.OnHost,
     );
 
-    const webSocketCallbackParams = {
-        context: restVirContext?.context,
+    const webSocketCallbackParams: WebSocketImplementationParams = {
+        context: restVirContext.context,
         headers: request.headers,
         log: implementedWebSocket.service.logger,
         request,
         service: implementedWebSocket.service,
         webSocketDefinition: implementedWebSocket,
         webSocket,
-        protocols: restVirContext?.protocols,
+        protocols: restVirContext.protocols,
+        searchParams: restVirContext.searchParams,
     };
 
     if (implementedWebSocket.implementation.onClose) {

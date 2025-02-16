@@ -1,8 +1,8 @@
 ## Required
 
--   add typed search params
 -   fill in mono-repo README
 -   make sure everything is exported
+-   test forward/backwards compatibility
 -   add more info logging
 -   add a dev port scanner so a frontend can find their backend.
 

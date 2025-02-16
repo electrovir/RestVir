@@ -115,7 +115,7 @@ export type ConnectTestWebSocket<WebSocketToTest extends WebSocketDefinition> = 
 ) => Promise<ClientWebSocket<WebSocketToTest>>;
 
 /**
- * Type for the `fetchService` function provided by {@link testService} and {@link describeService}.
+ * Type for the `fetchEndpoint` function provided by {@link testService} and {@link describeService}.
  *
  * @category Internal
  * @category Package : @rest-vir/run-service
@@ -303,7 +303,7 @@ export async function testExistingServer<
                   port: options.port,
               }).origin;
 
-    const fetchService = mapObjectValues(
+    const fetchEndpoint = mapObjectValues(
         service.endpoints as GenericServiceImplementation['endpoints'],
         (endpointPath, endpoint) => {
             return async (
@@ -418,7 +418,7 @@ export async function testExistingServer<
 
     return {
         /** Send a request to the service. */
-        fetchService,
+        fetchEndpoint,
         /** Connect to a service WebSocket. */
         connectWebSocket,
     };
@@ -438,9 +438,9 @@ export async function testExistingServer<
  * import {describeService} from '@rest-vir/run-service';
  * import {it} from '@augment-vir/test';
  *
- * describeService({service: myService}, ({fetchService}) => {
+ * describeService({service: myService}, ({fetchEndpoint}) => {
  *     it('responds', async () => {
- *         const response = await fetchService['/my-endpoint']();
+ *         const response = await fetchEndpoint['/my-endpoint']();
  *     });
  * });
  * ```
@@ -474,21 +474,21 @@ export function describeService<
     },
     describeCallback: (params: {
         /** Send a request to the service. */
-        fetchService: FetchTestService<Service>;
+        fetchEndpoint: FetchTestService<Service>;
     }) => void | undefined,
 ) {
     const servicePromise = testService(service, options);
 
     const fetchServiceObject = mapObjectValues(service.endpoints, (endpointPath) => {
         return async (...args: any[]) => {
-            const {fetchService} = await servicePromise;
-            return await fetchService[endpointPath](...(args as any));
+            const {fetchEndpoint} = await servicePromise;
+            return await fetchEndpoint[endpointPath](...(args as any));
         };
     }) as FetchTestService<Service>;
 
     describe(service.serviceName, () => {
         describeCallback({
-            fetchService: fetchServiceObject,
+            fetchEndpoint: fetchServiceObject,
         });
 
         /**

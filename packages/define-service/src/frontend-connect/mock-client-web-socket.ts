@@ -1,4 +1,4 @@
-import {getOrSet, type AnyObject} from '@augment-vir/common';
+import {getOrSet, type AnyObject, type PartialWithUndefined} from '@augment-vir/common';
 import {
     CommonWebSocket,
     CommonWebSocketEventMap,
@@ -25,7 +25,21 @@ export class MockClientWebSocket<const WebSocketToConnect extends WebSocketDefin
     /** This is called whenever this WebSocket's `.send()` method is called. */
     public sendCallback: MockClientWebSocketClientSendCallback<WebSocketToConnect> | undefined;
 
-    constructor() {
+    constructor(
+        options: PartialWithUndefined<{
+            /**
+             * Set this to `true` if you want to prevent this mock WebSocket from immediately opening
+             * itself. You can then use `.open()` at any time to manually open it.
+             */
+            preventImmediateOpen: boolean;
+        }> = {},
+    ) {
+        if (!options.preventImmediateOpen) {
+            this.open();
+        }
+    }
+
+    public open() {
         setTimeout(() => {
             if (this.readyState === CommonWebSocketState.Connecting) {
                 this.readyState = CommonWebSocketState.Open;

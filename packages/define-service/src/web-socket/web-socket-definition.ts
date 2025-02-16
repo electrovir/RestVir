@@ -14,6 +14,7 @@ import {MinimalService} from '../service/minimal-service.js';
 import {ensureServiceDefinitionError} from '../service/service-definition.error.js';
 import {NoParam} from '../util/no-param.js';
 import {OriginRequirement, originRequirementShape} from '../util/origin.js';
+import type {BaseSearchParams} from '../util/search-params.js';
 
 /**
  * Initialization for a WebSocket within a service definition..
@@ -55,6 +56,31 @@ export type WebSocketInit<MessageFromClientShape = unknown, MessageFromServerSha
      * ```
      */
     protocolsShape?: unknown;
+    /**
+     * A shape used to verify search params. This should match the entire search params object.
+     *
+     * Note the following:
+     *
+     * - Search param values will _always_ be in an array
+     * - Elements in search param value arrays will _always_ be strings
+     *
+     * @example
+     *
+     * ```ts
+     * import {exact, enumShape, tupleShape} from 'object-shape-tester';
+     *
+     * const partialWebSocketInit = {
+     *     searchParamsShape: {
+     *         // use `tupleShape` to ensure there's exactly one entry for this search param
+     *         userId: tupleShape(enumShape(MyEnum)),
+     *         date: tupleShape(exact('2')),
+     *         // don't use `tupleShape` here so that there can be any number of entries
+     *         colors: [''],
+     *     },
+     * };
+     * ```
+     */
+    searchParamsShape?: unknown;
 
     /** Attach any other properties that you want inside of here. */
     customProps?: Record<PropertyKey, unknown> | undefined;
@@ -114,6 +140,18 @@ export type WithFinalWebSocketProps<
               ProtocolsType: undefined extends Init['protocolsShape']
                   ? string[]
                   : ShapeToRuntimeType<ShapeDefinition<Init['protocolsShape'], true>, false, true>;
+              searchParamsShape: 'searchParamsShape' extends keyof Init
+                  ? undefined extends Init['searchParamsShape']
+                      ? undefined
+                      : ShapeDefinition<Init['searchParamsShape'], true> | undefined
+                  : undefined;
+              SearchParamsType: IsEqual<Init['searchParamsShape'], undefined> extends true
+                  ? BaseSearchParams
+                  : ShapeToRuntimeType<
+                        ShapeDefinition<Init['searchParamsShape'], true>,
+                        false,
+                        true
+                    >;
               customProps: 'customProps' extends keyof Init ? Init['customProps'] : undefined;
           }
       >
@@ -165,6 +203,7 @@ export type GenericWebSocketDefinition = Overwrite<
 export const webSocketInitShape = defineShape({
     messageFromClientShape: unknownShape(),
     messageFromHostShape: unknownShape(),
+    searchParamsShape: unknownShape(),
     /**
      * Set a required client origin for this WebSocket.
      *

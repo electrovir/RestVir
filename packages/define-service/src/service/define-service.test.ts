@@ -171,6 +171,7 @@ describe(defineService.name, () => {
             .equals<
                 (
                     | '/empty'
+                    | '/with-search-params'
                     | '/missing'
                     | '/incorrectly-has-response-data'
                     | '/requires-admin'

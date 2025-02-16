@@ -2,6 +2,7 @@ import {assert} from '@augment-vir/assert';
 import {wait} from '@augment-vir/common';
 import {describe, it, itCases} from '@augment-vir/test';
 import {mockService} from '../service/define-service.mock.js';
+import {CommonWebSocketState} from '../web-socket/common-web-socket.js';
 import {
     getOppositeWebSocketLocation,
     WebSocketLocation,
@@ -15,6 +16,8 @@ import {MockClientWebSocket} from './mock-client-web-socket.js';
 
 describe('CollapsedConnectWebSocketParams', () => {
     it('uses NoParam for generic params', () => {
+        assert.tsType(mockService.webSockets['/custom-props-web-socket'].searchParamsShape);
+
         const genericParams: CollapsedConnectWebSocketParams =
             {} as CollapsedConnectWebSocketParams<
                 (typeof mockService.webSockets)['/custom-props-web-socket']
@@ -43,7 +46,9 @@ describe(connectWebSocket.name, () => {
                     events.push(event.type);
                 },
             },
-            WebSocket: MockClientWebSocket<(typeof mockService.webSockets)['/no-client-data']>,
+            WebSocketConstructor: MockClientWebSocket<
+                (typeof mockService.webSockets)['/no-client-data']
+            >,
         });
 
         const messageListener = () => {
@@ -74,7 +79,9 @@ describe(connectWebSocket.name, () => {
     });
     it('rejects invalid messages', async () => {
         const clientWebSocket = await connectWebSocket(mockService.webSockets['/no-server-data'], {
-            WebSocket: MockClientWebSocket<(typeof mockService.webSockets)['/no-server-data']>,
+            WebSocketConstructor: MockClientWebSocket<
+                (typeof mockService.webSockets)['/no-server-data']
+            >,
         });
 
         assert.throws(
@@ -102,7 +109,9 @@ describe(connectWebSocket.name, () => {
     });
     it('waits for a reply', async () => {
         const clientWebSocket = await connectWebSocket(mockService.webSockets['/no-client-data'], {
-            WebSocket: MockClientWebSocket<(typeof mockService.webSockets)['/no-client-data']>,
+            WebSocketConstructor: MockClientWebSocket<
+                (typeof mockService.webSockets)['/no-client-data']
+            >,
         });
 
         const replyPromise = clientWebSocket.sendAndWaitForReply();
@@ -112,9 +121,70 @@ describe(connectWebSocket.name, () => {
 
         assert.strictEquals(await replyPromise, 'ok');
     });
+    it('fails if WebSocket emits error while opening', async () => {
+        class ImmediateErrorMockWebSocket extends MockClientWebSocket<
+            (typeof mockService.webSockets)['/no-client-data']
+        > {
+            constructor() {
+                super({preventImmediateOpen: true});
+                setTimeout(() => this.dispatchEvent('error', {}), 3000);
+            }
+        }
+
+        await assert.throws(
+            () =>
+                connectWebSocket(mockService.webSockets['/no-client-data'], {
+                    WebSocketConstructor: ImmediateErrorMockWebSocket,
+                }),
+            {
+                matchMessage: 'WebSocket connection failed',
+            },
+        );
+    });
+    it('fails if WebSocket never opens', async () => {
+        class NeverOpenMockWebSocket extends MockClientWebSocket<
+            (typeof mockService.webSockets)['/no-client-data']
+        > {
+            constructor() {
+                super({preventImmediateOpen: true});
+            }
+        }
+
+        await assert.throws(
+            () =>
+                connectWebSocket(mockService.webSockets['/no-client-data'], {
+                    WebSocketConstructor: NeverOpenMockWebSocket,
+                }),
+            {
+                matchMessage: 'WebSocket never opened',
+            },
+        );
+    });
+    it('fails if WebSocket closes before it can open', async () => {
+        class NeverOpenMockWebSocket extends MockClientWebSocket<
+            (typeof mockService.webSockets)['/no-client-data']
+        > {
+            constructor() {
+                super({preventImmediateOpen: true});
+                this.readyState = CommonWebSocketState.Closed;
+            }
+        }
+
+        await assert.throws(
+            () =>
+                connectWebSocket(mockService.webSockets['/no-client-data'], {
+                    WebSocketConstructor: NeverOpenMockWebSocket,
+                }),
+            {
+                matchMessage: 'WebSocket closed while waiting for it to open',
+            },
+        );
+    });
     it('passes protocols', async () => {
         const clientWebSocket = await connectWebSocket(mockService.webSockets['/no-client-data'], {
-            WebSocket: MockClientWebSocket<(typeof mockService.webSockets)['/no-client-data']>,
+            WebSocketConstructor: MockClientWebSocket<
+                (typeof mockService.webSockets)['/no-client-data']
+            >,
             protocols: [
                 'a',
                 'b',
@@ -133,7 +203,7 @@ describe(connectWebSocket.name, () => {
         await assert.throws(
             () =>
                 connectWebSocket(mockService.webSockets['/no-client-data'], {
-                    WebSocket: MockClientWebSocket<
+                    WebSocketConstructor: MockClientWebSocket<
                         (typeof mockService.webSockets)['/no-client-data']
                     >,
                     protocols: [
@@ -151,7 +221,7 @@ describe(connectWebSocket.name, () => {
         await assert.throws(
             () =>
                 connectWebSocket(mockService.webSockets['/no-client-data'], {
-                    WebSocket: MockClientWebSocket<
+                    WebSocketConstructor: MockClientWebSocket<
                         (typeof mockService.webSockets)['/no-client-data']
                     >,
                     protocols: [
@@ -169,7 +239,7 @@ describe(connectWebSocket.name, () => {
         await assert.throws(
             () =>
                 connectWebSocket(mockService.webSockets['/no-client-data'], {
-                    WebSocket: MockClientWebSocket<
+                    WebSocketConstructor: MockClientWebSocket<
                         (typeof mockService.webSockets)['/no-client-data']
                     >,
                     protocols: [
@@ -187,7 +257,7 @@ describe(connectWebSocket.name, () => {
         await assert.throws(
             () =>
                 connectWebSocket(mockService.webSockets['/no-client-data'], {
-                    WebSocket: MockClientWebSocket<
+                    WebSocketConstructor: MockClientWebSocket<
                         (typeof mockService.webSockets)['/no-client-data']
                     >,
                     protocols: [
@@ -205,7 +275,7 @@ describe(connectWebSocket.name, () => {
         await assert.throws(
             () =>
                 connectWebSocket(mockService.webSockets['/no-client-data'], {
-                    WebSocket: MockClientWebSocket<
+                    WebSocketConstructor: MockClientWebSocket<
                         (typeof mockService.webSockets)['/no-client-data']
                     >,
                     protocols: [
@@ -221,7 +291,9 @@ describe(connectWebSocket.name, () => {
     });
     it('times out with no reply', async () => {
         const clientWebSocket = await connectWebSocket(mockService.webSockets['/no-client-data'], {
-            WebSocket: MockClientWebSocket<(typeof mockService.webSockets)['/no-client-data']>,
+            WebSocketConstructor: MockClientWebSocket<
+                (typeof mockService.webSockets)['/no-client-data']
+            >,
         });
 
         await assert.throws(

@@ -9,6 +9,7 @@ import {
     getObjectTypedEntries,
 } from '@augment-vir/common';
 import {
+    BaseSearchParams,
     BaseServiceEndpointsInit,
     EndpointDefinition,
     EndpointInit,
@@ -103,6 +104,9 @@ export type EndpointImplementationParams<
     request: ServerRequest;
     response: ServerResponse;
     log: Readonly<ServiceLogger>;
+    searchParams: SpecificEndpoint extends NoParam
+        ? BaseSearchParams
+        : Exclude<SpecificEndpoint, NoParam>['SearchParamsType'];
 };
 
 /**
@@ -119,6 +123,7 @@ export type GenericEndpointImplementationParams = {
     endpoint: any;
     service: MinimalService<any>;
     requestHeaders: IncomingHttpHeaders;
+    searchParams: BaseSearchParams;
 
     requestData: any;
     request: ServerRequest;

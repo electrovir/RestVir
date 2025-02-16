@@ -1,17 +1,13 @@
 import {assertWrap} from '@augment-vir/assert';
 import {
     ensureErrorAndPrependMessage,
+    extractErrorMessage,
     HttpStatus,
-    log,
     stringify,
     wrapInTry,
     type SelectFrom,
 } from '@augment-vir/common';
-import {
-    type EndpointDefinition,
-    type EndpointPathBase,
-    type WebSocketDefinition,
-} from '@rest-vir/define-service';
+import {type EndpointDefinition, type WebSocketDefinition} from '@rest-vir/define-service';
 import {matchUrlToService} from '@rest-vir/define-service/src/service/match-url.js';
 import {
     ContextInitParameters,
@@ -25,6 +21,7 @@ import {assertValidShape, isValidShape} from 'object-shape-tester';
 import {handleHandlerResult} from './endpoint-handler.js';
 import {handleCors} from './handle-cors.js';
 import {handleRequestMethod} from './handle-request-method.js';
+import {parseSearchParams} from './parse-search-params.js';
 
 /**
  * Handles a request before it gets to the actual route handlers.
@@ -70,15 +67,33 @@ export async function preHandler(
     const route = endpointDefinition || webSocketDefinition;
 
     if (!route) {
-        throw new RestVirHandlerError(
-            {
-                service,
-                path: request.originalUrl as EndpointPathBase,
-                isEndpoint: false,
-                isWebSocket: false,
-            },
-            'No implementation found.',
+        return;
+    }
+
+    const protocols = webSocketDefinition
+        ? (request.headers['sec-websocket-protocol'] || '').split(', ')
+        : [];
+
+    const protocolShapeError = webSocketDefinition?.protocolsShape
+        ? wrapInTry(() => assertValidShape(protocols, webSocketDefinition.protocolsShape))
+        : undefined;
+
+    if (protocolShapeError) {
+        service.logger.error(
+            new RestVirHandlerError(
+                route,
+                extractErrorMessage(
+                    ensureErrorAndPrependMessage(
+                        protocolShapeError,
+                        `WebSocket protocols rejected (${stringify(protocols)}):`,
+                    ),
+                ),
+            ),
         );
+
+        response.statusCode = HttpStatus.BadRequest;
+        response.send('Invalid protocols.');
+        return;
     }
 
     if (
@@ -125,27 +140,10 @@ export async function preHandler(
         webSocketDefinition: webSocketDefinition,
     };
 
-    const protocols = webSocketDefinition
-        ? (request.headers['sec-websocket-protocol'] || '').split(', ')
-        : undefined;
+    const searchParams = parseSearchParams({request, route});
 
-    if (
-        webSocketDefinition?.protocolsShape &&
-        !isValidShape(protocols, webSocketDefinition.protocolsShape)
-    ) {
-        try {
-            assertValidShape(protocols, webSocketDefinition.protocolsShape);
-        } catch (error) {
-            log.error(
-                ensureErrorAndPrependMessage(
-                    error,
-                    `WebSocket protocols rejected (${stringify(protocols)}):`,
-                ),
-            );
-        }
-
-        response.statusCode = HttpStatus.BadRequest;
-        response.send('Invalid protocols.');
+    if (!('data' in searchParams)) {
+        handleHandlerResult(searchParams, response);
         return;
     }
 
@@ -178,6 +176,7 @@ export async function preHandler(
             context: contextOutput?.context,
             requestData,
             protocols,
+            searchParams: searchParams.data,
         };
     } catch (error) {
         throw ensureErrorAndPrependMessage(error, 'Failed to generate request context.');

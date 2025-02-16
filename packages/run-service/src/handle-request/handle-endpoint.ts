@@ -1,4 +1,4 @@
-import {assertWrap} from '@augment-vir/assert';
+import {assert, assertWrap} from '@augment-vir/assert';
 import {ensureErrorAndPrependMessage, HttpStatus, isErrorHttpStatus} from '@augment-vir/common';
 import {
     createRestVirHandlerErrorPrefix,
@@ -33,8 +33,12 @@ export async function handleEndpointRequest(
     >,
 ): Promise<HandledOutput> {
     try {
-        const context = request.restVirContext?.[attachId]?.context;
-        const requestData = request.restVirContext?.[attachId]?.requestData;
+        const restVirContext = request.restVirContext?.[attachId];
+        assert.isDefined(restVirContext, 'restVirContext is not defined');
+
+        const context = restVirContext.context;
+        const requestData = restVirContext.requestData;
+        const searchParams = restVirContext.searchParams;
 
         const endpointParams: EndpointImplementationParams = {
             method: assertWrap.isEnumValue(request.method.toUpperCase(), HttpMethod),
@@ -46,6 +50,7 @@ export async function handleEndpointRequest(
             endpoint,
             log: endpoint.service.logger,
             context,
+            searchParams,
         };
 
         const endpointResult = (await endpoint.implementation(

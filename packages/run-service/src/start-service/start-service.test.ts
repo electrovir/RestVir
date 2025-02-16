@@ -9,6 +9,7 @@ import {
     mockService,
     mockWebsiteOrigin,
 } from '@rest-vir/define-service/src/service/define-service.mock.js';
+import {buildUrl} from 'url-vir';
 import {condenseResponse} from '../test/test-service.js';
 import {startService} from './start-service.js';
 import {describeServiceScript, getMockScriptCommand} from './test-start-service.mock.js';
@@ -37,12 +38,13 @@ describe(startService.name, () => {
 
             webSocket.send('something here');
         });
-        it('rejects invalid protocols', async ({connectWebSocket}) => {
-            const webSocket = await connectWebSocket(
-                mockService.webSockets['/no-client-data'].path,
+        it('rejects invalid WebSocket protocols', async ({connectWebSocket}) => {
+            await assert.throws(
+                () => connectWebSocket(mockService.webSockets['/required-protocols'].path),
+                {
+                    matchMessage: 'WebSocket connection failed',
+                },
             );
-
-            webSocket.send('something here');
         });
         it('receives web socket protocols', async ({connectWebSocket}) => {
             const mockProtocols = [
@@ -60,10 +62,38 @@ describe(startService.name, () => {
 
             assert.deepEquals(serverMessage, mockProtocols);
         });
-        it('errors on invalid response', async ({fetchService}) => {
+        it('rejects invalid WebSocket search params', async ({connectWebSocket}) => {
+            await assert.throws(
+                () => connectWebSocket(mockService.webSockets['/with-search-params'].path),
+                {
+                    matchMessage: 'WebSocket connection failed',
+                },
+            );
+        });
+        it('accepts valid WebSocket search params', async ({connectWebSocket}) => {
+            const mockSearchParams = {
+                param1: ['hi'],
+                param2: [
+                    'a',
+                    'b',
+                    'c',
+                ],
+            };
+
+            const webSocket = await connectWebSocket(
+                buildUrl(mockService.webSockets['/with-search-params'].path, {
+                    search: mockSearchParams,
+                }).href,
+            );
+
+            const serverMessage = await webSocket.sendAndWaitForReply();
+
+            assert.deepEquals(serverMessage, mockSearchParams);
+        });
+        it('errors on invalid response', async ({fetchEndpoint}) => {
             assert.strictEquals(
                 (
-                    await fetchService(
+                    await fetchEndpoint(
                         mockService.endpoints['/incorrectly-has-response-data'].path,
                         {
                             method: HttpMethod.Get,
@@ -73,20 +103,20 @@ describe(startService.name, () => {
                 HttpStatus.InternalServerError,
             );
         });
-        it('rejects an unexpected method', async ({fetchService}) => {
+        it('rejects an unexpected method', async ({fetchEndpoint}) => {
             assert.strictEquals(
                 (
-                    await fetchService(mockService.endpoints['/test'].path, {
+                    await fetchEndpoint(mockService.endpoints['/test'].path, {
                         method: HttpMethod.Get,
                     })
                 ).status,
                 HttpStatus.MethodNotAllowed,
             );
         });
-        it('does not parse body when content type is not json', async ({fetchService}) => {
+        it('does not parse body when content type is not json', async ({fetchEndpoint}) => {
             assert.strictEquals(
                 (
-                    await fetchService(mockService.endpoints['/test'].path, {
+                    await fetchEndpoint(mockService.endpoints['/test'].path, {
                         method: HttpMethod.Post,
                         body: JSON.stringify({
                             somethingHere: 'value',
@@ -97,8 +127,8 @@ describe(startService.name, () => {
                 HttpStatus.BadRequest,
             );
         });
-        it('parses body when content type is json', async ({fetchService}) => {
-            const postResponse = await fetchService(mockService.endpoints['/test'].path, {
+        it('parses body when content type is json', async ({fetchEndpoint}) => {
+            const postResponse = await fetchEndpoint(mockService.endpoints['/test'].path, {
                 method: HttpMethod.Post,
                 headers: {
                     'Content-Type': 'application/json',
@@ -120,16 +150,75 @@ describe(startService.name, () => {
                 },
             });
         });
-        it('rejects a missing origin when CORS is required', async ({fetchService}) => {
+        it('rejects a missing origin when CORS is required', async ({fetchEndpoint}) => {
             assert.strictEquals(
-                (await fetchService(mockService.endpoints['/requires-origin'].path)).status,
+                (await fetchEndpoint(mockService.endpoints['/requires-origin'].path)).status,
                 HttpStatus.Forbidden,
             );
         });
-        it('passes a matching CORS origin', async ({fetchService}) => {
+        it('rejects invalid endpoint search params', async ({fetchEndpoint}) => {
+            assert.strictEquals(
+                (await fetchEndpoint(mockService.endpoints['/with-search-params'].path)).status,
+                HttpStatus.BadRequest,
+            );
+        });
+        it('accepts valid endpoint search params', async ({fetchEndpoint}) => {
             assert.strictEquals(
                 (
-                    await fetchService(mockService.endpoints['/requires-origin'].path, {
+                    await fetchEndpoint(
+                        buildUrl(mockService.endpoints['/with-search-params'].path, {
+                            search: {
+                                param1: ['hi'],
+                                param2: [
+                                    'a',
+                                    'b',
+                                    'c',
+                                ],
+                            },
+                        }).href,
+                    )
+                ).status,
+                HttpStatus.Ok,
+            );
+        });
+        it('accepts endpoint with same path as WebSocket and non-get method', async ({
+            fetchEndpoint,
+        }) => {
+            assert.strictEquals(
+                (
+                    await fetchEndpoint(
+                        buildUrl(mockService.endpoints['/with-search-params'].path, {
+                            search: {
+                                param1: ['hi'],
+                                param2: [
+                                    'a',
+                                    'b',
+                                    'c',
+                                ],
+                            },
+                        }).href,
+                        {
+                            method: HttpMethod.Post,
+                        },
+                    )
+                ).status,
+                HttpStatus.Ok,
+            );
+        });
+        it('rejects fetch to WebSocket path', async ({fetchEndpoint}) => {
+            assert.strictEquals(
+                (
+                    await fetchEndpoint(mockService.webSockets['/no-client-data'].path, {
+                        method: HttpMethod.Get,
+                    })
+                ).status,
+                HttpStatus.NotFound,
+            );
+        });
+        it('passes a matching CORS origin', async ({fetchEndpoint}) => {
+            assert.strictEquals(
+                (
+                    await fetchEndpoint(mockService.endpoints['/requires-origin'].path, {
                         headers: {
                             origin: mockWebsiteOrigin,
                         },
@@ -140,11 +229,11 @@ describe(startService.name, () => {
             );
         });
         it("allows options requests even when the endpoint doesn't specify it", async ({
-            fetchService,
+            fetchEndpoint,
         }) => {
             assert.strictEquals(
                 (
-                    await fetchService(mockService.endpoints['/test'].path, {
+                    await fetchEndpoint(mockService.endpoints['/test'].path, {
                         method: HttpMethod.Options,
                     })
                 ).status,
@@ -152,21 +241,21 @@ describe(startService.name, () => {
                 'options should be allowed without content',
             );
         });
-        it('gets blocked', async ({fetchService}) => {
+        it('gets blocked', async ({fetchEndpoint}) => {
             const startTime = Date.now();
-            const longRunningTime = fetchService(mockService.endpoints['/long-running'].path).then(
+            const longRunningTime = fetchEndpoint(mockService.endpoints['/long-running'].path).then(
                 () => Date.now() - startTime,
             );
-            const plainTime = fetchService(mockService.endpoints['/plain'].path).then(
+            const plainTime = fetchEndpoint(mockService.endpoints['/plain'].path).then(
                 () => Date.now() - startTime,
             );
 
             assert.isAtLeast(await plainTime, await longRunningTime);
         });
-        it('handles function CORS requirements', async ({fetchService}) => {
+        it('handles function CORS requirements', async ({fetchEndpoint}) => {
             assert.deepEquals(
                 await condenseResponse(
-                    await fetchService(mockService.endpoints['/function-origin'].path, {
+                    await fetchEndpoint(mockService.endpoints['/function-origin'].path, {
                         method: HttpMethod.Get,
                         headers: {
                             origin: 'https://electrovir.com',
@@ -181,7 +270,7 @@ describe(startService.name, () => {
             );
             assert.deepEquals(
                 await condenseResponse(
-                    await fetchService(mockService.endpoints['/function-origin'].path, {
+                    await fetchEndpoint(mockService.endpoints['/function-origin'].path, {
                         method: HttpMethod.Get,
                         headers: {
                             origin: 'https://example.com',
@@ -200,7 +289,7 @@ describe(startService.name, () => {
             );
             assert.deepEquals(
                 await condenseResponse(
-                    await fetchService(mockService.endpoints['/function-origin'].path, {
+                    await fetchEndpoint(mockService.endpoints['/function-origin'].path, {
                         method: HttpMethod.Options,
                         headers: {
                             origin: 'https://electrovir.com',
@@ -215,7 +304,7 @@ describe(startService.name, () => {
             );
             assert.deepEquals(
                 await condenseResponse(
-                    await fetchService(mockService.endpoints['/function-origin'].path, {
+                    await fetchEndpoint(mockService.endpoints['/function-origin'].path, {
                         method: HttpMethod.Options,
                         headers: {
                             origin: 'https://example.com',
@@ -236,10 +325,10 @@ describe(startService.name, () => {
                 'accepts a valid OPTIONS origin with functions',
             );
         });
-        it('handles array CORS requirements', async ({fetchService}) => {
+        it('handles array CORS requirements', async ({fetchEndpoint}) => {
             assert.deepEquals(
                 await condenseResponse(
-                    await fetchService(mockService.endpoints['/array-origin'].path, {
+                    await fetchEndpoint(mockService.endpoints['/array-origin'].path, {
                         method: HttpMethod.Get,
                         headers: {
                             origin: 'https://wikipedia.org',
@@ -254,7 +343,7 @@ describe(startService.name, () => {
             );
             assert.deepEquals(
                 await condenseResponse(
-                    await fetchService(mockService.endpoints['/array-origin'].path, {
+                    await fetchEndpoint(mockService.endpoints['/array-origin'].path, {
                         method: HttpMethod.Get,
                         headers: {
                             origin: 'https://example.com',
@@ -273,7 +362,7 @@ describe(startService.name, () => {
             );
             assert.deepEquals(
                 await condenseResponse(
-                    await fetchService(mockService.endpoints['/array-origin'].path, {
+                    await fetchEndpoint(mockService.endpoints['/array-origin'].path, {
                         method: HttpMethod.Options,
                         headers: {
                             origin: 'https://wikipedia.org',
@@ -288,7 +377,7 @@ describe(startService.name, () => {
             );
             assert.deepEquals(
                 await condenseResponse(
-                    await fetchService(mockService.endpoints['/array-origin'].path, {
+                    await fetchEndpoint(mockService.endpoints['/array-origin'].path, {
                         method: HttpMethod.Options,
                         headers: {
                             origin: 'https://example.com',
@@ -309,10 +398,10 @@ describe(startService.name, () => {
                 'accepts a valid OPTIONS origin with an array',
             );
         });
-        it("accepts a service's AnyOrigin", async ({fetchService}) => {
+        it("accepts a service's AnyOrigin", async ({fetchEndpoint}) => {
             assert.deepEquals(
                 await condenseResponse(
-                    await fetchService(mockService.endpoints['/health'].path, {
+                    await fetchEndpoint(mockService.endpoints['/health'].path, {
                         method: HttpMethod.Get,
                     }),
                 ),
@@ -326,7 +415,7 @@ describe(startService.name, () => {
             );
             assert.deepEquals(
                 await condenseResponse(
-                    await fetchService(mockService.endpoints['/health'].path, {
+                    await fetchEndpoint(mockService.endpoints['/health'].path, {
                         method: HttpMethod.Options,
                     }),
                 ),
@@ -342,10 +431,10 @@ describe(startService.name, () => {
                 'accepts an options request without any origin',
             );
         });
-        it('generates an error response', async ({fetchService}) => {
+        it('generates an error response', async ({fetchEndpoint}) => {
             assert.deepEquals(
                 await condenseResponse(
-                    await fetchService(mockService.endpoints['/returns-response-error'].path, {
+                    await fetchEndpoint(mockService.endpoints['/returns-response-error'].path, {
                         method: HttpMethod.Get,
                     }),
                 ),
@@ -360,10 +449,10 @@ describe(startService.name, () => {
                 },
             );
         });
-        it('handles a context rejection', async ({fetchService}) => {
+        it('handles a context rejection', async ({fetchEndpoint}) => {
             assert.deepEquals(
                 await condenseResponse(
-                    await fetchService(mockService.endpoints['/empty'].path, {
+                    await fetchEndpoint(mockService.endpoints['/empty'].path, {
                         method: HttpMethod.Get,
                         headers: {
                             authorization: 'reject',
@@ -378,10 +467,10 @@ describe(startService.name, () => {
                 },
             );
         });
-        it('handles failed context generation', async ({fetchService}) => {
+        it('handles failed context generation', async ({fetchEndpoint}) => {
             assert.deepEquals(
                 await condenseResponse(
-                    await fetchService(mockService.endpoints['/empty'].path, {
+                    await fetchEndpoint(mockService.endpoints['/empty'].path, {
                         method: HttpMethod.Get,
                         headers: {
                             authorization: 'error',
@@ -396,10 +485,10 @@ describe(startService.name, () => {
                 },
             );
         });
-        it('rejects unexpected request body', async ({fetchService}) => {
+        it('rejects unexpected request body', async ({fetchEndpoint}) => {
             assert.deepEquals(
                 await condenseResponse(
-                    await fetchService(mockService.endpoints['/plain'].path, {
+                    await fetchEndpoint(mockService.endpoints['/plain'].path, {
                         method: HttpMethod.Post,
                         body: JSON.stringify({somethingHere: 'hi'}),
                         headers: {
@@ -417,10 +506,10 @@ describe(startService.name, () => {
                 },
             );
         });
-        it('404s on missing endpoint', async ({fetchService}) => {
+        it('404s on missing endpoint', async ({fetchEndpoint}) => {
             assert.deepEquals(
                 await condenseResponse(
-                    await fetchService(mockService.endpoints['/missing'].path, {
+                    await fetchEndpoint(mockService.endpoints['/missing'].path, {
                         method: HttpMethod.Get,
                     }),
                 ),
@@ -463,18 +552,18 @@ describe(startService.name, () => {
          * 3. Quickly, in a separate tab, open `/empty`.
          * 4. `/empty` should resolve immediately while `/long-running` is still loading.
          */
-        // it('does not get blocked', async ({fetchService}) => {
+        // it('does not get blocked', async ({fetchEndpoint}) => {
         //     const startTime = Date.now();
-        //     const longRunningTime = fetchService(
+        //     const longRunningTime = fetchEndpoint(
         //         mockService.endpoints['/long-running'].path,
         //     ).then(() => Date.now() - startTime);
-        //     const plainTime = fetchService(mockService.endpoints['/plain'].path).then(
+        //     const plainTime = fetchEndpoint(mockService.endpoints['/plain'].path).then(
         //         () => Date.now() - startTime,
         //     );
         //     assert.isBelow(await plainTime, await longRunningTime);
         // });
-        it('runs', async ({fetchService}) => {
-            const response = await fetchService(mockService.endpoints['/empty'].path);
+        it('runs', async ({fetchEndpoint}) => {
+            const response = await fetchEndpoint(mockService.endpoints['/empty'].path);
             assert.deepEquals(await condenseResponse(response), {
                 headers: {
                     'access-control-allow-origin': '*',

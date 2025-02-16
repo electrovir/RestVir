@@ -77,7 +77,7 @@ async function setupService(scriptName: string) {
 
     const params = {
         address: serviceUrl,
-        fetchService: (async (path, init) => {
+        fetchEndpoint: (async (path, init) => {
             const fetchUrl = buildUrl(serviceUrl, {
                 pathname: path,
             }).href;
@@ -116,6 +116,8 @@ async function setupService(scriptName: string) {
                     MessageFromHostType: undefined,
                     protocolsShape: undefined,
                     ProtocolsType: [],
+                    searchParamsShape: undefined,
+                    SearchParamsType: undefined,
                 },
                 webSocket,
                 WebSocketLocation.OnClient,
@@ -132,7 +134,7 @@ async function setupService(scriptName: string) {
         },
     };
 
-    await waitUntil.isTrue(async () => (await params.fetchService('health')).ok);
+    await waitUntil.isTrue(async () => (await params.fetchEndpoint('health')).ok);
 
     return params;
 }

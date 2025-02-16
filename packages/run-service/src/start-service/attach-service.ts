@@ -1,6 +1,20 @@
-import {ensureError, HttpStatus, randomString, SelectFrom} from '@augment-vir/common';
+import {
+    ensureError,
+    extractErrorMessage,
+    getEnumValues,
+    getObjectTypedKeys,
+    HttpMethod,
+    HttpStatus,
+    randomString,
+    SelectFrom,
+} from '@augment-vir/common';
 import fastifyWs from '@fastify/websocket';
-import {GenericServiceImplementation, ServiceImplementation} from '@rest-vir/implement-service';
+import type {BaseSearchParams} from '@rest-vir/define-service';
+import {
+    GenericServiceImplementation,
+    RestVirHandlerError,
+    ServiceImplementation,
+} from '@rest-vir/implement-service';
 import {type FastifyInstance} from 'fastify';
 import {HandleRouteOptions} from '../handle-request/endpoint-handler.js';
 import {handleRoute} from '../handle-request/handle-route.js';
@@ -18,12 +32,22 @@ declare module 'fastify' {
                   [AttachId in string]: {
                       context: unknown;
                       requestData: unknown;
-                      protocols: unknown;
+                      protocols: string[];
+                      searchParams: BaseSearchParams;
                   };
               }
             | undefined;
     }
 }
+
+const endpointFastifyMethods = getEnumValues(HttpMethod).filter((value) => {
+    return (
+        /** Fastify doesn't support the CONNECT method. */
+        value !== HttpMethod.Connect &&
+        /** We use the GET method in a separate handler so it can handle WebSocket requests as well. */
+        value !== HttpMethod.Get
+    );
+});
 
 /**
  * Attach all handlers for a {@link ServiceImplementation} to any existing Fastify server.
@@ -69,7 +93,23 @@ export async function attachService(
             server.decorateRequest('restVirContext');
         }
         if (!server.hasRequestDecorator('ws')) {
-            await server.register(fastifyWs);
+            await server.register(fastifyWs, {
+                /* node:coverage ignore next 14: edge case handling */
+                errorHandler(error, webSocket, request) {
+                    service.logger.error(
+                        new RestVirHandlerError(
+                            {
+                                isEndpoint: false,
+                                isWebSocket: true,
+                                path: request.originalUrl,
+                                service,
+                            },
+                            extractErrorMessage(error),
+                        ),
+                    );
+                    webSocket.terminate();
+                },
+            });
         }
 
         server.addHook('preValidation', async (request, response) => {
@@ -86,34 +126,93 @@ export async function attachService(
             }
         });
 
-        Object.entries(service.webSockets).forEach(
-            ([
-                path,
-                webSocketDefinition,
-            ]) => {
-                server.get(path, {websocket: true}, async (webSocket, request) => {
-                    await handleRoute(
-                        webSocket,
-                        request,
-                        undefined,
-                        webSocketDefinition,
-                        attachId,
-                        options,
-                    );
-                });
-            },
-        );
+        const allPaths = new Set([
+            ...getObjectTypedKeys(service.webSockets),
+            ...getObjectTypedKeys(service.endpoints),
+        ]);
 
-        Object.entries(service.endpoints).forEach(
-            ([
-                path,
-                endpoint,
-            ]) => {
-                server.all(path, async (request, response) => {
-                    await handleRoute(undefined, request, response, endpoint, attachId, options);
+        allPaths.forEach((path) => {
+            const webSocketDefinition = service.webSockets[path];
+            const endpoint = service.endpoints[path];
+
+            if (endpoint && webSocketDefinition) {
+                server.route({
+                    method: endpointFastifyMethods,
+                    url: path,
+                    async handler(request, response) {
+                        await handleRoute(
+                            undefined,
+                            request,
+                            response,
+                            endpoint,
+                            attachId,
+                            options,
+                        );
+                    },
                 });
-            },
-        );
+                server.route({
+                    method: HttpMethod.Get,
+                    url: path,
+                    async handler(request, response) {
+                        await handleRoute(
+                            undefined,
+                            request,
+                            response,
+                            endpoint,
+                            attachId,
+                            options,
+                        );
+                    },
+                    async wsHandler(webSocket, request) {
+                        await handleRoute(
+                            webSocket,
+                            request,
+                            undefined,
+                            webSocketDefinition,
+                            attachId,
+                            options,
+                        );
+                    },
+                });
+            } else if (endpoint) {
+                server.route({
+                    method: [
+                        ...endpointFastifyMethods,
+                        HttpMethod.Get,
+                    ],
+                    url: path,
+                    async handler(request, response) {
+                        await handleRoute(
+                            undefined,
+                            request,
+                            response,
+                            endpoint,
+                            attachId,
+                            options,
+                        );
+                    },
+                });
+            } else if (webSocketDefinition) {
+                server.route({
+                    method: HttpMethod.Get,
+                    url: path,
+                    handler(request, response) {
+                        response.status(HttpStatus.NotFound).send();
+                    },
+                    async wsHandler(webSocket, request) {
+                        await handleRoute(
+                            webSocket,
+                            request,
+                            undefined,
+                            webSocketDefinition,
+                            attachId,
+                            options,
+                        );
+                    },
+                });
+            }
+        });
+
         /* node:coverage ignore next 4: this is just here to cover edge cases. */
     } catch (error) {
         service.logger.error(ensureError(error));

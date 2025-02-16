@@ -2,6 +2,7 @@ import {waitUntil} from '@augment-vir/assert';
 import {
     AnyObject,
     DeferredPromise,
+    ensureErrorAndPrependMessage,
     getOrSet,
     MaybePromise,
     Overwrite,
@@ -178,6 +179,7 @@ export type OverwriteWebSocketMethods<
                   {
                       MessageFromClientType: true;
                       MessageFromHostType: true;
+                      SearchParamsType: true;
                   }
               >
           >
@@ -261,6 +263,7 @@ export type ClientWebSocket<
                   {
                       MessageFromClientType: true;
                       MessageFromHostType: true;
+                      SearchParamsType: true;
                   }
               >
           >
@@ -284,6 +287,7 @@ export type WebSocketListenerParams<
                   {
                       MessageFromClientType: true;
                       MessageFromHostType: true;
+                      SearchParamsType: true;
                   }
               >
           >
@@ -318,6 +322,9 @@ export type WebSocketListenerParams<
                         >;
               }
           >;
+          searchParams: WebSocketToConnect extends NoParam
+              ? any
+              : Exclude<WebSocketToConnect, NoParam>['SearchParamsType'];
           message: WebSocketToConnect extends NoParam
               ? any
               : GetWebSocketMessageTypeFromLocation<
@@ -345,6 +352,7 @@ export type ConnectWebSocketListeners<
                   {
                       MessageFromClientType: true;
                       MessageFromHostType: true;
+                      SearchParamsType: true;
                   }
               >
           >
@@ -375,6 +383,7 @@ export type WebSocketListener<
                   {
                       MessageFromClientType: true;
                       MessageFromHostType: true;
+                      SearchParamsType: true;
                   }
               >
           >
@@ -413,7 +422,8 @@ export type GenericConnectWebSocketParams<WebSocketClass extends CommonWebSocket
      *
      * @default globalThis.WebSocket
      */
-    WebSocket?: Constructor<WebSocketClass>;
+    WebSocketConstructor?: Constructor<WebSocketClass>;
+    searchParams?: unknown;
 };
 
 /**
@@ -589,24 +599,51 @@ export function overwriteWebSocketMethods<
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
 export async function waitForOpenWebSocket(
-    webSocket: Readonly<Pick<CommonWebSocket, 'readyState'>>,
+    webSocket: Readonly<
+        Pick<CommonWebSocket, 'readyState' | 'addEventListener' | 'removeEventListener'>
+    >,
 ) {
     const webSocketOpenedPromise = new DeferredPromise();
 
-    await waitUntil.isTruthy(() => {
-        /* node:coverage ignore next 3: there's no way to intentionally trigger this */
-        if (webSocket.readyState === CommonWebSocketState.Closed) {
-            webSocketOpenedPromise.reject('WebSocket closed while waiting for it to open.');
-            return true;
-        } else if (webSocket.readyState === CommonWebSocketState.Open) {
-            webSocketOpenedPromise.resolve();
-            return true;
-        } else {
-            return false;
+    function errorListener(error: unknown) {
+        if (!webSocketOpenedPromise.isSettled) {
+            webSocketOpenedPromise.reject(
+                ensureErrorAndPrependMessage(error, 'WebSocket connection failed.'),
+            );
         }
-    });
+    }
 
-    await webSocketOpenedPromise.promise;
+    webSocket.addEventListener('error', errorListener);
+
+    void waitUntil
+        .isTruthy(
+            () => {
+                if (webSocketOpenedPromise.isSettled) {
+                    return true;
+                }
+
+                if (webSocket.readyState === CommonWebSocketState.Closed) {
+                    webSocketOpenedPromise.reject('WebSocket closed while waiting for it to open.');
+                    return true;
+                } else if (webSocket.readyState === CommonWebSocketState.Open) {
+                    webSocketOpenedPromise.resolve();
+                    return true;
+                } else {
+                    return false;
+                }
+            },
+            undefined,
+            'WebSocket never opened',
+        )
+        .catch((error: unknown) => {
+            if (!webSocketOpenedPromise.isSettled) {
+                webSocketOpenedPromise.reject(error);
+            }
+        });
+
+    await webSocketOpenedPromise.promise.finally(() => {
+        webSocket.removeEventListener('error', errorListener);
+    });
 }
 
 /**

@@ -13,14 +13,14 @@ import {
     testService,
 } from './test-service.js';
 
-describeService({service: mockServiceImplementation}, ({fetchService}) => {
+describeService({service: mockServiceImplementation}, ({fetchEndpoint}) => {
     it('responds to a request', async () => {
-        const response = await fetchService['/empty']();
+        const response = await fetchEndpoint['/empty']();
 
         assert.isTrue(response.ok);
     });
     it('rejects an invalid request', async () => {
-        const response = await fetchService['/test']({
+        const response = await fetchEndpoint['/test']({
             // @ts-expect-error: invalid request data
             requestData: undefined,
         });
@@ -92,14 +92,14 @@ const plainService = implementService(
     },
 );
 
-describeService({service: plainService, options: {}}, ({fetchService}) => {
+describeService({service: plainService, options: {}}, ({fetchEndpoint}) => {
     it('responds to a request', async () => {
-        const response = await fetchService['/health']();
+        const response = await fetchEndpoint['/health']();
 
         assert.isTrue(response.ok);
     });
     it('includes fastify headers', async () => {
-        const response = await fetchService['/health']();
+        const response = await fetchEndpoint['/health']();
 
         assert.hasKeys((await condenseResponse(response, {includeFastifyHeaders: true})).headers, [
             'access-control-allow-origin',
@@ -112,12 +112,12 @@ describeService({service: plainService, options: {}}, ({fetchService}) => {
 
 describe(testService.name, () => {
     it('works with an actual port', async () => {
-        const {fetchService, connectWebSocket, kill} = await testService(plainService, {
+        const {fetchEndpoint, connectWebSocket, kill} = await testService(plainService, {
             port: 4500 + randomInteger({min: 0, max: 4000}),
         });
 
         try {
-            assert.deepEquals(await condenseResponse(await fetchService['/health']()), {
+            assert.deepEquals(await condenseResponse(await fetchEndpoint['/health']()), {
                 headers: {
                     'access-control-allow-origin': '*',
                 },
@@ -150,10 +150,10 @@ describe(testService.name, () => {
         }
     });
     it('works without a port', async () => {
-        const {fetchService, connectWebSocket, kill} = await testService(plainService);
+        const {fetchEndpoint, connectWebSocket, kill} = await testService(plainService);
 
         try {
-            assert.deepEquals(await condenseResponse(await fetchService['/health']()), {
+            assert.deepEquals(await condenseResponse(await fetchEndpoint['/health']()), {
                 headers: {
                     'access-control-allow-origin': '*',
                 },
@@ -198,12 +198,12 @@ describe(testExistingServer.name, () => {
             reply.status(HttpStatus.InternalServerError).send();
         });
 
-        const {fetchService} = await testExistingServer(server, plainService, {
+        const {fetchEndpoint} = await testExistingServer(server, plainService, {
             throwErrorsForExternalHandling: true,
         });
         try {
             assert.deepEquals(
-                await condenseResponse(await fetchService['/health']()),
+                await condenseResponse(await fetchEndpoint['/health']()),
                 {
                     headers: {
                         'access-control-allow-origin': '*',
@@ -213,7 +213,7 @@ describe(testExistingServer.name, () => {
                 'should work with a simple request',
             );
 
-            assert.isFalse((await fetchService['/internal-error']()).ok);
+            assert.isFalse((await fetchEndpoint['/internal-error']()).ok);
 
             await waitUntil.isLengthExactly(1, () => errors);
 
@@ -223,7 +223,7 @@ describe(testExistingServer.name, () => {
             );
             assert.isFalse(
                 (
-                    await fetchService['/health']({
+                    await fetchEndpoint['/health']({
                         options: {
                             headers: {
                                 authorization: 'reject',

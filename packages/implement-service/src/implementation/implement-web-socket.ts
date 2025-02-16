@@ -6,15 +6,16 @@ import {
     getObjectTypedKeys,
 } from '@augment-vir/common';
 import {
-    type BaseServiceWebSocketsInit,
-    type EndpointPathBase,
-    type MinimalService,
-    type NoParam,
-    type ServiceDefinition,
+    BaseSearchParams,
+    BaseServiceWebSocketsInit,
+    EndpointPathBase,
+    MinimalService,
+    NoParam,
+    ServiceDefinition,
     ServiceDefinitionError,
-    type WebSocketDefinition,
-    type WebSocketInit,
-    type WithFinalWebSocketProps,
+    WebSocketDefinition,
+    WebSocketInit,
+    WithFinalWebSocketProps,
 } from '@rest-vir/define-service';
 import {type IncomingHttpHeaders} from 'node:http';
 import {type IsEqual} from 'type-fest';
@@ -82,6 +83,9 @@ export type WebSocketImplementationParams<
     protocols: SpecificWebSocket extends NoParam
         ? string[]
         : Exclude<SpecificWebSocket, NoParam>['ProtocolsType'];
+    searchParams: SpecificWebSocket extends NoParam
+        ? BaseSearchParams
+        : Exclude<SpecificWebSocket, NoParam>['SearchParamsType'];
 } & (IsEqual<WithMessage, true> extends true
     ? {
           message: SpecificWebSocket extends NoParam

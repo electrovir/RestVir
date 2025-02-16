@@ -24,7 +24,7 @@ export type TestEndpoint = <EndpointToTest extends EndpointDefinition>(
 export const testEndpoint = async function testEndpoint<
     const EndpointToTest extends ImplementedEndpoint,
 >(endpoint: EndpointToTest, ...args: CollapsedFetchEndpointParams<EndpointToTest, false>) {
-    const {fetchService, kill} = await testService(
+    const {fetchEndpoint, kill} = await testService(
         {
             ...endpoint.service,
             endpoints: {
@@ -38,7 +38,7 @@ export const testEndpoint = async function testEndpoint<
     );
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const response = await fetchService[endpoint.path]!(...args);
+    const response = await fetchEndpoint[endpoint.path]!(...args);
 
     await kill();
 

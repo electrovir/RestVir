@@ -56,6 +56,17 @@ export const mockService = defineService({
             messageFromHostShape: exact('ok'),
             messageFromClientShape: undefined,
         },
+        '/with-search-params': {
+            messageFromHostShape: {
+                param1: tupleShape(''),
+                param2: [''],
+            },
+            messageFromClientShape: undefined,
+            searchParamsShape: {
+                param1: tupleShape(''),
+                param2: [''],
+            },
+        },
     },
     endpoints: {
         '/custom-props': {
@@ -66,6 +77,18 @@ export const mockService = defineService({
             responseDataShape: undefined,
             customProps: {
                 somethingElse: 'hi',
+            },
+        },
+        '/with-search-params': {
+            methods: {
+                [HttpMethod.Get]: true,
+                [HttpMethod.Post]: true,
+            },
+            requestDataShape: undefined,
+            responseDataShape: undefined,
+            searchParamsShape: {
+                param1: tupleShape(''),
+                param2: [''],
             },
         },
         '/function-origin': {

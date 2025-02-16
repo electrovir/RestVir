@@ -168,7 +168,7 @@ function finalizeServiceDefinition<
         const genericEndpoints = (serviceInit.endpoints || {}) as BaseServiceEndpointsInit;
 
         const endpoints = mapObjectValues(genericEndpoints, (endpointPath, endpointInit) => {
-            assertValidShape(endpointInit, endpointInitShape);
+            assertValidShape({searchParamsShape: undefined, ...endpointInit}, endpointInitShape);
             const endpoint = {
                 ...endpointInit,
                 requestDataShape: endpointInit.requestDataShape
@@ -177,12 +177,19 @@ function finalizeServiceDefinition<
                 responseDataShape: endpointInit.responseDataShape
                     ? defineShape<any, true>(endpointInit.responseDataShape, true)
                     : undefined,
+
                 path: endpointPath,
                 service: minimalService,
                 customProps: endpointInit.customProps,
                 isEndpoint: true,
                 isWebSocket: false,
-            } satisfies Omit<EndpointDefinition, 'ResponseType' | 'RequestType'>;
+                searchParamsShape: (endpointInit.searchParamsShape
+                    ? defineShape<any, any>(endpointInit.searchParamsShape)
+                    : undefined) as EndpointDefinition['searchParamsShape'],
+            } satisfies Omit<
+                EndpointDefinition,
+                'ResponseType' | 'RequestType' | 'SearchParamsType'
+            >;
 
             attachEndpointShapeTypeGetters(endpoint);
 
@@ -192,7 +199,10 @@ function finalizeServiceDefinition<
         const genericWebSockets = (serviceInit.webSockets || {}) as BaseServiceWebSocketsInit;
 
         const webSockets = mapObjectValues(genericWebSockets, (webSocketPath, webSocketInit) => {
-            assertValidShape({protocolsShape: undefined, ...webSocketInit}, webSocketInitShape);
+            assertValidShape(
+                {protocolsShape: undefined, searchParamsShape: undefined, ...webSocketInit},
+                webSocketInitShape,
+            );
             const webSocketDefinition = {
                 ...webSocketInit,
                 messageFromClientShape: webSocketInit.messageFromClientShape
@@ -204,6 +214,9 @@ function finalizeServiceDefinition<
                 protocolsShape: (webSocketInit.protocolsShape
                     ? defineShape(webSocketInit.protocolsShape)
                     : undefined) as WebSocketDefinition['protocolsShape'],
+                searchParamsShape: (webSocketInit.searchParamsShape
+                    ? defineShape(webSocketInit.searchParamsShape)
+                    : undefined) as WebSocketDefinition['searchParamsShape'],
                 service: minimalService,
                 path: webSocketPath,
                 customProps: webSocketInit.customProps,
@@ -211,7 +224,10 @@ function finalizeServiceDefinition<
                 isWebSocket: true,
             } satisfies Omit<
                 WebSocketDefinition,
-                'MessageFromClientType' | 'MessageFromHostType' | 'ProtocolsType'
+                | 'MessageFromClientType'
+                | 'MessageFromHostType'
+                | 'ProtocolsType'
+                | 'SearchParamsType'
             >;
 
             attachWebSocketShapeTypeGetters(webSocketDefinition);

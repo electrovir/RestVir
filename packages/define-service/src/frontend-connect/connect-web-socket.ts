@@ -101,6 +101,8 @@ export type ConnectWebSocketParams<
                 MessageFromHostType: true;
                 protocolsShape: true;
                 ProtocolsType: true;
+                searchParamsShape: true;
+                SearchParamsType: true;
             }
         >
     >,
@@ -127,7 +129,7 @@ export type ConnectWebSocketParams<
             pathParams?: undefined;
         }) &
     (AllowWebSocketMock extends true
-        ? Pick<GenericConnectWebSocketParams<WebSocketClass>, 'WebSocket'>
+        ? Pick<GenericConnectWebSocketParams<WebSocketClass>, 'WebSocketConstructor'>
         : unknown) &
     (WebSocketToConnect['protocolsShape'] extends undefined
         ? {
@@ -135,6 +137,13 @@ export type ConnectWebSocketParams<
           }
         : {
               protocols: WebSocketToConnect['ProtocolsType'];
+          }) &
+    (WebSocketToConnect['searchParamsShape'] extends undefined
+        ? {
+              searchParams?: string[];
+          }
+        : {
+              searchParams: WebSocketToConnect['SearchParamsType'];
           });
 
 /**
@@ -156,6 +165,8 @@ export type CollapsedConnectWebSocketParams<
                       MessageFromHostType: true;
                       protocolsShape: true;
                       ProtocolsType: true;
+                      searchParamsShape: true;
+                      SearchParamsType: true;
                   }
               >
           >
@@ -193,7 +204,7 @@ export async function connectWebSocket<
     ...params: CollapsedConnectWebSocketParams<WebSocketToConnect, true, WebSocketClass>
 ): Promise<ClientWebSocket<WebSocketToConnect, WebSocketClass>> {
     const [
-        {WebSocket = globalThis.WebSocket, protocols, listeners} = {},
+        {WebSocketConstructor: WebSocket = globalThis.WebSocket, protocols, listeners} = {},
     ] = params;
 
     assertValidWebSocketProtocols(protocols);

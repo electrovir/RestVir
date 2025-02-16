@@ -20,6 +20,7 @@ import {type MinimalService} from '../service/minimal-service.js';
 import {ensureServiceDefinitionError} from '../service/service-definition.error.js';
 import {type NoParam} from '../util/no-param.js';
 import {originRequirementShape, type OriginRequirement} from '../util/origin.js';
+import {BaseSearchParams} from '../util/search-params.js';
 import {assertValidEndpointPath, type EndpointPathBase} from './endpoint-path.js';
 
 /**
@@ -73,6 +74,31 @@ export type EndpointInit<
      * - Any other set value overrides the service's origin requirement (if it has any).
      */
     requiredClientOrigin?: OriginRequirement;
+    /**
+     * A shape used to verify search params. This should match the entire search params object.
+     *
+     * Note the following:
+     *
+     * - Search param values will _always_ be in an array
+     * - Elements in search param value arrays will _always_ be strings
+     *
+     * @example
+     *
+     * ```ts
+     * import {exact, enumShape} from 'object-shape-tester';
+     *
+     * const partialEndpointInit = {
+     *     searchParamsShape: {
+     *         // use `tupleShape` to ensure there's exactly one entry for this search param
+     *         userId: tupleShape(enumShape(MyEnum)),
+     *         date: tupleShape(exact('2')),
+     *         // don't use `tupleShape` here so that there can be any number of entries
+     *         colors: [''],
+     *     },
+     * };
+     * ```
+     */
+    searchParamsShape?: unknown;
 
     customProps?: Record<PropertyKey, unknown> | undefined;
 };
@@ -87,6 +113,7 @@ export type EndpointInit<
 export const endpointInitShape = defineShape({
     requestDataShape: unknownShape(),
     responseDataShape: unknownShape(),
+    searchParamsShape: unknownShape(),
     /**
      * Set a required client origin for this endpoint.
      *
@@ -155,6 +182,18 @@ export type WithFinalEndpointProps<
                           false,
                           true
                       >;
+              searchParamsShape: 'searchParamsShape' extends keyof Init
+                  ? undefined extends Init['searchParamsShape']
+                      ? undefined
+                      : ShapeDefinition<Init['searchParamsShape'], true> | undefined
+                  : undefined;
+              SearchParamsType: undefined extends Init['searchParamsShape']
+                  ? BaseSearchParams
+                  : ShapeToRuntimeType<
+                        ShapeDefinition<Init['searchParamsShape'], true>,
+                        false,
+                        true
+                    >;
               customProps: 'customProps' extends keyof Init ? Init['customProps'] : undefined;
           }
       >

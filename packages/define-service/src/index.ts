@@ -13,5 +13,6 @@ export * from './util/mock-fetch.js';
 export * from './util/no-param.js';
 export * from './util/origin.js';
 export * from './util/path-to-regexp.js';
+export * from './util/search-params.js';
 export * from './web-socket/overwrite-web-socket-methods.js';
 export * from './web-socket/web-socket-definition.js';

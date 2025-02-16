@@ -41,10 +41,27 @@ export type ImplementedEndpoint<
  * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
  */
 export type GenericServiceImplementation = Omit<ServiceDefinition, 'endpoints' | 'webSockets'> & {
-    endpoints: Record<EndpointPathBase, ImplementedEndpoint>;
+    endpoints: Record<
+        EndpointPathBase,
+        Overwrite<
+            ImplementedEndpoint,
+            {
+                searchParamsShape: any;
+                SearchParamsType: any;
+            }
+        >
+    >;
     webSockets: Record<
         EndpointPathBase,
-        Overwrite<ImplementedWebSocket, {protocolsShape: any; ProtocolsType: any}>
+        Overwrite<
+            ImplementedWebSocket,
+            {
+                protocolsShape: any;
+                ProtocolsType: any;
+                searchParamsShape: any;
+                SearchParamsType: any;
+            }
+        >
     >;
     createContext: ContextInit<any, any, any, any> | undefined;
     logger: ServiceLogger;

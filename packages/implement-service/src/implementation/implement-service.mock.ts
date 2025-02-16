@@ -34,6 +34,19 @@ export const mockServiceImplementation = implementService(
     },
     {
         webSockets: {
+            '/with-search-params': {
+                onConnection({searchParams}) {
+                    assert.tsType(searchParams).equals<
+                        Readonly<{
+                            param1: [string];
+                            param2: ReadonlyArray<string>;
+                        }>
+                    >();
+                },
+                onMessage({searchParams, webSocket}) {
+                    webSocket.send(searchParams);
+                },
+            },
             '/required-protocols': {
                 onConnection({protocols}) {
                     assert.tsType(protocols).equals<[string, string, 'hi']>();
@@ -129,6 +142,18 @@ export const mockServiceImplementation = implementService(
             },
         },
         endpoints: {
+            '/with-search-params'({searchParams}) {
+                assert.tsType(searchParams).equals<
+                    Readonly<{
+                        param1: [string];
+                        param2: ReadonlyArray<string>;
+                    }>
+                >();
+
+                return {
+                    statusCode: HttpStatus.Ok,
+                };
+            },
             // @ts-expect-error: this endpoint is not supposed to return data
             '/incorrectly-has-response-data'() {
                 return {
