@@ -1,10 +1,11 @@
 import {AnyOrigin, defineService} from '../index.js';
 
-export const myService = defineService({
+export const myService = await defineService({
     serviceName: 'my-service',
     /**
      * The origin at which the service will be hosted. Client requests sent to this service will be
-     * sent to this origin.
+     * sent to this origin. In dev, use a `isDev` check to switch between your production origin and
+     * `localhost`.
      */
     serviceOrigin: 'https://example.com',
     requiredClientOrigin: AnyOrigin,

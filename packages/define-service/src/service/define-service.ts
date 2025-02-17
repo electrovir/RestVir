@@ -1,131 +1,56 @@
-import {assert, check} from '@augment-vir/assert';
-import {AnyObject, getObjectTypedEntries, mapObjectValues, stringify} from '@augment-vir/common';
+import {assert, check, checkWrap} from '@augment-vir/assert';
+import {
+    AnyObject,
+    getObjectTypedEntries,
+    mapObjectValues,
+    stringify,
+    wrapInTry,
+    type PartialWithUndefined,
+} from '@augment-vir/common';
 import {assertValidShape, defineShape} from 'object-shape-tester';
-import {type IsEqual, type SetRequired} from 'type-fest';
-import {type EndpointPathBase} from '../endpoint/endpoint-path.js';
 import {
     assertValidEndpoint,
     attachEndpointShapeTypeGetters,
     endpointInitShape,
     type EndpointDefinition,
-    type EndpointInit,
-    type WithFinalEndpointProps,
 } from '../endpoint/endpoint.js';
-import {type NoParam} from '../util/no-param.js';
-import {type OriginRequirement} from '../util/origin.js';
+import {FindPortOptions, findDevServicePort} from '../frontend-connect/find-dev-port.js';
 import {
     WebSocketDefinition,
-    WebSocketInit,
-    WithFinalWebSocketProps,
     assertValidWebSocketDefinition,
     attachWebSocketShapeTypeGetters,
     webSocketInitShape,
 } from '../web-socket/web-socket-definition.js';
 import {MinimalService} from './minimal-service.js';
 import {ensureServiceDefinitionError} from './service-definition.error.js';
+import type {
+    BaseServiceEndpointsInit,
+    BaseServiceWebSocketsInit,
+    ServiceDefinition,
+    ServiceInit,
+} from './service-definition.js';
 
 /**
- * A string used for type errors triggered when an endpoint path is defined without a leading slash.
+ * Options for {@link defineService}.
  *
  * @category Internal
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export type EndpointMustStartWithSlashTypeError = 'ERROR: endpoint must start with a slash';
-
-/**
- * Base type used for the right side of "extends" in type parameters for generic endpoint
- * definitions.
- *
- * @category Internal
- * @category Package : @rest-vir/define-service
- * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
- */
-export type BaseServiceEndpointsInit = Record<EndpointPathBase, EndpointInit>;
-
-/**
- * Base type used for the right side of "extends" in type parameters for generic endpoint
- * definitions.
- *
- * @category Internal
- * @category Package : @rest-vir/define-service
- * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
- */
-export type BaseServiceWebSocketsInit = Record<EndpointPathBase, WebSocketInit>;
-
-/**
- * Init for a service. This is used as an input to {@link defineService}.
- *
- * @category Internal
- * @category Package : @rest-vir/define-service
- * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
- */
-export type ServiceInit<
-    ServiceName extends string,
-    EndpointsInit extends BaseServiceEndpointsInit | NoParam,
-    WebSocketsInit extends BaseServiceWebSocketsInit | NoParam,
-> = MinimalService<ServiceName> & {
-    requiredClientOrigin: NonNullable<OriginRequirement>;
-    webSockets?: IsEqual<WebSocketsInit, NoParam> extends true
-        ? Record<EndpointPathBase, WebSocketInit>
-        : {
-              [WebSocketPath in keyof WebSocketsInit]: WebSocketPath extends EndpointPathBase
-                  ? WebSocketsInit[WebSocketPath]
-                  : WebSocketPath extends EndpointMustStartWithSlashTypeError
-                    ? /** Prevent EndpointMustStartWithSlashTypeError from being used as an endpoint path. */
-                      never
-                    : EndpointMustStartWithSlashTypeError;
-          };
-    endpoints?: IsEqual<EndpointsInit, NoParam> extends true
-        ? Record<EndpointPathBase, EndpointInit>
-        : {
-              [EndpointPath in keyof EndpointsInit]: EndpointPath extends EndpointPathBase
-                  ? EndpointsInit[EndpointPath]
-                  : EndpointPath extends EndpointMustStartWithSlashTypeError
-                    ? /** Prevent EndpointMustStartWithSlashTypeError from being used as an endpoint path. */
-                      never
-                    : EndpointMustStartWithSlashTypeError;
-          };
-};
-
-/**
- * A fully defined service (without executable endpoint implementations).
- *
- * @category Internal
- * @category Package : @rest-vir/define-service
- * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
- */
-export type ServiceDefinition<
-    ServiceName extends string = any,
-    EndpointsInit extends BaseServiceEndpointsInit | NoParam = NoParam,
-    WebSocketsInit extends BaseServiceWebSocketsInit | NoParam = NoParam,
-> = MinimalService<ServiceName> & {
-    requiredClientOrigin: NonNullable<OriginRequirement>;
-    /** Include the initial init object so a service can be composed. */
-    init: SetRequired<
-        ServiceInit<ServiceName, EndpointsInit, WebSocketsInit>,
-        'endpoints' | 'webSockets'
-    >;
-    webSockets: WebSocketsInit extends NoParam
-        ? {
-              [WebSocketPath in EndpointPathBase]: WebSocketDefinition;
-          }
-        : {
-              [WebSocketPath in keyof WebSocketsInit]: WebSocketPath extends EndpointPathBase
-                  ? WithFinalWebSocketProps<WebSocketsInit[WebSocketPath], WebSocketPath>
-                  : EndpointMustStartWithSlashTypeError;
-          };
-    endpoints: EndpointsInit extends NoParam
-        ? {
-              [EndpointPath in EndpointPathBase]: EndpointDefinition;
-          }
-        : {
-              [EndpointPath in keyof EndpointsInit]: EndpointPath extends EndpointPathBase
-                  ? WithFinalEndpointProps<EndpointsInit[EndpointPath], EndpointPath>
-                  : EndpointMustStartWithSlashTypeError;
-          };
-    /** Given a URL, find the endpoint path from this service that matches it. */
-};
+export type DefineServiceOptions = PartialWithUndefined<{
+    /**
+     * If set to `true`, the service definition's `serviceOrigin`'s port number will be
+     * automatically determined by {@link findDevServicePort}. The nearest port to the original
+     * service definition's port number, if any, that has an active instance of this service will be
+     * used. You can also set this to an object to control how `findDevServicePort` works.
+     *
+     * This is only recommended for dev environments where the service can safely startup on a
+     * different port if other ports are already in use.
+     *
+     * @default false
+     */
+    findActiveDevPort: boolean | FindPortOptions;
+}>;
 
 /**
  * The main entry point to the whole `@rest-vir/define-service` package. This function accepts a
@@ -135,25 +60,27 @@ export type ServiceDefinition<
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export function defineService<
+export async function defineService<
     const ServiceName extends string,
     EndpointsInit extends BaseServiceEndpointsInit,
     WebSocketsInit extends BaseServiceWebSocketsInit,
 >(
     serviceInit: ServiceInit<ServiceName, EndpointsInit, WebSocketsInit>,
-): ServiceDefinition<ServiceName, EndpointsInit, WebSocketsInit> {
-    const serviceDefinition = finalizeServiceDefinition(serviceInit);
+    options: Readonly<DefineServiceOptions> = {},
+): Promise<ServiceDefinition<ServiceName, EndpointsInit, WebSocketsInit>> {
+    const serviceDefinition = await finalizeServiceDefinition(serviceInit, options);
     assertValidServiceDefinition(serviceDefinition);
     return serviceDefinition;
 }
 
-function finalizeServiceDefinition<
+async function finalizeServiceDefinition<
     const ServiceName extends string,
     EndpointsInit extends BaseServiceEndpointsInit,
     WebSocketsInit extends BaseServiceWebSocketsInit,
 >(
     serviceInit: ServiceInit<ServiceName, EndpointsInit, WebSocketsInit>,
-): ServiceDefinition<ServiceName, EndpointsInit, WebSocketsInit> {
+    options: Readonly<DefineServiceOptions>,
+): Promise<ServiceDefinition<ServiceName, EndpointsInit, WebSocketsInit>> {
     try {
         const minimalService: MinimalService<ServiceName> = {
             serviceName: serviceInit.serviceName,
@@ -235,7 +162,7 @@ function finalizeServiceDefinition<
             return webSocketDefinition;
         });
 
-        return {
+        const serviceDefinition: ServiceDefinition<ServiceName, EndpointsInit, WebSocketsInit> = {
             serviceName: serviceInit.serviceName,
             serviceOrigin: serviceInit.serviceOrigin,
             init: {
@@ -264,6 +191,21 @@ function finalizeServiceDefinition<
                 WebSocketsInit
             >['endpoints'],
         };
+
+        if (options.findActiveDevPort) {
+            const result = await wrapInTry(() =>
+                findDevServicePort(
+                    serviceDefinition,
+                    checkWrap.isObject(options.findActiveDevPort),
+                ),
+            );
+
+            if (!check.instanceOf(result, Error)) {
+                serviceDefinition.serviceOrigin = result.origin;
+            }
+        }
+
+        return serviceDefinition;
     } catch (error) {
         throw ensureServiceDefinitionError(error, {
             path: undefined,

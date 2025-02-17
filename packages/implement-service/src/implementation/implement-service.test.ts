@@ -6,7 +6,7 @@ import {or} from 'object-shape-tester';
 import {implementService} from './implement-service.js';
 
 describe(implementService.name, () => {
-    it('handles shape definitions', () => {
+    it('handles shape definitions', async () => {
         implementService(
             {
                 createContext() {
@@ -14,7 +14,7 @@ describe(implementService.name, () => {
                         context: 'hi',
                     };
                 },
-                service: defineService({
+                service: await defineService({
                     endpoints: {
                         '/test': {
                             methods: {
@@ -51,11 +51,11 @@ describe(implementService.name, () => {
             },
         );
     });
-    it('blocks non-function endpoint implementations', () => {
-        assert.throws(() =>
+    it('blocks non-function endpoint implementations', async () => {
+        await assert.throws(async () =>
             implementService(
                 {
-                    service: defineService({
+                    service: await defineService({
                         endpoints: {
                             '/test': {
                                 methods: {
@@ -83,11 +83,11 @@ describe(implementService.name, () => {
             ),
         );
     });
-    it('blocks extra endpoint implementations', () => {
-        assert.throws(() =>
+    it('blocks extra endpoint implementations', async () => {
+        await assert.throws(async () =>
             implementService(
                 {
-                    service: defineService({
+                    service: await defineService({
                         endpoints: {
                             '/test': {
                                 methods: {
@@ -127,10 +127,10 @@ describe(implementService.name, () => {
             ),
         );
     });
-    it('does not require response data output when it is undefined', () => {
+    it('does not require response data output when it is undefined', async () => {
         implementService(
             {
-                service: defineService({
+                service: await defineService({
                     endpoints: {
                         '/test': {
                             methods: {
@@ -161,10 +161,10 @@ describe(implementService.name, () => {
             },
         );
     });
-    it('requires response data', () => {
+    it('requires response data', async () => {
         implementService(
             {
-                service: defineService({
+                service: await defineService({
                     endpoints: {
                         '/test': {
                             methods: {
@@ -198,11 +198,11 @@ describe(implementService.name, () => {
             },
         );
     });
-    it('requires endpoints to be implemented', () => {
-        assert.throws(() =>
+    it('requires endpoints to be implemented', async () => {
+        await assert.throws(async () =>
             implementService(
                 {
-                    service: defineService({
+                    service: await defineService({
                         endpoints: {
                             '/test': {
                                 methods: {
@@ -225,11 +225,11 @@ describe(implementService.name, () => {
             ),
         );
     });
-    it('requires WebSocket to be implemented', () => {
-        assert.throws(() =>
+    it('requires WebSocket to be implemented', async () => {
+        await assert.throws(async () =>
             implementService(
                 {
-                    service: defineService({
+                    service: await defineService({
                         webSockets: {
                             '/test': {
                                 messageFromHostShape: undefined,
@@ -249,10 +249,10 @@ describe(implementService.name, () => {
             ),
         );
     });
-    it('implements WebSockets', () => {
+    it('implements WebSockets', async () => {
         implementService(
             {
-                service: defineService({
+                service: await defineService({
                     webSockets: {
                         '/test': {
                             messageFromHostShape: undefined,
@@ -276,12 +276,12 @@ describe(implementService.name, () => {
             },
         );
     });
-    it('rejects a non function WebSocket listener', () => {
-        assert.throws(
-            () =>
+    it('rejects a non function WebSocket listener', async () => {
+        await assert.throws(
+            async () =>
                 implementService(
                     {
-                        service: defineService({
+                        service: await defineService({
                             webSockets: {
                                 '/test': {
                                     messageFromHostShape: undefined,
@@ -310,12 +310,12 @@ describe(implementService.name, () => {
             },
         );
     });
-    it('rejects extra WebSocket implementations', () => {
-        assert.throws(
-            () =>
+    it('rejects extra WebSocket implementations', async () => {
+        await assert.throws(
+            async () =>
                 implementService(
                     {
-                        service: defineService({
+                        service: await defineService({
                             webSockets: {
                                 '/test': {
                                     messageFromHostShape: undefined,

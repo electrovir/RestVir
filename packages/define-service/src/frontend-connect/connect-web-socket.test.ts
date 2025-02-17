@@ -12,7 +12,10 @@ import {
     connectWebSocket,
     type CollapsedConnectWebSocketParams,
 } from './connect-web-socket.js';
-import {MockClientWebSocket} from './mock-client-web-socket.js';
+import {
+    createMockClientWebSocketConstructor,
+    MockClientWebSocket,
+} from './mock-client-web-socket.js';
 
 describe('CollapsedConnectWebSocketParams', () => {
     it('uses NoParam for generic params', () => {
@@ -55,9 +58,9 @@ describe(connectWebSocket.name, () => {
             events.push('message');
         };
         clientWebSocket.addEventListener('message', messageListener);
-        clientWebSocket.sendFromServer('ok');
+        clientWebSocket.sendFromHost('ok');
         clientWebSocket.removeEventListener('message', messageListener);
-        clientWebSocket.sendFromServer('ok');
+        clientWebSocket.sendFromHost('ok');
 
         clientWebSocket.dispatchEvent('error', {});
         clientWebSocket.sendCallback = () => {
@@ -100,7 +103,7 @@ describe(connectWebSocket.name, () => {
         assert.throws(
             () => {
                 // @ts-expect-error: this should be undefined
-                clientWebSocket.sendFromServer('this should be undefined');
+                clientWebSocket.sendFromHost('this should be undefined');
             },
             {
                 matchMessage: 'does not expect any message data',
@@ -117,7 +120,7 @@ describe(connectWebSocket.name, () => {
         const replyPromise = clientWebSocket.sendAndWaitForReply();
 
         await wait({milliseconds: 100});
-        clientWebSocket.sendFromServer('ok');
+        clientWebSocket.sendFromHost('ok');
 
         assert.strictEquals(await replyPromise, 'ok');
     });
@@ -195,9 +198,37 @@ describe(connectWebSocket.name, () => {
         const replyPromise = clientWebSocket.sendAndWaitForReply();
 
         await wait({milliseconds: 100});
-        clientWebSocket.sendFromServer('ok');
+        clientWebSocket.sendFromHost('ok');
 
         assert.strictEquals(await replyPromise, 'ok');
+    });
+    it('does not send data if the socket has closed', async () => {
+        const messages: (undefined | string)[] = [];
+        const clientWebSocket = await connectWebSocket(mockService.webSockets['/no-client-data'], {
+            WebSocketConstructor: createMockClientWebSocketConstructor(
+                mockService.webSockets['/no-client-data'],
+                {
+                    sendCallback({messageData}) {
+                        messages.push(messageData);
+                    },
+                },
+            ),
+        });
+
+        clientWebSocket.send();
+        clientWebSocket.sendFromHost('ok');
+
+        clientWebSocket.close();
+
+        clientWebSocket.send();
+        clientWebSocket.sendFromHost('ok');
+        clientWebSocket.send();
+        clientWebSocket.sendFromHost('ok');
+
+        assert.deepEquals(messages, [
+            undefined,
+            'ok',
+        ]);
     });
     it('rejects empty protocol', async () => {
         await assert.throws(

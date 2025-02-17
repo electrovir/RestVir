@@ -9,6 +9,13 @@ import {
 import {type ImplementedWebSocket} from '@rest-vir/implement-service';
 import {testService} from './test-service.js';
 
+/**
+ * Type for {@link testWebSocket}.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/run-service
+ * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
+ */
 export type TestWebSocket = <WebSocketToTest extends WebSocketDefinition>(
     webSocketDefinition: WebSocketToTest,
     ...args: CollapsedConnectWebSocketParams<WebSocketToTest, false>
@@ -48,6 +55,13 @@ export const testWebSocket = async function testWebSocket<
     return webSocket;
 } as TestWebSocket;
 
+/**
+ * Callback type for {@link withWebSocketTest}.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/run-service
+ * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
+ */
 export type WithWebSocketTestCallback<WebSocketToTest extends ImplementedWebSocket> = (
     clientWebSocket: ClientWebSocket<WebSocketToTest>,
 ) => MaybePromise<void>;

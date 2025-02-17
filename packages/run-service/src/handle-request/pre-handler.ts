@@ -7,7 +7,11 @@ import {
     wrapInTry,
     type SelectFrom,
 } from '@augment-vir/common';
-import {type EndpointDefinition, type WebSocketDefinition} from '@rest-vir/define-service';
+import {
+    restVirServiceNameHeader,
+    type EndpointDefinition,
+    type WebSocketDefinition,
+} from '@rest-vir/define-service';
 import {matchUrlToService} from '@rest-vir/define-service/src/service/match-url.js';
 import {
     ContextInitParameters,
@@ -21,7 +25,7 @@ import {assertValidShape, isValidShape} from 'object-shape-tester';
 import {handleHandlerResult} from './endpoint-handler.js';
 import {handleCors} from './handle-cors.js';
 import {handleRequestMethod} from './handle-request-method.js';
-import {parseSearchParams} from './parse-search-params.js';
+import {handleSearchParams} from './handle-search-params.js';
 
 /**
  * Handles a request before it gets to the actual route handlers.
@@ -49,6 +53,8 @@ export async function preHandler(
     >,
     attachId: string,
 ) {
+    response.header(restVirServiceNameHeader, service.serviceName);
+
     const pathMatch = matchUrlToService(service, request.originalUrl);
 
     if (!pathMatch) {
@@ -144,7 +150,7 @@ export async function preHandler(
         webSocketDefinition: webSocketDefinition,
     };
 
-    const searchParams = parseSearchParams({request, route});
+    const searchParams = handleSearchParams({request, route});
 
     if (!('data' in searchParams)) {
         handleHandlerResult(searchParams, response);

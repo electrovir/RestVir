@@ -31,7 +31,7 @@ describeService({service: mockServiceImplementation}, ({fetchEndpoint}) => {
 
 const plainService = implementService(
     {
-        service: defineService({
+        service: await defineService({
             webSockets: {
                 '/socket': {
                     messageFromClientShape: exact('from client'),
@@ -101,7 +101,7 @@ describeService({service: plainService, options: {}}, ({fetchEndpoint}) => {
     it('includes fastify headers', async () => {
         const response = await fetchEndpoint['/health']();
 
-        assert.hasKeys((await condenseResponse(response, {includeFastifyHeaders: true})).headers, [
+        assert.hasKeys((await condenseResponse(response, {includeDefaultHeaders: true})).headers, [
             'access-control-allow-origin',
             'connection',
             'content-length',

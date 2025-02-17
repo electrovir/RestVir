@@ -14,7 +14,9 @@ describe(preHandler.name, () => {
             {
                 originalUrl: '/missing',
             } as ServerRequest,
-            {} as ServerResponse,
+            {
+                header() {},
+            } as unknown as ServerResponse,
             {
                 createContext: undefined,
                 endpoints: {

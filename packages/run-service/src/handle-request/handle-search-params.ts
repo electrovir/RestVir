@@ -13,10 +13,18 @@ import {
     type ImplementedWebSocket,
     type ServerRequest,
 } from '@rest-vir/implement-service';
-import {assertValidShape} from 'object-shape-tester';
+import {assertValidShape, type ShapeDefinition} from 'object-shape-tester';
 import {parseUrl} from 'url-vir';
 
-export function parseSearchParams({
+/**
+ * Handles a request's search params and compares it against the route's required search params
+ * shape, if it has any.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/run-service
+ * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
+ */
+export function handleSearchParams({
     request,
     route,
 }: Readonly<{
@@ -47,7 +55,7 @@ export function parseSearchParams({
       }
     | {data: BaseSearchParams} {
     const searchParams = parseUrl(request.originalUrl).searchParams;
-    const shape = route.searchParamsShape;
+    const shape = route.searchParamsShape as undefined | ShapeDefinition<any, boolean>;
 
     const validationError: undefined | Error = shape
         ? wrapInTry(() => {

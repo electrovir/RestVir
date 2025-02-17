@@ -2,7 +2,7 @@ import {assert} from '@augment-vir/assert';
 import {describe, it, itCases} from '@augment-vir/test';
 import {parseUrl} from 'url-vir';
 import type {EndpointDefinition} from '../endpoint/endpoint.js';
-import {findDevServicePort} from './find-dev-port.js';
+import {findDevServicePort, findLivePort} from './find-dev-port.js';
 
 describe(findDevServicePort.name, () => {
     async function testFindDevServicePort({
@@ -33,9 +33,23 @@ describe(findDevServicePort.name, () => {
                     fetchedPorts.push(fetchPort);
 
                     if (fetchPort === workingPort) {
-                        return Promise.resolve({ok: true} as Response);
+                        return Promise.resolve({
+                            headers: {
+                                get() {
+                                    return 'test service';
+                                },
+                            },
+                            ok: true,
+                        } as unknown as Response);
                     } else {
-                        return Promise.resolve({ok: false} as Response);
+                        return Promise.resolve({
+                            headers: {
+                                get() {
+                                    return 'test service';
+                                },
+                            },
+                            ok: false,
+                        } as unknown as Response);
                     }
                 },
                 maxScanDistance,
@@ -110,6 +124,31 @@ describe(findDevServicePort.name, () => {
             {
                 matchMessage: 'Service has no endpoints',
             },
+        );
+    });
+});
+
+describe(findLivePort.name, () => {
+    it('does not require a isValidResponse option', async () => {
+        assert.strictEquals(
+            await findLivePort('localhost:3000', '/my-path', {
+                fetch(url) {
+                    const {port} = parseUrl(url);
+                    const fetchPort = Number(port);
+
+                    if (fetchPort === 3002) {
+                        return Promise.resolve({
+                            ok: true,
+                        } as unknown as Response);
+                    } else {
+                        return Promise.resolve({
+                            ok: false,
+                        } as unknown as Response);
+                    }
+                },
+                maxScanDistance: 10,
+            }),
+            3002,
         );
     });
 });

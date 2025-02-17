@@ -8,7 +8,7 @@ import {defineService} from './define-service.js';
 
 export const mockWebsiteOrigin = 'https://example.com';
 
-export const mockService = defineService({
+export const mockService = await defineService({
     serviceName: 'mock-service',
     serviceOrigin: 'https://example.com',
     requiredClientOrigin: AnyOrigin,

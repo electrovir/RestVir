@@ -16,14 +16,15 @@ import {
     assertValidWebSocketProtocols,
     buildEndpointRequestInit,
     buildWebSocketUrl,
+    ClientWebSocket,
+    CollapsedConnectWebSocketParams,
     CollapsedFetchEndpointParams,
     EndpointDefinition,
     finalizeWebSocket,
+    NoParam,
+    restVirServiceNameHeader,
+    WebSocketDefinition,
     WebSocketLocation,
-    type ClientWebSocket,
-    type CollapsedConnectWebSocketParams,
-    type NoParam,
-    type WebSocketDefinition,
 } from '@rest-vir/define-service';
 import {GenericServiceImplementation} from '@rest-vir/implement-service';
 import fastify, {FastifyInstance} from 'fastify';
@@ -47,11 +48,11 @@ import {applyDebugLogger} from '../util/debug.js';
  */
 export type CondenseResponseOptions = {
     /**
-     * Include all headers that fastify automatically appends.
+     * Include all headers that fastify and rest-vir automatically append.
      *
      * @default false
      */
-    includeFastifyHeaders: boolean;
+    includeDefaultHeaders: boolean;
 };
 
 /**
@@ -77,7 +78,7 @@ export async function condenseResponse(
     return {
         status: assertWrap.isHttpStatus(response.status),
         ...bodyObject,
-        headers: options.includeFastifyHeaders
+        headers: options.includeDefaultHeaders
             ? headers
             : omitObjectKeys(headers, [
                   /**
@@ -88,6 +89,7 @@ export async function condenseResponse(
                   'content-length',
                   'date',
                   'keep-alive',
+                  restVirServiceNameHeader,
               ]),
     };
 }
