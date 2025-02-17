@@ -1,7 +1,6 @@
 ## Required
 
 -   fill in mono-repo README
--   test finding a service port
 
 ## Not required
 

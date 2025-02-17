@@ -3,7 +3,6 @@ import {getObjectTypedKeys, HttpMethod, type MaybePromise} from '@augment-vir/co
 import {describe, it, itCases} from '@augment-vir/test';
 import {assertValidShape, exact, or} from 'object-shape-tester';
 import {type RequireAtLeastOne} from 'type-fest';
-import {parseUrl} from 'url-vir';
 import {type EndpointPathBase} from '../endpoint/endpoint-path.js';
 import {AnyOrigin} from '../util/origin.js';
 import {assertValidServiceDefinition, defineService} from './define-service.js';
@@ -13,8 +12,8 @@ import {ServiceDefinitionError} from './service-definition.error.js';
 import {type ServiceDefinition} from './service-definition.js';
 
 describe(defineService.name, () => {
-    it('allows wrapping an existing service', async () => {
-        const myService = await defineService({
+    it('allows wrapping an existing service', () => {
+        const myService = defineService({
             ...mockService.init,
             serviceOrigin: 'https://electrovir.com',
         });
@@ -26,94 +25,6 @@ describe(defineService.name, () => {
         assert
             .tsType<(typeof mockService.endpoints)['/long-running']['RequestType']>()
             .equals<undefined | Readonly<{count: number}>>();
-    });
-    it('finds a different port when findActiveDevPort is set', async () => {
-        const service = await defineService(
-            {
-                requiredClientOrigin: AnyOrigin,
-                serviceName: 'test service',
-                serviceOrigin: 'http://localhost:3000',
-                endpoints: {
-                    '/test': {
-                        methods: {
-                            GET: true,
-                        },
-                        requestDataShape: undefined,
-                        responseDataShape: undefined,
-                    },
-                },
-            },
-            {
-                findActiveDevPort: {
-                    fetch(url) {
-                        const {port} = parseUrl(url);
-                        const fetchPort = Number(port);
-
-                        if (fetchPort === 3005) {
-                            return Promise.resolve({
-                                headers: {
-                                    get() {
-                                        return 'test service';
-                                    },
-                                },
-                                ok: true,
-                            } as unknown as Response);
-                        } else {
-                            return Promise.resolve({
-                                headers: {
-                                    get() {
-                                        return 'test service';
-                                    },
-                                },
-                                ok: false,
-                            } as unknown as Response);
-                        }
-                    },
-                },
-            },
-        );
-
-        assert.strictEquals(service.serviceOrigin, 'http://localhost:3005');
-    });
-    it('does not change the service origin if a dev port cannot be found', async () => {
-        assert.strictEquals(
-            (
-                await defineService(
-                    {
-                        requiredClientOrigin: AnyOrigin,
-                        serviceName: 'test',
-                        serviceOrigin: 'http://localhost:3000',
-                        endpoints: {
-                            '/test': {
-                                methods: {
-                                    GET: true,
-                                },
-                                requestDataShape: undefined,
-                                responseDataShape: undefined,
-                            },
-                        },
-                    },
-                    {
-                        findActiveDevPort: {
-                            fetch(url) {
-                                const {port} = parseUrl(url);
-
-                                return Promise.resolve({
-                                    headers: {
-                                        get() {
-                                            return 'test';
-                                        },
-                                    },
-                                    ok: false,
-                                } as unknown as Response);
-                            },
-                            maxScanDistance: 5,
-                        },
-                    },
-                )
-            ).serviceOrigin,
-            'http://localhost:3000',
-        );
     });
     it('preserves WebSocket protocols', () => {
         assert
@@ -167,8 +78,8 @@ describe(defineService.name, () => {
 
         assert.isUndefined(result);
     });
-    it('preserves methods', async () => {
-        const myService = await defineService({
+    it('preserves methods', () => {
+        const myService = defineService({
             endpoints: {
                 '/path': {
                     requestDataShape: undefined,
@@ -188,8 +99,8 @@ describe(defineService.name, () => {
             [HttpMethod.Get]: true;
         }>();
     });
-    it('can be assigned to an empty definition', async () => {
-        const myService = await defineService({
+    it('can be assigned to an empty definition', () => {
+        const myService = defineService({
             endpoints: {
                 '/path': {
                     requestDataShape: undefined,
@@ -218,8 +129,8 @@ describe(defineService.name, () => {
         acceptsDefinition(myService);
     });
 
-    it('blocks invalid endpoint paths', async () => {
-        await assert.throws(
+    it('blocks invalid endpoint paths', () => {
+        assert.throws(
             () =>
                 defineService({
                     serviceName: 'invalid-test-service',
@@ -293,8 +204,8 @@ describe(defineService.name, () => {
         assert.tsType(mockService.serviceName).equals<'mock-service'>();
     });
 
-    it('blocks empty service name', async () => {
-        await assert.throws(
+    it('blocks empty service name', () => {
+        assert.throws(
             () =>
                 defineService({
                     // @ts-expect-error: service name cannot be an empty string
@@ -309,8 +220,8 @@ describe(defineService.name, () => {
         );
     });
 
-    it('blocks non-string service name', async () => {
-        await assert.throws(
+    it('blocks non-string service name', () => {
+        assert.throws(
             () =>
                 defineService({
                     // @ts-expect-error: intentionally the wrong type for testing purposes
@@ -354,8 +265,8 @@ describe(defineService.name, () => {
             .equals<undefined>();
     });
 
-    it('blocks empty object endpoints', async () => {
-        await assert.throws(
+    it('blocks empty object endpoints', () => {
+        assert.throws(
             () =>
                 defineService({
                     serviceName: 'empty-object-endpoint-service',
@@ -371,8 +282,8 @@ describe(defineService.name, () => {
         );
     });
 
-    it('requires errorMessage when returning an error-based status code', async () => {
-        await defineService({
+    it('requires errorMessage when returning an error-based status code', () => {
+        defineService({
             serviceName: 'test-endpoint-service',
             requiredClientOrigin: AnyOrigin,
             serviceOrigin: '',
@@ -389,8 +300,8 @@ describe(defineService.name, () => {
         });
     });
 
-    it('requires data when returning a successful status code', async () => {
-        await defineService({
+    it('requires data when returning a successful status code', () => {
+        defineService({
             serviceName: 'test-endpoint-service',
             requiredClientOrigin: AnyOrigin,
             serviceOrigin: '',
@@ -407,8 +318,8 @@ describe(defineService.name, () => {
         });
     });
 
-    it('rejects missing methods', async () => {
-        await assert.throws(
+    it('rejects missing methods', () => {
+        assert.throws(
             () =>
                 defineService({
                     serviceName: 'test-endpoint-service',
@@ -429,8 +340,8 @@ describe(defineService.name, () => {
             },
         );
     });
-    it('rejects a string endpoint', async () => {
-        await assert.throws(
+    it('rejects a string endpoint', () => {
+        assert.throws(
             () =>
                 defineService({
                     serviceName: 'test-service',
@@ -447,8 +358,8 @@ describe(defineService.name, () => {
         );
     });
 
-    it('rejects endpoint ending in slash', async () => {
-        await assert.throws(
+    it('rejects endpoint ending in slash', () => {
+        assert.throws(
             () =>
                 defineService({
                     serviceName: 'test-endpoint-service',
@@ -470,8 +381,8 @@ describe(defineService.name, () => {
             },
         );
     });
-    it('can define WebSockets without endpoints', async () => {
-        const service = await defineService({
+    it('can define WebSockets without endpoints', () => {
+        const service = defineService({
             serviceName: 'test-endpoint-service',
             requiredClientOrigin: AnyOrigin,
             serviceOrigin: '',
@@ -541,8 +452,8 @@ describe(defineService.name, () => {
                 >
             >();
     });
-    it('can define no webSockets or endpoints', async () => {
-        const service = await defineService({
+    it('can define no webSockets or endpoints', () => {
+        const service = defineService({
             serviceName: 'test-endpoint-service',
             requiredClientOrigin: AnyOrigin,
             serviceOrigin: '',
@@ -551,8 +462,8 @@ describe(defineService.name, () => {
         assert.tsType<keyof typeof service.endpoints>().equals<EndpointPathBase>();
         assert.tsType<keyof typeof service.webSockets>().equals<EndpointPathBase>();
     });
-    it('rejects a WebSocket with an invalid path', async () => {
-        await assert.throws(() =>
+    it('rejects a WebSocket with an invalid path', () => {
+        assert.throws(() =>
             defineService({
                 serviceName: 'test-endpoint-service',
                 requiredClientOrigin: AnyOrigin,

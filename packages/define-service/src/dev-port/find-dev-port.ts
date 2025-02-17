@@ -7,10 +7,12 @@ import {
     type PartialWithUndefined,
     type SelectFrom,
 } from '@augment-vir/common';
+import {convertDuration, type AnyDuration} from 'date-vir';
 import {buildUrl, parseUrl} from 'url-vir';
 import type {EndpointPathBase} from '../endpoint/endpoint-path.js';
+import {GenericFetchEndpointParams} from '../frontend-connect/fetch-endpoint.js';
+import {defineService} from '../service/define-service.js';
 import type {ServiceDefinition} from '../service/service-definition.js';
-import {GenericFetchEndpointParams} from './fetch-endpoint.js';
 
 /**
  * This header is set on all responses handled by rest-vir so we know what service a response came
@@ -46,6 +48,12 @@ export type FindPortOptions = Pick<GenericFetchEndpointParams, 'fetch'> &
          * only be called if `response.ok` is already `true`.
          */
         isValidResponse: (response: Readonly<Response>) => MaybePromise<boolean>;
+        /**
+         * Max duration that port finding is allowed to go on for.
+         *
+         * @default {seconds: 10}
+         */
+        timeout: AnyDuration;
     }>;
 
 /**
@@ -66,7 +74,7 @@ export type FindPortOptions = Pick<GenericFetchEndpointParams, 'fetch'> &
  * ```ts
  * import {findDevServicePort, defineService, AnyOrigin} from '@rest-vir/define-service';
  *
- * const myService = await defineService({
+ * const myService = defineService({
  *     serviceName: 'my-service',
  *     serviceOrigin: 'https://localhost:3000',
  *     requiredClientOrigin: AnyOrigin,
@@ -110,13 +118,19 @@ export async function findDevServicePort(
             throw new Error(`Service has no endpoints.`);
         }
 
-        const port = await waitUntil.isNumber(() =>
-            findLivePort(service.serviceOrigin, endpoint.path, {
-                ...options,
-                isValidResponse(response) {
-                    return response.headers.get(restVirServiceNameHeader) === service.serviceName;
-                },
-            }),
+        const port = await waitUntil.isNumber(
+            () =>
+                findLivePort(service.serviceOrigin, endpoint.path, {
+                    ...options,
+                    isValidResponse(response) {
+                        return (
+                            response.headers.get(restVirServiceNameHeader) === service.serviceName
+                        );
+                    },
+                }),
+            {
+                timeout: options.timeout,
+            },
         );
 
         const {origin} = buildUrl(service.serviceOrigin, {
@@ -152,6 +166,7 @@ export async function findLivePort(
         fetch = globalThis.fetch,
         maxScanDistance = 100,
         isValidResponse,
+        timeout = {seconds: 10},
     }: Readonly<FindPortOptions> = {},
 ): Promise<number> {
     const {port: originalPort} = parseUrl(originWithStartingPort);
@@ -167,8 +182,15 @@ export async function findLivePort(
 
     let foundValidPort = false;
 
+    const timeoutMs = convertDuration(timeout, {milliseconds: true}).milliseconds;
+
+    const startTime = Date.now();
+
     while (!foundValidPort) {
         const port = findDistance + startingPort;
+        if (Date.now() - startTime >= timeoutMs) {
+            throw new Error(`Port scan timeout reached. Last scanned port: ${port - 1}`);
+        }
 
         const newUrl = buildUrl(originWithStartingPort, {
             pathname: pathToCheck,
@@ -188,11 +210,45 @@ export async function findLivePort(
         ) {
             foundValidPort = true;
         } else if (findDistance >= maxScanDistance) {
-            throw new Error(`Max scan distance reached. Last scanned port: ${port}`);
+            throw new Error(`Max port scan distance reached. Last scanned port: ${port}`);
         } else {
             findDistance++;
         }
     }
 
     return findDistance + startingPort;
+}
+
+/**
+ * Creates a copy of a service definition (without mutating the original service definition) for dev
+ * environments where the service's port has been modified to match an actual running instance of
+ * this service.
+ *
+ * This is useful for situations where your backend in dev automatically starts on a different port
+ * if the original port is already in use.
+ *
+ * @category Define Service
+ * @category Package : @rest-vir/define-service
+ * @example
+ *
+ * ```ts
+ * import {mapServiceDevPort} from '@rest-vir/define-service';
+ *
+ * const mappedService = await mapServiceDevPort(myServiceDefinition);
+ * ```
+ *
+ * @throws Error if no valid starting port can be found or if the max scan distance has been reached
+ *   without finding a valid port.
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
+ */
+export async function mapServiceDevPort<const SpecificService extends ServiceDefinition>(
+    service: Readonly<SpecificService>,
+    options: Readonly<Omit<FindPortOptions, 'isValidResponse'>> = {},
+): Promise<SpecificService> {
+    const {origin} = await findDevServicePort(service, options);
+
+    return defineService({
+        ...service.init,
+        serviceOrigin: origin,
+    }) as SpecificService;
 }

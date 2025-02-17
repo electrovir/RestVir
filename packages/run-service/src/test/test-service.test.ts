@@ -31,7 +31,7 @@ describeService({service: mockServiceImplementation}, ({fetchEndpoint}) => {
 
 const plainService = implementService(
     {
-        service: await defineService({
+        service: defineService({
             webSockets: {
                 '/socket': {
                     messageFromClientShape: exact('from client'),

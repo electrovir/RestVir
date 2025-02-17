@@ -1,12 +1,5 @@
-import {assert, check, checkWrap} from '@augment-vir/assert';
-import {
-    AnyObject,
-    getObjectTypedEntries,
-    mapObjectValues,
-    stringify,
-    wrapInTry,
-    type PartialWithUndefined,
-} from '@augment-vir/common';
+import {assert, check} from '@augment-vir/assert';
+import {AnyObject, getObjectTypedEntries, mapObjectValues, stringify} from '@augment-vir/common';
 import {assertValidShape, defineShape} from 'object-shape-tester';
 import {
     assertValidEndpoint,
@@ -14,7 +7,6 @@ import {
     endpointInitShape,
     type EndpointDefinition,
 } from '../endpoint/endpoint.js';
-import {FindPortOptions, findDevServicePort} from '../frontend-connect/find-dev-port.js';
 import {
     WebSocketDefinition,
     assertValidWebSocketDefinition,
@@ -31,28 +23,6 @@ import type {
 } from './service-definition.js';
 
 /**
- * Options for {@link defineService}.
- *
- * @category Internal
- * @category Package : @rest-vir/define-service
- * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
- */
-export type DefineServiceOptions = PartialWithUndefined<{
-    /**
-     * If set to `true`, the service definition's `serviceOrigin`'s port number will be
-     * automatically determined by {@link findDevServicePort}. The nearest port to the original
-     * service definition's port number, if any, that has an active instance of this service will be
-     * used. You can also set this to an object to control how `findDevServicePort` works.
-     *
-     * This is only recommended for dev environments where the service can safely startup on a
-     * different port if other ports are already in use.
-     *
-     * @default false
-     */
-    findActiveDevPort: boolean | FindPortOptions;
-}>;
-
-/**
  * The main entry point to the whole `@rest-vir/define-service` package. This function accepts a
  * {@link ServiceInit} object and returns a fully defined {@link ServiceDefinition}.
  *
@@ -60,27 +30,25 @@ export type DefineServiceOptions = PartialWithUndefined<{
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export async function defineService<
+export function defineService<
     const ServiceName extends string,
     EndpointsInit extends BaseServiceEndpointsInit,
     WebSocketsInit extends BaseServiceWebSocketsInit,
 >(
     serviceInit: ServiceInit<ServiceName, EndpointsInit, WebSocketsInit>,
-    options: Readonly<DefineServiceOptions> = {},
-): Promise<ServiceDefinition<ServiceName, EndpointsInit, WebSocketsInit>> {
-    const serviceDefinition = await finalizeServiceDefinition(serviceInit, options);
+): ServiceDefinition<ServiceName, EndpointsInit, WebSocketsInit> {
+    const serviceDefinition = finalizeServiceDefinition(serviceInit);
     assertValidServiceDefinition(serviceDefinition);
     return serviceDefinition;
 }
 
-async function finalizeServiceDefinition<
+function finalizeServiceDefinition<
     const ServiceName extends string,
     EndpointsInit extends BaseServiceEndpointsInit,
     WebSocketsInit extends BaseServiceWebSocketsInit,
 >(
     serviceInit: ServiceInit<ServiceName, EndpointsInit, WebSocketsInit>,
-    options: Readonly<DefineServiceOptions>,
-): Promise<ServiceDefinition<ServiceName, EndpointsInit, WebSocketsInit>> {
+): ServiceDefinition<ServiceName, EndpointsInit, WebSocketsInit> {
     try {
         const minimalService: MinimalService<ServiceName> = {
             serviceName: serviceInit.serviceName,
@@ -191,19 +159,6 @@ async function finalizeServiceDefinition<
                 WebSocketsInit
             >['endpoints'],
         };
-
-        if (options.findActiveDevPort) {
-            const result = await wrapInTry(() =>
-                findDevServicePort(
-                    serviceDefinition,
-                    checkWrap.isObject(options.findActiveDevPort),
-                ),
-            );
-
-            if (!check.instanceOf(result, Error)) {
-                serviceDefinition.serviceOrigin = result.origin;
-            }
-        }
 
         return serviceDefinition;
     } catch (error) {

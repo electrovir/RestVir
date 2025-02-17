@@ -4,7 +4,7 @@ import {assert} from '@augment-vir/assert';
 import {HttpMethod, HttpStatus, mergeDeep} from '@augment-vir/common';
 import {runShellCommand} from '@augment-vir/node';
 import {describe, it} from '@augment-vir/test';
-import {fetchEndpoint} from '@rest-vir/define-service';
+import {defineService, fetchEndpoint, mapServiceDevPort} from '@rest-vir/define-service';
 import {
     mockService,
     mockWebsiteOrigin,
@@ -23,6 +23,17 @@ describe(startService.name, () => {
             const serverMessage = await webSocket.sendAndWaitForReply();
 
             assert.strictEquals(serverMessage, 'ok');
+        });
+        it('can be dev port scanned', async ({address}) => {
+            const service = await mapServiceDevPort(
+                defineService({
+                    ...mockService.init,
+                    serviceOrigin: 'http://localhost:2990',
+                }),
+            );
+
+            assert.strictEquals(service.serviceOrigin, address);
+            assert.strictEquals(service.serviceOrigin, 'http://localhost:3000');
         });
         it('fires websocket listeners', async ({connectWebSocket}) => {
             const webSocket = await connectWebSocket(

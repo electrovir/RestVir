@@ -26,7 +26,7 @@ export enum MyAuth {
     User = 'user',
 }
 
-export const myService = await defineService({
+export const myService = defineService({
     serviceName: 'my-service',
     allowedAuth: getEnumValues(MyAuth),
     /**

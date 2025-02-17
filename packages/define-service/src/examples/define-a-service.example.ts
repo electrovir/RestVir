@@ -1,6 +1,6 @@
 import {AnyOrigin, defineService} from '../index.js';
 
-export const myService = await defineService({
+export const myService = defineService({
     serviceName: 'my-service',
     /**
      * The origin at which the service will be hosted. Client requests sent to this service will be

@@ -1,8 +1,11 @@
 import {assert} from '@augment-vir/assert';
+import {wait} from '@augment-vir/common';
 import {describe, it, itCases} from '@augment-vir/test';
 import {parseUrl} from 'url-vir';
 import type {EndpointDefinition} from '../endpoint/endpoint.js';
-import {findDevServicePort, findLivePort} from './find-dev-port.js';
+import {defineService} from '../service/define-service.js';
+import {mockService} from '../service/define-service.mock.js';
+import {findDevServicePort, findLivePort, mapServiceDevPort} from './find-dev-port.js';
 
 describe(findDevServicePort.name, () => {
     async function testFindDevServicePort({
@@ -150,5 +153,65 @@ describe(findLivePort.name, () => {
             }),
             3002,
         );
+    });
+    it('times out', async () => {
+        await assert.throws(
+            () =>
+                findLivePort('localhost:3000', '/my-path', {
+                    async fetch(url) {
+                        const {port} = parseUrl(url);
+                        await wait({milliseconds: 10});
+
+                        return {
+                            ok: false,
+                        } as unknown as Response;
+                    },
+                    maxScanDistance: 10_000,
+                    timeout: {
+                        milliseconds: 100,
+                    },
+                }),
+            {
+                matchMessage: 'Port scan timeout reached',
+            },
+        );
+    });
+});
+
+describe(mapServiceDevPort.name, () => {
+    it('finds a new port', async () => {
+        const result = await mapServiceDevPort(
+            defineService({
+                ...mockService.init,
+                serviceOrigin: 'http://localhost:3000',
+            }),
+            {
+                fetch(url) {
+                    const {port} = parseUrl(url);
+                    const fetchPort = Number(port);
+
+                    if (fetchPort === 3005) {
+                        return Promise.resolve({
+                            headers: {
+                                get() {
+                                    return mockService.serviceName;
+                                },
+                            },
+                            ok: true,
+                        } as unknown as Response);
+                    } else {
+                        return Promise.resolve({
+                            headers: {
+                                get() {
+                                    return mockService.serviceName;
+                                },
+                            },
+                            ok: false,
+                        } as unknown as Response);
+                    }
+                },
+            },
+        );
+        assert.deepEquals(result.serviceOrigin, 'http://localhost:3005');
     });
 });

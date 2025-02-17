@@ -1,3 +1,4 @@
+import type {Overwrite} from '@augment-vir/common';
 import {IsEqual, SetRequired} from 'type-fest';
 import {EndpointPathBase} from '../endpoint/endpoint-path.js';
 import {EndpointDefinition, EndpointInit, WithFinalEndpointProps} from '../endpoint/endpoint.js';
@@ -94,7 +95,15 @@ export type ServiceDefinition<
     >;
     webSockets: WebSocketsInit extends NoParam
         ? {
-              [WebSocketPath in EndpointPathBase]: WebSocketDefinition;
+              [WebSocketPath in EndpointPathBase]: Overwrite<
+                  WebSocketDefinition,
+                  {
+                      searchParamsShape: any;
+                      SearchParamsType: any;
+                      protocolsShape: any;
+                      ProtocolsType: any;
+                  }
+              >;
           }
         : {
               [WebSocketPath in keyof WebSocketsInit]: WebSocketPath extends EndpointPathBase
@@ -103,7 +112,13 @@ export type ServiceDefinition<
           };
     endpoints: EndpointsInit extends NoParam
         ? {
-              [EndpointPath in EndpointPathBase]: EndpointDefinition;
+              [EndpointPath in EndpointPathBase]: Overwrite<
+                  EndpointDefinition,
+                  {
+                      searchParamsShape: any;
+                      SearchParamsType: any;
+                  }
+              >;
           }
         : {
               [EndpointPath in keyof EndpointsInit]: EndpointPath extends EndpointPathBase
