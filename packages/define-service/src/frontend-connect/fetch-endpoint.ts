@@ -6,6 +6,7 @@ import {
     HttpMethod,
     KeyCount,
     type ExtractKeysWithMatchingValues,
+    type MaybePromise,
     type RequiredKeysOf,
     type SelectFrom,
 } from '@augment-vir/common';
@@ -13,7 +14,11 @@ import {assertValidShape} from 'object-shape-tester';
 import {type IsEqual, type IsNever} from 'type-fest';
 import {buildUrl} from 'url-vir';
 import {type PathParams} from '../endpoint/endpoint-path.js';
-import {EndpointExecutorData, type EndpointDefinition} from '../endpoint/endpoint.js';
+import {
+    EndpointExecutorData,
+    type EndpointDefinition,
+    type GenericEndpointDefinition,
+} from '../endpoint/endpoint.js';
 import {type NoParam} from '../util/no-param.js';
 
 /**
@@ -32,11 +37,24 @@ export type GenericFetchEndpointParams = {
     /**
      * A custom fetch implementation. Useful for debugging or unit testing. This can safely be
      * omitted to use the default JavaScript built-in global `fetch` function.
-     *
-     * @default globalThis.fetch
      */
-    fetch?: ((input: string, init: RequestInit) => Promise<Response>) | undefined;
+    fetch?:
+        | ((
+              url: string,
+              requestInit: RequestInit,
+              endpoint?: GenericEndpointDefinition | undefined,
+          ) => MaybePromise<Response>)
+        | undefined;
 };
+
+function defaultFetch(
+    ...[
+        url,
+        requestInit,
+    ]: Parameters<NonNullable<GenericFetchEndpointParams['fetch']>>
+) {
+    return fetch(url, requestInit);
+}
 
 /**
  * Type that determines which HTTP request methods can be used for the given endpoint definition.
@@ -313,7 +331,11 @@ export async function fetchEndpoint<
     const {requestInit, url} = buildEndpointRequestInit(endpoint, ...params);
 
     /* node:coverage ignore next: all tests mock fetch so we're never going to have a fallback here. */
-    const response = await (fetch || globalThis.fetch)(url, requestInit);
+    const response = await (fetch || defaultFetch)(
+        url,
+        requestInit,
+        endpoint as EndpointDefinition,
+    );
 
     const responseData = endpoint.responseDataShape ? await response.json() : undefined;
 

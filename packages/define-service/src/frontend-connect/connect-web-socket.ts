@@ -129,7 +129,7 @@ export type ConnectWebSocketParams<
             pathParams?: undefined;
         }) &
     (AllowWebSocketMock extends true
-        ? Pick<GenericConnectWebSocketParams<WebSocketClass>, 'WebSocketConstructor'>
+        ? Pick<GenericConnectWebSocketParams<WebSocketClass>, 'webSocketConstructor'>
         : unknown) &
     (WebSocketToConnect['protocolsShape'] extends undefined
         ? {
@@ -187,6 +187,20 @@ export type CollapsedConnectWebSocketParams<
           : [RealParams]
       : [];
 
+const defaultWebSocket = function (
+    this: any,
+    ...[
+        url,
+        protocols,
+    ]: ConstructorParameters<
+        NonNullable<GenericConnectWebSocketParams<globalThis.WebSocket>['webSocketConstructor']>
+    >
+): WebSocket {
+    return new globalThis.WebSocket(url, protocols);
+} as unknown as NonNullable<
+    GenericConnectWebSocketParams<globalThis.WebSocket>['webSocketConstructor']
+>;
+
 /**
  * Creates and connects a new client WebSocket instance with type safety.
  *
@@ -204,7 +218,7 @@ export async function connectWebSocket<
     ...params: CollapsedConnectWebSocketParams<WebSocketToConnect, true, WebSocketClass>
 ): Promise<ClientWebSocket<WebSocketToConnect, WebSocketClass>> {
     const [
-        {WebSocketConstructor: WebSocket = globalThis.WebSocket, protocols, listeners} = {},
+        {webSocketConstructor = defaultWebSocket, protocols, listeners} = {},
     ] = params;
 
     assertValidWebSocketProtocols(protocols);
@@ -217,7 +231,7 @@ export async function connectWebSocket<
         WebSocketToConnect
     > = await finalizeWebSocket<WebSocketToConnect, WebSocketClass, WebSocketLocation.OnClient>(
         webSocketDefinition as any,
-        new WebSocket(url, protocols?.length ? protocols : undefined) as WebSocketClass,
+        new webSocketConstructor(url, protocols, webSocketDefinition) as WebSocketClass,
         listeners,
         WebSocketLocation.OnClient,
     );

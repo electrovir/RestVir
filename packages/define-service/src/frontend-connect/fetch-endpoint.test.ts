@@ -3,7 +3,7 @@ import {HttpMethod} from '@augment-vir/common';
 import {describe, it, itCases} from '@augment-vir/test';
 import {type EndpointDefinition} from '../endpoint/endpoint.js';
 import {mockService} from '../service/define-service.mock.js';
-import {createMockFetch, createMockFetchResponse} from '../util/mock-fetch.js';
+import {createMockEndpointFetch, createMockEndpointResponse} from '../util/mock-fetch.js';
 import {type NoParam} from '../util/no-param.js';
 import {
     buildEndpointUrl,
@@ -137,8 +137,8 @@ describe(fetchEndpoint.name, () => {
                         somethingHere: 'hi',
                         testValue: -1,
                     },
-                    fetch: createMockFetch(mockService.endpoints['/test'], {
-                        responseData: {
+                    fetch: createMockEndpointFetch(mockService.endpoints['/test'], {
+                        body: {
                             result: 1,
                             requestData: {
                                 somethingHere: 'hi',
@@ -165,6 +165,25 @@ describe(fetchEndpoint.name, () => {
                 }>
             >();
     });
+    it('uses the default fetch', async () => {
+        await assert.throws(() =>
+            fetchEndpoint(
+                {
+                    ...mockService.endpoints['/test'],
+                    service: {
+                        ...mockService.endpoints['/test'].service,
+                        serviceOrigin: 'localhost:0',
+                    },
+                },
+                {
+                    requestData: {
+                        somethingHere: 'hi',
+                        testValue: -1,
+                    },
+                },
+            ),
+        );
+    });
 
     async function testFetchEndpoint(
         endpoint: EndpointDefinition,
@@ -179,8 +198,8 @@ describe(fetchEndpoint.name, () => {
                 url = givenUrl;
                 requestInit = givenRequestInit;
                 return Promise.resolve(
-                    createMockFetchResponse(endpoint, {
-                        responseData: endpoint.responseDataShape?.defaultValue,
+                    createMockEndpointResponse(endpoint, {
+                        body: endpoint.responseDataShape?.defaultValue,
                     }),
                 );
             },

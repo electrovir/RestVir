@@ -13,7 +13,7 @@ import {
 } from '@augment-vir/common';
 import {convertDuration, type AnyDuration} from 'date-vir';
 import {assertValidShape} from 'object-shape-tester';
-import type {Constructor, HasRequiredKeys} from 'type-fest';
+import type {HasRequiredKeys} from 'type-fest';
 import {parseJsonWithUndefined} from '../augments/json.js';
 import {NoParam} from '../util/no-param.js';
 import {
@@ -422,7 +422,13 @@ export type GenericConnectWebSocketParams<WebSocketClass extends CommonWebSocket
      *
      * @default globalThis.WebSocket
      */
-    WebSocketConstructor?: Constructor<WebSocketClass>;
+    webSocketConstructor?:
+        | (new (
+              url: string,
+              protocols: string[] | undefined,
+              webSocketDefinition: WebSocketDefinition,
+          ) => WebSocketClass)
+        | undefined;
     searchParams?: unknown;
 };
 

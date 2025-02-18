@@ -190,6 +190,8 @@ export type GenericWebSocketDefinition = Overwrite<
     {
         protocolsShape: any;
         ProtocolsType: any;
+        searchParamsShape: any;
+        SearchParamsType: any;
     }
 >;
 

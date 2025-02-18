@@ -11,6 +11,7 @@ import {
     CommonWebSocketState,
 } from '../web-socket/common-web-socket.js';
 import {
+    GenericConnectWebSocketParams,
     WebSocketLocation,
     type ClientWebSocket,
 } from '../web-socket/overwrite-web-socket-methods.js';
@@ -62,7 +63,7 @@ export type MockClientWebSocketOptions<WebSocketToConnect extends WebSocketDefin
  * Creates a {@link MockClientWebSocket} constructor for connections from the client side with types
  * for the given {@link WebSocketDefinition} and utilizing the given
  * {@link MockClientWebSocketOptions} instance. This can be passed to `connectWebSocket` as the
- * `WebSocketConstructor` to allow unit testing on a client without spinning up an entire host to
+ * `webSocketConstructor` to allow unit testing on a client without spinning up an entire host to
  * serve the WebSocket connection.
  *
  * @category Testing
@@ -76,7 +77,7 @@ export type MockClientWebSocketOptions<WebSocketToConnect extends WebSocketDefin
  * } from '@rest-vir/define-service';
  *
  * const webSocket = await connectWebSocket(myService.webSockets['/my-path'], {
- *     WebSocketConstructor: createMockClientWebSocketConstructor(
+ *     webSocketConstructor: createMockClientWebSocketConstructor(
  *         myService.webSockets['/my-path'],
  *         {preventImmediateOpen: true},
  *     ),
@@ -95,8 +96,12 @@ export function createMockClientWebSocketConstructor<
     options: Readonly<MockClientWebSocketOptions<WebSocketToConnect>> = {},
 ): typeof MockClientWebSocket<WebSocketToConnect> {
     return class extends MockClientWebSocket<WebSocketToConnect> {
-        constructor() {
-            super(options);
+        constructor(
+            ...params: ConstructorParameters<
+                NonNullable<GenericConnectWebSocketParams<any>['webSocketConstructor']>
+            >
+        ) {
+            super(...params, options);
         }
     };
 }
@@ -115,7 +120,7 @@ export type MockClientWebSocketListeners = Partial<{
 }>;
 /**
  * A mock WebSocket constructor for connections from the client side. This can be passed to
- * `connectWebSocket` as the `WebSocketConstructor` to allow unit testing on a client without
+ * `connectWebSocket` as the `webSocketConstructor` to allow unit testing on a client without
  * spinning up an entire host to serve the WebSocket connection.
  *
  * @category Testing
@@ -126,7 +131,7 @@ export type MockClientWebSocketListeners = Partial<{
  * import {connectWebSocket, MockClientWebSocket} from '@rest-vir/define-service';
  *
  * const webSocket = await connectWebSocket(myService.webSockets['/my-path'], {
- *     WebSocketConstructor: MockClientWebSocket<(typeof myService.webSockets)['/my-path']>,
+ *     webSocketConstructor: MockClientWebSocket<(typeof myService.webSockets)['/my-path']>,
  * });
  *
  * // mock server responses without an actual server
@@ -135,7 +140,7 @@ export type MockClientWebSocketListeners = Partial<{
  *
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export class MockClientWebSocket<const WebSocketToConnect extends WebSocketDefinition>
+export class MockClientWebSocket<const WebSocketToConnect extends WebSocketDefinition = any>
     implements CommonWebSocket
 {
     /**
@@ -163,7 +168,7 @@ export class MockClientWebSocket<const WebSocketToConnect extends WebSocketDefin
      * import {MockClientWebSocket, connectWebSocket} from '@rest-vir/define-service';
      *
      * const webSocket = await connectWebSocket(myService.webSockets['/my-socket'], {
-     *     WebSocketConstructor: createMockClientWebSocketConstructor(
+     *     webSocketConstructor: createMockClientWebSocketConstructor(
      *         myService.webSockets['/my-socket'],
      *         {
      *             sendCallback: (message) => {
@@ -177,7 +182,19 @@ export class MockClientWebSocket<const WebSocketToConnect extends WebSocketDefin
      */
     public sendCallback: MockClientWebSocketClientSendCallback<WebSocketToConnect> | undefined;
 
-    constructor(options: Readonly<MockClientWebSocketOptions<WebSocketToConnect>> = {}) {
+    constructor(
+        ...[
+            ,
+            ,
+            ,
+            options = {},
+        ]: [
+            ...ConstructorParameters<
+                NonNullable<GenericConnectWebSocketParams<any>['webSocketConstructor']>
+            >,
+            options?: Readonly<MockClientWebSocketOptions<WebSocketToConnect>>,
+        ]
+    ) {
         if (!options.preventImmediateOpen) {
             this.open();
         }

@@ -100,6 +100,11 @@ export type EndpointInit<
      */
     searchParamsShape?: unknown;
 
+    /**
+     * Any additional data that you wish to attach to this endpoint. This won't be used by the
+     * service at all, it's merely a place for you to place extra data which will be passed along to
+     * your endpoint implementations.
+     */
     customProps?: Record<PropertyKey, unknown> | undefined;
 };
 
@@ -221,6 +226,21 @@ export type EndpointDefinition<
 > = WithFinalEndpointProps<
     EndpointInit<AllowedMethods, RequestDataShape, ResponseDataShape>,
     EndpointPath
+>;
+
+/**
+ * A generic version of {@link EndpointDefinition} that any endpoint can be assigned to.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
+ */
+export type GenericEndpointDefinition = Overwrite<
+    EndpointDefinition,
+    {
+        searchParamsShape: any;
+        SearchParamsType: any;
+    }
 >;
 
 /**

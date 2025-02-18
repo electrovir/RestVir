@@ -4,6 +4,7 @@ import {
     EndpointPathBase,
     ServiceDefinition,
     WebSocketDefinition,
+    type GenericEndpointDefinition,
     type GenericWebSocketDefinition,
     type NoParam,
 } from '@rest-vir/define-service';
@@ -22,7 +23,7 @@ import {type ContextInit} from './service-context-init.js';
 export type ImplementedEndpoint<
     Context = any,
     ServiceName extends string = any,
-    SpecificEndpoint extends EndpointDefinition = EndpointDefinition,
+    SpecificEndpoint extends EndpointDefinition = GenericEndpointDefinition,
 > = Overwrite<
     SpecificEndpoint,
     {
@@ -41,28 +42,8 @@ export type ImplementedEndpoint<
  * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
  */
 export type GenericServiceImplementation = Omit<ServiceDefinition, 'endpoints' | 'webSockets'> & {
-    endpoints: Record<
-        EndpointPathBase,
-        Overwrite<
-            ImplementedEndpoint,
-            {
-                searchParamsShape: any;
-                SearchParamsType: any;
-            }
-        >
-    >;
-    webSockets: Record<
-        EndpointPathBase,
-        Overwrite<
-            ImplementedWebSocket,
-            {
-                protocolsShape: any;
-                ProtocolsType: any;
-                searchParamsShape: any;
-                SearchParamsType: any;
-            }
-        >
-    >;
+    endpoints: Record<EndpointPathBase, any>;
+    webSockets: Record<EndpointPathBase, ImplementedWebSocket>;
     createContext: ContextInit<any, any, any, any> | undefined;
     logger: ServiceLogger;
 };

@@ -54,6 +54,13 @@ export type FindPortOptions = Pick<GenericFetchEndpointParams, 'fetch'> &
          * @default {seconds: 10}
          */
         timeout: AnyDuration;
+        /**
+         * A starting origin used to replace the service definition's origin, in case you need to
+         * keep your service definition's origin static for API publishing purposes.
+         *
+         * This defaults to whatever origin is already set on the given service definition.
+         */
+        startingOriginOverride: string;
     }>;
 
 /**
@@ -113,6 +120,8 @@ export async function findDevServicePort(
     origin: string;
 }> {
     try {
+        const startingOrigin = options.startingOriginOverride || service.serviceOrigin;
+
         const endpoint = Object.values(service.endpoints)[0];
         if (!endpoint) {
             throw new Error(`Service has no endpoints.`);
@@ -120,7 +129,7 @@ export async function findDevServicePort(
 
         const port = await waitUntil.isNumber(
             () =>
-                findLivePort(service.serviceOrigin, endpoint.path, {
+                findLivePort(startingOrigin, endpoint.path, {
                     ...options,
                     isValidResponse(response) {
                         return (
@@ -133,7 +142,7 @@ export async function findDevServicePort(
             },
         );
 
-        const {origin} = buildUrl(service.serviceOrigin, {
+        const {origin} = buildUrl(startingOrigin, {
             port,
         });
 
@@ -167,7 +176,7 @@ export async function findLivePort(
         maxScanDistance = 100,
         isValidResponse,
         timeout = {seconds: 10},
-    }: Readonly<FindPortOptions> = {},
+    }: Readonly<Omit<FindPortOptions, 'overwriteOrigin'>> = {},
 ): Promise<number> {
     const {port: originalPort} = parseUrl(originWithStartingPort);
     if (!originalPort) {

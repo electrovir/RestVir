@@ -6,6 +6,7 @@ export * from './endpoint/endpoint-path.js';
 export * from './endpoint/endpoint.js';
 export * from './frontend-connect/connect-web-socket.js';
 export * from './frontend-connect/fetch-endpoint.js';
+export * from './frontend-connect/generate-api.js';
 export * from './frontend-connect/mock-client-web-socket.js';
 export * from './frontend-connect/web-socket-protocol-parse.js';
 export * from './service/define-service.js';
