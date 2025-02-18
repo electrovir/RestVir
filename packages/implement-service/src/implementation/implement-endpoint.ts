@@ -19,6 +19,7 @@ import {
     ServiceDefinition,
     ServiceDefinitionError,
     WithFinalEndpointProps,
+    type PathParams,
 } from '@rest-vir/define-service';
 import {type IncomingHttpHeaders, type OutgoingHttpHeaders} from 'node:http';
 import {type IsEqual, type IsNever} from 'type-fest';
@@ -81,6 +82,11 @@ export type EndpointImplementationParams<
     ServiceName extends string = any,
     SpecificEndpoint extends EndpointDefinition | NoParam = NoParam,
 > = {
+    pathParams: SpecificEndpoint extends NoParam
+        ? Readonly<Record<string, string>>
+        : PathParams<Exclude<SpecificEndpoint, NoParam>['path']> extends string
+          ? Readonly<Record<PathParams<Exclude<SpecificEndpoint, NoParam>['path']>, string>>
+          : Readonly<Record<string, string>>;
     context: Context;
     method: IsEqual<Extract<SpecificEndpoint, NoParam>, NoParam> extends true
         ? HttpMethod
@@ -124,6 +130,7 @@ export type GenericEndpointImplementationParams = {
     service: MinimalService<any>;
     requestHeaders: IncomingHttpHeaders;
     searchParams: BaseSearchParams;
+    pathParams: Readonly<Record<string, string>>;
 
     requestData: any;
     request: ServerRequest;

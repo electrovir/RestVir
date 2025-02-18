@@ -259,10 +259,16 @@ export const mockServiceImplementation = implementService(
             '/throws-error'() {
                 throw new Error('fake error');
             },
-            '/with/:param1/:param2'() {
+            '/with/:param1/:param2'({pathParams}) {
+                assert.tsType(pathParams).equals<
+                    Readonly<{
+                        param1: string;
+                        param2: string;
+                    }>
+                >();
                 return {
                     statusCode: HttpStatus.Accepted,
-                    responseData: undefined,
+                    responseData: pathParams,
                 };
             },
         },

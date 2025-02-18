@@ -28,9 +28,10 @@ export type MockEndpointResponseOptions<EndpointToMock extends EndpointDefinitio
 >;
 
 /**
- * Creates a mocked fetch `Response` object for the given endpoint (requiring a type safe body).
+ * Creates a mocked fetch `Response` object for the given endpoint (requiring a type safe body). For
+ * more generic response mocking, see {@link createMockResponse}.
  *
- * @category Testing
+ * @category Testing : Client (Frontend)
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
@@ -92,9 +93,11 @@ export class MockResponseBodyStream extends ReadableStream<Uint8Array> {
 }
 
 /**
- * Creates a mocked fetch `Response` object.
+ * Creates a mocked, but realistic, `Response` object. Use this when mocking `fetch`. See
+ * {@link createMockEndpointResponse} for a more type safe version, specific to individual
+ * endpoints.
  *
- * @category Testing
+ * @category Internal
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
@@ -205,9 +208,10 @@ export function createMockResponse(params: Readonly<MockResponseParams> = {}): R
 
 /**
  * Creates a mock `fetch` function that returns a mock `Response` object that matches the
- * expectations of the given endpoint.
+ * expectations of the given endpoint. For more generic `fetch` mocking, see
+ * {@link createMockFetch}.
  *
- * @category Testing
+ * @category Testing : Client (Frontend)
  * @category Package : @rest-vir/define-service
  * @example
  *
@@ -232,10 +236,12 @@ export function createMockEndpointFetch<const EndpointToMock extends EndpointDef
 }
 
 /**
- * Creates a mock `fetch` function that returns a mock `Response` object based on the given response
- * parameters.
+ * Creates a mock `fetch` function that always returns a mock `Response` object based on the given
+ * response parameters. For more control over a mocked `fetch`, use {@link createMockResponse}
+ * directly. See {@link createMockEndpointFetch} for a more type safe version, specific to individual
+ * endpoints.
  *
- * @category Testing
+ * @category Internal
  * @category Package : @rest-vir/define-service
  * @example
  *

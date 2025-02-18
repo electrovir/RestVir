@@ -13,8 +13,10 @@ import {type OriginRequirement} from '../util/origin.js';
 export type MinimalService<ServiceName extends string = string> = {
     serviceName: IsEqual<ServiceName, ''> extends true ? never : ServiceName;
     /**
-     * The origin through which the service can be contacted. This will be used by `fetchEndpoint`
-     * to send requests to this service.
+     * The origin at which the service will be hosted. Fetch requests and WebSocket connections will
+     * be sent to this service will be sent to this origin.
+     *
+     * It is recommended to use a ternary to switch between dev and prod origins.
      *
      * @example
      *
@@ -29,6 +31,15 @@ export type MinimalService<ServiceName extends string = string> = {
      * @see https://developer.mozilla.org/en-US/docs/Web/API/Location for help on which part of the URL is the origin (if necessary).
      */
     serviceOrigin: string;
-    /** The service's origin requirement for all request clients. */
+    /**
+     * The service's `origin` requirement for all endpoint requests and WebSocket connections. This
+     * is used for CORS handshakes.
+     *
+     * This can be a string, a RegExp, a function, or an array of any of those. (If this is an
+     * array, the first matching array element will be used.)
+     *
+     * Set this to `AnyOrigin` (imported from `'@rest-vir/define-service'`) to allow any origins.
+     * Make sure that you're okay with the security impact this may have on your users of doing so.
+     */
     requiredClientOrigin: NonNullable<OriginRequirement>;
 };

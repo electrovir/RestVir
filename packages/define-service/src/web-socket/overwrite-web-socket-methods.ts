@@ -600,7 +600,7 @@ export function overwriteWebSocketMethods<
 /**
  * Waits for a WebSocket to reach to the open state.
  *
- * @category WebSocket
+ * @category Internal
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */

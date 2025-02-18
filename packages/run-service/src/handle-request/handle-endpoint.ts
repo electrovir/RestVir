@@ -41,6 +41,7 @@ export async function handleEndpointRequest(
         const searchParams = restVirContext.searchParams;
 
         const endpointParams: EndpointImplementationParams = {
+            pathParams: request.params as Record<string, string>,
             method: assertWrap.isEnumValue(request.method.toUpperCase(), HttpMethod),
             request,
             requestData,

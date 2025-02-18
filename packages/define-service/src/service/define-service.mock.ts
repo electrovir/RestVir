@@ -2,7 +2,7 @@
 /** This is just a mock file. */
 
 import {HttpMethod, wait} from '@augment-vir/common';
-import {exact, or, tupleShape} from 'object-shape-tester';
+import {exact, indexedKeys, or, tupleShape} from 'object-shape-tester';
 import {AnyOrigin} from '../util/origin.js';
 import {defineService} from './define-service.js';
 
@@ -13,6 +13,7 @@ export const mockService = defineService({
     serviceOrigin: 'https://example.com',
     requiredClientOrigin: AnyOrigin,
     webSockets: {
+        /** This WebSocket requires protocols. */
         '/required-protocols': {
             messageFromClientShape: exact('hello'),
             messageFromHostShape: exact('ok'),
@@ -172,7 +173,11 @@ export const mockService = defineService({
                 [HttpMethod.Get]: true,
             },
             requestDataShape: undefined,
-            responseDataShape: undefined,
+            responseDataShape: indexedKeys({
+                keys: '',
+                values: '',
+                required: true,
+            }),
         },
         '/empty': {
             requestDataShape: undefined,

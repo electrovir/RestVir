@@ -267,7 +267,7 @@ export type CollapsedFetchEndpointParams<
  *
  * This can safely be used in frontend _or_ backend code.
  *
- * @category Fetch
+ * @category Client (Frontend) Connection
  * @category Package : @rest-vir/define-service
  * @example
  *
@@ -315,7 +315,6 @@ export async function fetchEndpoint<
           >,
     ...params: CollapsedFetchEndpointParams<EndpointToFetch>
 ): Promise<FetchEndpointOutput<EndpointToFetch>> {
-    /* node:coverage ignore next: `params[0]` will never be empty in tests because we always mock `fetch` */
     const {requestData, fetch} = params[0] || {};
 
     if (requestData) {

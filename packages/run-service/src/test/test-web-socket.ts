@@ -22,9 +22,11 @@ export type TestWebSocket = <WebSocketToTest extends WebSocketDefinition>(
 ) => Promise<ClientWebSocket<WebSocketToTest>>;
 
 /**
- * Test your WebSocket implementation with a real pipeline.
+ * Test your WebSocket implementation with a real connection pipeline. Make sure to close your
+ * WebSocket after each test. Use {@link withWebSocketTest} to automatically close the WebSocket
+ * after a test.
  *
- * @category Testing
+ * @category Internal
  * @category Package : @rest-vir/run-service
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
@@ -67,9 +69,15 @@ export type WithWebSocketTestCallback<WebSocketToTest extends ImplementedWebSock
 ) => MaybePromise<void>;
 
 /**
- * Test a WebSocket implementation by using this to generate an `it` callback.
+ * Test your WebSocket implementation with a real connection pipeline. This is used to generate an
+ * `it` callback and will automatically close the WebSocket connection at the end of the test.
  *
- * @category Testing
+ * You can also use {@link testWebSocket} to directly test a WebSocket but it does not automatically
+ * close the WebSocket.
+ *
+ * This should be used in backend testing to verify your WebSocket implementation.
+ *
+ * @category Testing : Backend
  * @category Package : @rest-vir/run-service
  * @example
  *

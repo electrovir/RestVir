@@ -7,5 +7,5 @@ export const startServiceMocksDirPath = join(
     'run-service',
     'src',
     'start-service',
-    'mocks',
+    'examples',
 );

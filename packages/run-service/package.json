@@ -1,8 +1,17 @@
 {
     "name": "@rest-vir/run-service",
     "version": "0.0.2",
-    "description": "",
-    "keywords": [],
+    "description": "Run a service defined by @rest-vir/define-service and implemented by @rest-vir/implement-service.",
+    "keywords": [
+        "rest",
+        "api",
+        "express",
+        "service",
+        "backend",
+        "server",
+        "websocket",
+        "vir"
+    ],
     "homepage": "https://github.com/electrovir/rest-vir",
     "bugs": {
         "url": "https://github.com/electrovir/rest-vir/issues"
@@ -22,9 +31,11 @@
     "types": "src/index.ts",
     "scripts": {
         "compile": "virmator compile",
+        "docs": "md-code README.md",
         "start": "tsx src/index.ts",
         "test": "virmator test node",
         "test:coverage": "npm run test coverage",
+        "test:docs": "npm run docs check",
         "test:update": "npm test update"
     },
     "dependencies": {
@@ -49,7 +60,8 @@
         "@types/node": "^22.13.4",
         "@types/ws": "^8.5.14",
         "c8": "^10.1.3",
-        "istanbul-smart-text-reporter": "^1.1.5"
+        "istanbul-smart-text-reporter": "^1.1.5",
+        "markdown-code-example-inserter": "^3.0.3"
     },
     "engines": {
         "node": ">=22"

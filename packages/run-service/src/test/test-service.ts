@@ -58,7 +58,7 @@ export type CondenseResponseOptions = {
 /**
  * Condense a response into just the interesting properties for easier testing comparisons.
  *
- * @category Testing
+ * @category Internal
  * @category Package : @rest-vir/run-service
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
@@ -172,16 +172,29 @@ export type TestServiceOptions = Overwrite<
 >;
 
 /**
- * Test your service with actual Request and Response objects!
+ * Test your service with actual Request and Response objects! The returned object includes
+ * utilities for sending fetch requests and WebSocket connections to the service.
  *
- * The returned object includes a function to send fetches to directly to the running service. See
- * also {@link describeService}, which uses this function.
+ * Make sure to use the `kill` output after your tests are finished. To automatically kill the
+ * server, use {@link describeService} instead.
  *
  * By default, this uses Fastify's request injection strategy to avoid using up real system ports.
- * To instead listen to an actual port, set `port` in the options parameter.
+ * To instead use an actual port, set `port` in the options parameter.
  *
- * @category Testing
+ * @category Internal
  * @category Package : @rest-vir/run-service
+ * @example
+ *
+ * ```ts
+ * import {testService} from '@rest-vir/run-service';
+ *
+ * const {connectWebsocket, kill, fetchEndpoint} = await testService(myServiceImplementation);
+ *
+ * // run tests
+ *
+ * await kill();
+ * ```
+ *
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
 export async function testService<
@@ -266,7 +279,7 @@ export async function testService<
  * By default, this uses Fastify's request injection strategy to avoid using up real system ports.
  * To instead listen to an actual port, set `port` in the options parameter.
  *
- * @category Testing
+ * @category Internal
  * @category Package : @rest-vir/run-service
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
@@ -432,7 +445,10 @@ export async function testExistingServer<
  * test runner to run tests for a service and automatically kill the service when all tests have
  * finished. The describe callback is passed a params object which includes a fetch function.
  *
- * @category Testing
+ * See {@link testService} for more control over how tests are run (but without automatic server
+ * shutdown).
+ *
+ * @category Testing : Backend
  * @category Package : @rest-vir/run-service
  * @example
  *

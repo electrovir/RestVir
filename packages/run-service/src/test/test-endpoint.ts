@@ -17,8 +17,16 @@ export type TestEndpoint = <EndpointToTest extends EndpointDefinition>(
 /**
  * Test your endpoint with real Request and Response objects!
  *
- * @category Testing
+ * @category Testing : Backend
  * @category Package : @rest-vir/run-service
+ * @example
+ *
+ * ```ts
+ * import {testEndpoint} from '@rest-vir/run-service';
+ *
+ * const response = await testEndpoint(myServiceImplementation.endpoints['/my-endpoint']);
+ * ```
+ *
  * @package [`@rest-vir/run-service`](https://www.npmjs.com/package/@rest-vir/run-service)
  */
 export const testEndpoint = async function testEndpoint<

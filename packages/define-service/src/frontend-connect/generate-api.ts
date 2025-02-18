@@ -81,6 +81,9 @@ export type RestVirApi<SpecificService extends ServiceDefinition> = {
  * import {generateApi} from '@rest-vir/define-service';
  *
  * export const myApi = generateApi(myServiceDefinition);
+ *
+ * myApi.endpoints['/my-endpoint'].fetch();
+ * myApi.webSockets['/my-web-socket'].connect();
  * ```
  *
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
@@ -179,11 +182,12 @@ export type MockExistingApi<
 >;
 
 /**
- * Overwrites an API's fetch and WebSocket connect methods with a mocked fetch function and a mocked
- * WebSocket constructor so you can have full control over them for unit-testing purposes. This way,
- * you can unit test your clients without spinning up a mock API server.
+ * Overwrites a generated API's fetch and WebSocket connect methods with a mocked fetch function and
+ * a mocked WebSocket constructor so you can have full control over them for unit-testing purposes.
  *
- * @category Testing
+ * With this, you can unit test your clients without spinning up a mock API server.
+ *
+ * @category Testing : Client (Frontend)
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */

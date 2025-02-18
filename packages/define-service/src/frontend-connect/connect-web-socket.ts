@@ -204,7 +204,7 @@ const defaultWebSocket = function (
 /**
  * Creates and connects a new client WebSocket instance with type safety.
  *
- * @category WebSocket
+ * @category Client (Frontend) Connection
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */

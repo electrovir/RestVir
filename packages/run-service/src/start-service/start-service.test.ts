@@ -124,6 +124,22 @@ describe(startService.name, () => {
                 HttpStatus.MethodNotAllowed,
             );
         });
+        it('passes path params an unexpected method', async ({fetchEndpoint}) => {
+            assert.deepEquals(
+                await (
+                    await fetchEndpoint('/with/first/second', {
+                        method: HttpMethod.Get,
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    })
+                ).json(),
+                {
+                    param1: 'first',
+                    param2: 'second',
+                },
+            );
+        });
         it('does not parse body when content type is not json', async ({fetchEndpoint}) => {
             assert.strictEquals(
                 (

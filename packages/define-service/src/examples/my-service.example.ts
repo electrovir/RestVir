@@ -1,23 +1,4 @@
-# @rest-vir/define-service
-
-Part of the rest-vir suite. This package is used for defining a declarative and type safe REST service with both endpoints and WebSockets.
-
-See the full docs at https://electrovir.github.io/rest-vir
-
-## Installation
-
-```sh
-npm i @rest-vir/define-service
-```
-
-## Usage
-
-Define your service:
-
-<!-- example-link: src/examples/my-service.example.ts -->
-
-```TypeScript
-import {AnyOrigin, defineService, HttpMethod} from '@rest-vir/define-service';
+import {AnyOrigin, defineService, HttpMethod} from '../index.js';
 
 export const myService = defineService({
     /** The name of your service. This will be visible to all consumers of this service definition. */
@@ -85,4 +66,3 @@ export const myService = defineService({
         },
     },
 });
-```

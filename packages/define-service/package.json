@@ -1,14 +1,15 @@
 {
     "name": "@rest-vir/define-service",
     "version": "0.0.2",
-    "description": "Declarative and type safe service definition.",
+    "description": "Define an connect to a declarative and type safe REST and WebSocket service.",
     "keywords": [
         "rest",
         "api",
         "express",
         "service",
-        "frontend",
         "backend",
+        "server",
+        "websocket",
         "vir"
     ],
     "homepage": "https://github.com/electrovir/rest-vir",
@@ -31,11 +32,11 @@
     "scripts": {
         "build": "virmator frontend build",
         "compile": "virmator compile",
-        "docs": "virmator docs",
+        "docs": "md-code README.md",
         "start": "virmator frontend",
         "test": "virmator test web",
         "test:coverage": "npm run test coverage",
-        "test:docs": "virmator docs check",
+        "test:docs": "npm run docs check",
         "test:update": "npm test update"
     },
     "dependencies": {

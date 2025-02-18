@@ -60,13 +60,15 @@ export type MockClientWebSocketOptions<WebSocketToConnect extends WebSocketDefin
     }>;
 
 /**
- * Creates a {@link MockClientWebSocket} constructor for connections from the client side with types
- * for the given {@link WebSocketDefinition} and utilizing the given
+ * Use this to create a mock WebSocket constructor for unit testing Web Socket connection.
+ *
+ * This creates a {@link MockClientWebSocket} constructor for connections from the client side with
+ * types for the given {@link WebSocketDefinition} and utilizing the given
  * {@link MockClientWebSocketOptions} instance. This can be passed to `connectWebSocket` as the
  * `webSocketConstructor` to allow unit testing on a client without spinning up an entire host to
  * serve the WebSocket connection.
  *
- * @category Testing
+ * @category Testing : Client (Frontend)
  * @category Package : @rest-vir/define-service
  * @example
  *
@@ -123,7 +125,7 @@ export type MockClientWebSocketListeners = Partial<{
  * `connectWebSocket` as the `webSocketConstructor` to allow unit testing on a client without
  * spinning up an entire host to serve the WebSocket connection.
  *
- * @category Testing
+ * @category Internal
  * @category Package : @rest-vir/define-service
  * @example
  *

@@ -8,7 +8,7 @@ import {match} from '../util/path-to-regexp.js';
  * Given a raw path or URL, finds an endpoint or WebSocket path that will match in the given
  * service. If no match is found, this returns `undefined`.
  *
- * @category Util
+ * @category Internal
  * @category Package : @rest-vir/implement-service
  * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
  */

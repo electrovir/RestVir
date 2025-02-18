@@ -229,14 +229,13 @@ export async function findLivePort(
 }
 
 /**
- * Creates a copy of a service definition (without mutating the original service definition) for dev
- * environments where the service's port has been modified to match an actual running instance of
- * this service.
+ * Creates a copy of a service definition (without mutating the original service definition) that
+ * maps the service's origin port to find the live port that's actually running.
  *
- * This is useful for situations where your backend in dev automatically starts on a different port
- * if the original port is already in use.
+ * This is useful for situations in dev where backend automatically starts on a different port if
+ * the original port is already in use.
  *
- * @category Define Service
+ * @category Client (Frontend) Connection
  * @category Package : @rest-vir/define-service
  * @example
  *
