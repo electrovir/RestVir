@@ -38,10 +38,10 @@
     "devDependencies": {
         "@eslint/eslintrc": "^3.2.0",
         "@eslint/js": "^9.14.0",
-        "@stylistic/eslint-plugin": "^4.0.0",
-        "@stylistic/eslint-plugin-ts": "^4.0.0",
+        "@stylistic/eslint-plugin": "^4.0.1",
+        "@stylistic/eslint-plugin-ts": "^4.0.1",
         "@typescript-eslint/eslint-plugin": "^8.24.1",
-        "cspell": "^8.17.3",
+        "cspell": "^8.17.4",
         "dependency-cruiser": "^16.10.0",
         "esbuild": "^0.25.0",
         "eslint": "^9.14.0",
@@ -71,7 +71,6 @@
         "node": ">=22"
     },
     "overrides": {
-        "playwright": "1.46.1",
-        "esbuild": "^0.25.0"
+        "playwright": "1.46.1"
     }
 }
