@@ -46,7 +46,7 @@
         "fastify": "^5.2.1",
         "object-shape-tester": "^5.1.1",
         "path-to-regexp": "^8.2.0",
-        "type-fest": "^4.34.1"
+        "type-fest": "^4.35.0"
     },
     "devDependencies": {
         "@augment-vir/test": "^31.9.1",

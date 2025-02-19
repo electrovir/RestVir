@@ -24,7 +24,7 @@
     },
     "dependencies": {
         "@virmator/docs": "^13.13.0",
-        "type-fest": "^4.34.1",
+        "type-fest": "^4.35.0",
         "typedoc": "^0.27.7"
     },
     "engines": {
