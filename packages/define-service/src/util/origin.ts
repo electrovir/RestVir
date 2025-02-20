@@ -1,17 +1,32 @@
+import {check} from '@augment-vir/assert';
 import {MaybePromise} from '@augment-vir/common';
 import {classShape, or} from 'object-shape-tester';
 
 /**
- * Explicity denotes that any origin is allowed.
+ * Explicity denotes that any origin is allowed. Use {@link isAnyOrigin} to check if something is
+ * equal to this.
  *
  * @category Internal
  * @category Package : @rest-vir/define-service
  * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
  */
-export const AnyOrigin = Symbol('any-origin');
+export const AnyOrigin = {
+    anyOrigin: true,
+};
 
 /**
- * Type for {@link AnyOrigin} symbol.
+ * Checks if the input is equal to {@link AnyOrigin}.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
+ */
+export function isAnyOrigin(input: unknown): input is AnyOrigin {
+    return check.jsonEquals(input, AnyOrigin);
+}
+
+/**
+ * Type for {@link AnyOrigin}.
  *
  * @category Internal
  * @category Package : @rest-vir/define-service

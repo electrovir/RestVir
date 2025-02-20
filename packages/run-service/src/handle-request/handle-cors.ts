@@ -4,6 +4,7 @@ import {
     AnyOrigin,
     EndpointDefinition,
     getAllowedEndpointMethods,
+    isAnyOrigin,
     OriginRequirement,
     type WebSocketDefinition,
 } from '@rest-vir/define-service';
@@ -83,7 +84,7 @@ export async function handleCors(
 }
 
 function buildStandardCorsHeaders(matchedOrigin: NonNullable<MatchedOrigin>): OutgoingHttpHeaders {
-    if (matchedOrigin === AnyOrigin) {
+    if (isAnyOrigin(matchedOrigin)) {
         return {
             'Access-Control-Allow-Origin': '*',
         };
@@ -159,7 +160,7 @@ async function matchOrigin(
 ): Promise<MatchedOrigin> {
     const endpointRequirement = await checkOriginRequirement(endpoint.requiredClientOrigin, origin);
 
-    if (endpointRequirement === AnyOrigin) {
+    if (isAnyOrigin(endpointRequirement)) {
         return AnyOrigin;
     } else if (endpointRequirement === false) {
         return undefined;
@@ -174,7 +175,7 @@ async function matchOrigin(
         origin,
     );
 
-    if (serviceRequirement === AnyOrigin) {
+    if (isAnyOrigin(serviceRequirement)) {
         return AnyOrigin;
     } else if (serviceRequirement === false) {
         return undefined;
@@ -203,7 +204,7 @@ async function checkOriginRequirement(
     originRequirement: OriginRequirement,
     origin: string | undefined,
 ): Promise<OriginRequirementResult> {
-    if (originRequirement === AnyOrigin) {
+    if (isAnyOrigin(originRequirement)) {
         /** Any origin has been explicitly allowed. */
         return AnyOrigin;
     } else if (originRequirement === undefined) {
