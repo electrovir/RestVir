@@ -6,7 +6,6 @@
 *.mock.*
 *.test.*
 *.tgz
-**/*/test/
 /configs/
 /coverage/
 /cspell.config.cjs

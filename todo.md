@@ -1,6 +1,8 @@
 ## Required
 
--   fill in mono-repo README
+-   don't use a symbol for `AnyOrigin` because it makes version compatibility terrible
+-   make `object-shape-tester` a peer dependency
+-   don't accept port and host inputs to start service because the service definition already contains this.
 
 ## Not required
 
