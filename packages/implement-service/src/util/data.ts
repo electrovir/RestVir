@@ -35,5 +35,5 @@ export type ServerResponse = FastifyReply;
  * @category Package : @rest-vir/implement-service
  * @package [`@rest-vir/implement-service`](https://www.npmjs.com/package/@rest-vir/implement-service)
  */
-export type ServerWebSocket<SpecificWebSocket extends WebSocketDefinition | NoParam> =
+export type ServerWebSocket<SpecificWebSocket extends WebSocketDefinition | NoParam = NoParam> =
     OverwriteWebSocketMethods<WsWebSocket, WebSocketLocation.OnHost, SpecificWebSocket>;
