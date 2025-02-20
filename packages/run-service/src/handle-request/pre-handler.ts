@@ -8,11 +8,11 @@ import {
     type SelectFrom,
 } from '@augment-vir/common';
 import {
+    matchUrlToService,
     restVirServiceNameHeader,
     type EndpointDefinition,
     type WebSocketDefinition,
 } from '@rest-vir/define-service';
-import {matchUrlToService} from '@rest-vir/define-service/src/service/match-url.js';
 import {
     ContextInitParameters,
     GenericServiceImplementation,
