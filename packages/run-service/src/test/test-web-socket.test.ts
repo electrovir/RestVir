@@ -1,7 +1,27 @@
-import {assert} from '@augment-vir/assert';
+import {assert, waitUntil} from '@augment-vir/assert';
 import {describe, it} from '@augment-vir/test';
 import {mockServiceImplementation} from '@rest-vir/implement-service/src/implementation/implement-service.mock.js';
-import {withWebSocketTest} from './test-web-socket.js';
+import {testWebSocket, withWebSocketTest} from './test-web-socket.js';
+
+describe(testWebSocket.name, () => {
+    it('fires open listener', async () => {
+        let opened = false;
+        const webSocket = await testWebSocket(
+            mockServiceImplementation.webSockets['/no-client-data'],
+            {
+                listeners: {
+                    open() {
+                        opened = true;
+                    },
+                },
+            },
+        );
+
+        await waitUntil.isTrue(() => opened);
+
+        webSocket.close();
+    });
+});
 
 describe(withWebSocketTest.name, () => {
     it(

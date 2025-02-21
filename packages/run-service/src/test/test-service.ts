@@ -31,6 +31,7 @@ import fastify, {FastifyInstance} from 'fastify';
 import {type InjectOptions} from 'light-my-request';
 import {type OutgoingHttpHeaders} from 'node:http';
 import {buildUrl, parseUrl} from 'url-vir';
+import type WsSocket from 'ws';
 import {HandleRouteOptions} from '../handle-request/endpoint-handler.js';
 import {attachService} from '../start-service/attach-service.js';
 import {
@@ -405,7 +406,7 @@ export async function testExistingServer<
 
                 assertValidWebSocketProtocols(protocols);
 
-                const webSocket =
+                const webSocket: globalThis.WebSocket =
                     webSocketOrigin == undefined
                         ? ((await server.injectWS(
                               parseUrl(webSocketUrl).pathname,
@@ -425,6 +426,21 @@ export async function testExistingServer<
                     listeners,
                     WebSocketLocation.OnClient,
                 );
+
+                if (webSocketOrigin == undefined) {
+                    /**
+                     * `injectWS` gives us a WebSocket from the `ws` package with a slightly
+                     * different interface.
+                     */
+                    webSocket.dispatchEvent = (event: Event) => {
+                        return (webSocket as any as WsSocket).emit(event.type, event);
+                    };
+                    /**
+                     * `injectWS` does not fire the `'open'` event so we have to do it manually
+                     * here.
+                     */
+                    webSocket.dispatchEvent(new Event('open'));
+                }
 
                 return finalized;
             };
