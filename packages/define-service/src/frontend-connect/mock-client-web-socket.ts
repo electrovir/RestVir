@@ -117,7 +117,7 @@ export function createMockClientWebSocketConstructor<
  */
 export type MockClientWebSocketListeners = Partial<{
     [EventName in keyof CommonWebSocketEventMap]: Set<
-        (event: CommonWebSocketEventMap[EventName]) => void
+        (event: CommonWebSocketEventMap[EventName]) => MaybePromise<void>
     >;
 }>;
 /**
@@ -241,13 +241,13 @@ export class MockClientWebSocket<const WebSocketToConnect extends WebSocketDefin
         eventName: EventName,
         event: Omit<CommonWebSocketEventMap[EventName], 'type' | 'target'>,
     ) {
-        this.listeners[eventName]?.forEach((listener) =>
-            listener({
+        this.listeners[eventName]?.forEach((listener) => {
+            void listener({
                 ...event,
                 target: this,
                 type: eventName,
-            } as AnyObject as CommonWebSocketEventMap[EventName]),
-        );
+            } as AnyObject as CommonWebSocketEventMap[EventName]);
+        });
     }
 
     /**
@@ -258,7 +258,7 @@ export class MockClientWebSocket<const WebSocketToConnect extends WebSocketDefin
      */
     public addEventListener<const EventName extends keyof CommonWebSocketEventMap>(
         eventName: EventName,
-        listener: (event: CommonWebSocketEventMap[EventName]) => void,
+        listener: (event: CommonWebSocketEventMap[EventName]) => MaybePromise<void>,
     ): void {
         getOrSet(this.listeners, eventName, () => new Set<any>()).add(listener as any);
     }
@@ -270,7 +270,7 @@ export class MockClientWebSocket<const WebSocketToConnect extends WebSocketDefin
      */
     public removeEventListener<const EventName extends keyof CommonWebSocketEventMap>(
         eventName: EventName,
-        listener: (event: CommonWebSocketEventMap[EventName]) => void,
+        listener: (event: CommonWebSocketEventMap[EventName]) => MaybePromise<void>,
     ): void {
         this.listeners[eventName]?.delete(listener);
     }
@@ -299,8 +299,9 @@ export class MockClientWebSocket<const WebSocketToConnect extends WebSocketDefin
         if (this.readyState !== CommonWebSocketState.Open) {
             return;
         }
+
         this.dispatchEvent('message', {
-            data,
+            data: JSON.stringify(data),
         });
 
         void this.sendCallback?.({
