@@ -77,16 +77,11 @@ describe(testWebSocket.name, () => {
             `never got message: ${stringify(listeners)}`,
         );
 
-        webSocket.close();
+        await webSocket.close();
 
         await waitUntil.isTrue(
             () => listeners.closedOnClient && listeners.closedOnServer,
-            {
-                timeout: {
-                    /** For some reason closing a WebSocket takes _forever_! */
-                    minutes: 5,
-                },
-            },
+            undefined,
             `never closed: ${stringify(listeners)}`,
         );
     });

@@ -1,6 +1,7 @@
 import {waitUntil} from '@augment-vir/assert';
 import {
     AnyObject,
+    callAsynchronously,
     DeferredPromise,
     ensureErrorAndPrependMessage,
     getOrSet,
@@ -187,6 +188,11 @@ export type OverwriteWebSocketMethods<
 > = Overwrite<
     WebSocketClass,
     {
+        /**
+         * Closes the WebSocket and waits it to actually close (so that you _know_ it's been closed
+         * once this resolves).
+         */
+        close(): Promise<void>;
         /**
          * Adds an event listener that's wrapped in assertions to verify that message events have
          * the expected contents.
@@ -453,6 +459,7 @@ export function overwriteWebSocketMethods<
     webSocketLocation: Location,
 ): OverwriteWebSocketMethods<WebSocketClass, Location, WebSocketToConnect> {
     const originalSend = rawWebSocket.send;
+    const originalClose = rawWebSocket.close;
     const originalAddEventListener = rawWebSocket.addEventListener;
     const originalRemoveEventListener = rawWebSocket.removeEventListener;
 
@@ -462,10 +469,30 @@ export function overwriteWebSocketMethods<
         WebSocketToConnect
     >;
 
+    const deferredClosePromise = new DeferredPromise();
+
+    webSocket.addEventListener('close', () => {
+        /**
+         * Call this asynchronously so the other `close` event listeners get fired before this
+         * resolves.
+         */
+        void callAsynchronously(() => {
+            deferredClosePromise.resolve();
+        });
+    });
+
     const originalListenerMap: Record<string, WeakMap<AnyFunction, AnyFunction>> = {};
 
     Object.assign(webSocket, {
         originalListenerMap,
+        async close() {
+            originalClose.call(webSocket);
+            /**
+             * Closing takes a _long time_ for some reason, so we want to wait until it's actually
+             * done before proceeding with other operations.
+             */
+            await deferredClosePromise.promise;
+        },
         addEventListener<const EventName extends keyof CommonWebSocketEventMap>(
             this: CommonWebSocket,
             eventName: EventName,

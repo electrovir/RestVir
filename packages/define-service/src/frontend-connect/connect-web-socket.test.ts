@@ -69,7 +69,7 @@ describe(connectWebSocket.name, () => {
         };
         clientWebSocket.send();
 
-        clientWebSocket.close();
+        await clientWebSocket.close();
 
         assert.deepEquals(events, [
             'open',
@@ -236,7 +236,7 @@ describe(connectWebSocket.name, () => {
         clientWebSocket.send();
         clientWebSocket.sendFromHost('ok');
 
-        clientWebSocket.close();
+        await clientWebSocket.close();
 
         clientWebSocket.send();
         clientWebSocket.sendFromHost('ok');

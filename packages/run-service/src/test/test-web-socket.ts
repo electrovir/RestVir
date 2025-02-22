@@ -114,6 +114,6 @@ export function withWebSocketTest<const WebSocketToTest extends ImplementedWebSo
 
         await callback(clientWebSocket as any);
 
-        clientWebSocket.close();
+        await clientWebSocket.close();
     };
 }

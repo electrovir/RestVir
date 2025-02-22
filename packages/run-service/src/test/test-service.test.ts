@@ -143,7 +143,7 @@ describe(testService.name, () => {
 
                 assert.strictEquals(messageReceived, 'from server');
             } finally {
-                webSocket.close();
+                await webSocket.close();
             }
         } finally {
             await kill();
@@ -179,7 +179,7 @@ describe(testService.name, () => {
 
                 assert.strictEquals(messageReceived, 'from server');
             } finally {
-                webSocket.close();
+                await webSocket.close();
             }
         } finally {
             await kill();
