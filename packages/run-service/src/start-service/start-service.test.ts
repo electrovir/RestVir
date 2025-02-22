@@ -361,7 +361,7 @@ describe(startService.name, () => {
                     headers: {
                         'access-control-allow-credentials': 'true',
                         'access-control-allow-headers': 'Cookie,Authorization,Content-Type',
-                        'access-control-allow-methods': 'GET',
+                        'access-control-allow-methods': 'GET,OPTIONS',
                         'access-control-allow-origin': 'https://example.com',
                         'access-control-max-age': '3600',
                         vary: 'Origin',
@@ -434,7 +434,7 @@ describe(startService.name, () => {
                     headers: {
                         'access-control-allow-credentials': 'true',
                         'access-control-allow-headers': 'Cookie,Authorization,Content-Type',
-                        'access-control-allow-methods': 'GET',
+                        'access-control-allow-methods': 'GET,OPTIONS',
                         'access-control-allow-origin': 'https://example.com',
                         'access-control-max-age': '3600',
                         vary: 'Origin',
@@ -468,7 +468,7 @@ describe(startService.name, () => {
                     status: HttpStatus.NoContent,
                     headers: {
                         'access-control-allow-headers': 'Cookie,Authorization,Content-Type',
-                        'access-control-allow-methods': 'GET',
+                        'access-control-allow-methods': 'GET,OPTIONS',
                         'access-control-allow-origin': '*',
                         'access-control-max-age': '3600',
                     },

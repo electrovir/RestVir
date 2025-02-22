@@ -119,7 +119,10 @@ function buildOptionsRequestCorsHeaders(
 
     return {
         ...buildStandardCorsHeaders(matchedOrigin),
-        'Access-Control-Allow-Methods': allowedMethods.join(','),
+        'Access-Control-Allow-Methods': [
+            allowedMethods,
+            HttpMethod.Options,
+        ].join(','),
         'Access-Control-Allow-Headers': [
             'Cookie',
             'Authorization',
