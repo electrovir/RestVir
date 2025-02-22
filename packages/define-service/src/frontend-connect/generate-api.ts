@@ -50,15 +50,9 @@ export type RestVirApi<SpecificService extends ServiceDefinition> = {
                   connect(
                       ...params: CollapsedConnectWebSocketParams<
                           SpecificService['webSockets'][WebSocketPath],
-                          false,
-                          globalThis.WebSocket
+                          false
                       >
-                  ): Promise<
-                      ClientWebSocket<
-                          SpecificService['webSockets'][WebSocketPath],
-                          globalThis.WebSocket
-                      >
-                  >;
+                  ): Promise<ClientWebSocket<SpecificService['webSockets'][WebSocketPath]>>;
               }
             : never;
     };
@@ -104,11 +98,7 @@ export function generateApi<const SpecificService extends ServiceDefinition>(
             return {
                 ...webSocketDefinition,
                 connect: (
-                    ...params: CollapsedConnectWebSocketParams<
-                        WebSocketDefinition,
-                        false,
-                        globalThis.WebSocket
-                    >
+                    ...params: CollapsedConnectWebSocketParams<WebSocketDefinition, false>
                 ) => {
                     return connectWebSocket(webSocketDefinition, ...(params as [any]));
                 },

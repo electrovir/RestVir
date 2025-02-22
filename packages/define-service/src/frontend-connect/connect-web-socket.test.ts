@@ -7,12 +7,14 @@ import {
     GenericConnectWebSocketParams,
     getOppositeWebSocketLocation,
     WebSocketLocation,
+    type ClientWebSocket,
 } from '../web-socket/overwrite-web-socket-methods.js';
 import {
     buildWebSocketUrl,
     connectWebSocket,
     type CollapsedConnectWebSocketParams,
 } from './connect-web-socket.js';
+import {mockServiceApi} from './generate-api.mock.js';
 import {
     createMockClientWebSocketConstructor,
     MockClientWebSocket,
@@ -30,6 +32,24 @@ describe('CollapsedConnectWebSocketParams', () => {
 });
 
 describe(connectWebSocket.name, () => {
+    it('is assignable to a client web socket', async () => {
+        /** These will fail because there isn't a server responding. */
+        await assert.throws(async () => {
+            const webSockets: ClientWebSocket<
+                (typeof mockService.webSockets)['/no-client-data']
+            >[] = [
+                await mockServiceApi.webSockets['/no-client-data'].connect(),
+                await connectWebSocket(mockService.webSockets['/no-client-data']),
+            ];
+            const webSockets2: ClientWebSocket<
+                (typeof mockServiceApi)['webSockets']['/no-client-data']
+            >[] = [
+                await mockServiceApi.webSockets['/no-client-data'].connect(),
+                await connectWebSocket(mockService.webSockets['/no-client-data']),
+            ];
+        });
+    });
+
     it('receives events', async () => {
         const events: string[] = [];
 

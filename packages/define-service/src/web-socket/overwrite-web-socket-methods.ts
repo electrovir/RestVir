@@ -175,6 +175,37 @@ export type CollapsedSendAndWaitForReplyParams<
         : [SendAndWaitForReplyParams<Location, WebSocketToConnect>?];
 
 /**
+ * Narrows a {@link WebSocketDefinition} for use within {@link OverwriteWebSocketMethods}.
+ *
+ * @category Internal
+ * @category Package : @rest-vir/define-service
+ * @package [`@rest-vir/define-service`](https://www.npmjs.com/package/@rest-vir/define-service)
+ */
+export type NarrowOriginalDefinition<
+    OriginalWebSocketDefinition extends
+        | Readonly<
+              SelectFrom<
+                  WebSocketDefinition,
+                  {
+                      MessageFromClientType: true;
+                      MessageFromHostType: true;
+                      SearchParamsType: true;
+                  }
+              >
+          >
+        | NoParam = NoParam,
+> = OriginalWebSocketDefinition extends NoParam
+    ? NoParam
+    : Omit<
+          OriginalWebSocketDefinition,
+          /**
+           * Omit connect so this is compatible with API WebSocket objects (which have a `connect`
+           * method).
+           */
+          'connect'
+      >;
+
+/**
  * Takes any WebSocket class and overwrites it with some new rest vir methods and makes some
  * existing WebSocket methods type safe.
  *
@@ -213,7 +244,7 @@ export type OverwriteWebSocketMethods<
             eventName: EventName,
             listener: WebSocketListener<
                 EventName,
-                OriginalWebSocketDefinition,
+                NarrowOriginalDefinition<OriginalWebSocketDefinition>,
                 FlipWebSocketLocation<Location>,
                 WebSocketClass
             >,
@@ -226,12 +257,15 @@ export type OverwriteWebSocketMethods<
          * message as it will catch _any_ message sent from the other side.
          */
         sendAndWaitForReply(
-            ...params: CollapsedSendAndWaitForReplyParams<Location, OriginalWebSocketDefinition>
+            ...params: CollapsedSendAndWaitForReplyParams<
+                Location,
+                NarrowOriginalDefinition<OriginalWebSocketDefinition>
+            >
         ): Promise<
-            OriginalWebSocketDefinition extends NoParam
+            NarrowOriginalDefinition<OriginalWebSocketDefinition> extends NoParam
                 ? any
                 : GetWebSocketMessageTypeFromLocation<
-                      Exclude<OriginalWebSocketDefinition, NoParam>,
+                      Exclude<NarrowOriginalDefinition<OriginalWebSocketDefinition>, NoParam>,
                       FlipWebSocketLocation<Location>
                   >
         >;
@@ -244,21 +278,21 @@ export type OverwriteWebSocketMethods<
          * `WebSocket.send()` docs.
          */
         send(
-            ...args: OriginalWebSocketDefinition extends NoParam
+            ...args: NarrowOriginalDefinition<OriginalWebSocketDefinition> extends NoParam
                 ? [message?: any]
                 : GetWebSocketMessageTypeFromLocation<
-                        Exclude<OriginalWebSocketDefinition, NoParam>,
+                        Exclude<NarrowOriginalDefinition<OriginalWebSocketDefinition>, NoParam>,
                         Location
                     > extends undefined
                   ? [
                         message?: GetWebSocketMessageTypeFromLocation<
-                            Exclude<OriginalWebSocketDefinition, NoParam>,
+                            Exclude<NarrowOriginalDefinition<OriginalWebSocketDefinition>, NoParam>,
                             Location
                         >,
                     ]
                   : [
                         message: GetWebSocketMessageTypeFromLocation<
-                            Exclude<OriginalWebSocketDefinition, NoParam>,
+                            Exclude<NarrowOriginalDefinition<OriginalWebSocketDefinition>, NoParam>,
                             Location
                         >,
                     ]
