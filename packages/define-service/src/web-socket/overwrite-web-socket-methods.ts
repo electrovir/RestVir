@@ -9,6 +9,7 @@ import {
     Overwrite,
     SelectFrom,
     stringify,
+    wrapInTry,
     type AnyFunction,
     type Values,
 } from '@augment-vir/common';
@@ -134,6 +135,17 @@ export type SendAndWaitForReplyParams<
      * @default {seconds: 10}
      */
     timeout?: Readonly<AnyDuration> | undefined;
+    /**
+     * An optional function to check if the current reply is the one you were waiting for.
+     *
+     * If this is set, `sendAndWaitForReply` will wait until a reply is received that matches this
+     * condition. If this not set, the first reply is used.
+     */
+    replyCheck?: (
+        messageFromHost: WebSocketToConnect extends NoParam
+            ? any
+            : Exclude<WebSocketToConnect, NoParam>['MessageFromHostType'],
+    ) => MaybePromise<boolean>;
 };
 
 /**
@@ -573,10 +585,11 @@ export function overwriteWebSocketMethods<
         async sendAndWaitForReply({
             message,
             timeout = {seconds: 10},
+            replyCheck,
         }: SendAndWaitForReplyParams<Location> | undefined = {}) {
             const deferredReply = new DeferredPromise<any>();
 
-            function listener({
+            async function listener({
                 message,
             }: WebSocketListenerParams<
                 'message',
@@ -585,7 +598,12 @@ export function overwriteWebSocketMethods<
                 WebSocketClass
             >) {
                 if (!deferredReply.isSettled) {
-                    deferredReply.resolve(message);
+                    const matchesChecker = replyCheck
+                        ? (await wrapInTry(() => replyCheck(message))) === true
+                        : true;
+                    if (matchesChecker) {
+                        deferredReply.resolve(message);
+                    }
                 }
             }
             setTimeout(

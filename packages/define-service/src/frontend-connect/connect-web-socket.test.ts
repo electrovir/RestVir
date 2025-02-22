@@ -137,6 +137,26 @@ describe(connectWebSocket.name, () => {
 
         assert.strictEquals(await replyPromise, 'ok');
     });
+    it('waits for a reply that matches replyCheck', async () => {
+        const clientWebSocket = await connectWebSocket(mockService.webSockets['/sends-protocol'], {
+            webSocketConstructor: MockClientWebSocket<
+                (typeof mockService.webSockets)['/sends-protocol']
+            >,
+        });
+
+        const replyPromise = clientWebSocket.sendAndWaitForReply({
+            replyCheck(messageFromHost) {
+                return messageFromHost[0] === 'c';
+            },
+        });
+
+        await wait({milliseconds: 100});
+        clientWebSocket.sendFromHost(['a']);
+        clientWebSocket.sendFromHost(['b']);
+        clientWebSocket.sendFromHost(['c']);
+
+        assert.deepEquals(await replyPromise, ['c']);
+    });
     it('fails if WebSocket emits error while opening', async () => {
         class ImmediateErrorMockWebSocket extends MockClientWebSocket<
             (typeof mockService.webSockets)['/no-client-data']
