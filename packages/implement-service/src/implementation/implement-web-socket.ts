@@ -34,10 +34,25 @@ export type WebSocketImplementation<
     ServiceName extends string = any,
     SpecificWebSocket extends WebSocketDefinition | NoParam = NoParam,
 > = SpecificWebSocket extends NoParam
-    ? any
+    ? Partial<{
+          /** This will be called when the WebSocket is opened and created. */
+          open: (params: any) => MaybePromise<void>;
+          /**
+           * This will be called on every received WebSocket message.
+           *
+           * @see https://github.com/websockets/ws/blob/HEAD/doc/ws.md#event-message
+           */
+          message: (params: any) => MaybePromise<void>;
+          /**
+           * This will be called when the WebSocket is closed.
+           *
+           * @see https://github.com/websockets/ws/blob/HEAD/doc/ws.md#event-close-1
+           */
+          close: (params: any) => MaybePromise<void>;
+      }>
     : Partial<{
-          /** This will be called when the WebSocket is connected and created. */
-          onConnection: (
+          /** This will be called when the WebSocket is opened and created. */
+          open: (
               params: WebSocketImplementationParams<Context, ServiceName, SpecificWebSocket, false>,
           ) => MaybePromise<void>;
           /**
@@ -45,7 +60,7 @@ export type WebSocketImplementation<
            *
            * @see https://github.com/websockets/ws/blob/HEAD/doc/ws.md#event-message
            */
-          onMessage: (
+          message: (
               params: WebSocketImplementationParams<Context, ServiceName, SpecificWebSocket, true>,
           ) => MaybePromise<void>;
           /**
@@ -53,7 +68,7 @@ export type WebSocketImplementation<
            *
            * @see https://github.com/websockets/ws/blob/HEAD/doc/ws.md#event-close-1
            */
-          onClose: (
+          close: (
               params: WebSocketImplementationParams<Context, ServiceName, SpecificWebSocket, false>,
           ) => MaybePromise<void>;
       }>;

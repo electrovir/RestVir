@@ -57,13 +57,13 @@ export async function handleWebSocketRequest(
         searchParams: restVirContext.searchParams,
     };
 
-    if (implementedWebSocket.implementation.onClose) {
+    if (implementedWebSocket.implementation.close) {
         webSocket.on('close', async () => {
-            await implementedWebSocket.implementation.onClose?.(webSocketCallbackParams);
+            await implementedWebSocket.implementation.close?.(webSocketCallbackParams);
         });
     }
 
-    if (implementedWebSocket.implementation.onMessage) {
+    if (implementedWebSocket.implementation.message) {
         webSocket.on('message', async (rawMessage) => {
             let message: unknown;
             try {
@@ -97,7 +97,7 @@ export async function handleWebSocketRequest(
                 );
             }
             try {
-                await implementedWebSocket.implementation.onMessage?.({
+                await implementedWebSocket.implementation.message?.({
                     ...webSocketCallbackParams,
                     message,
                 });
@@ -114,7 +114,7 @@ export async function handleWebSocketRequest(
         });
     }
 
-    if (implementedWebSocket.implementation.onConnection) {
-        await implementedWebSocket.implementation.onConnection(webSocketCallbackParams);
+    if (implementedWebSocket.implementation.open) {
+        await implementedWebSocket.implementation.open(webSocketCallbackParams);
     }
 }

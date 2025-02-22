@@ -51,8 +51,10 @@ export const testWebSocket = async function testWebSocket<
 
     const webSocket = await (connectWebSocket[webSocketImplementation.path] as AnyFunction)(params);
 
-    webSocket.addEventListener('close', async () => {
-        await kill();
+    webSocket.addEventListener('close', () => {
+        setTimeout(async () => {
+            await kill();
+        }, 1000);
     });
     return webSocket;
 } as TestWebSocket;

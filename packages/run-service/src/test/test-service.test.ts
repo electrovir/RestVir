@@ -83,7 +83,7 @@ const plainService = implementService(
         },
         webSockets: {
             '/socket': {
-                onMessage({message, webSocket}) {
+                message({message, webSocket}) {
                     assert.strictEquals(message, 'from client');
                     webSocket.send('from server');
                 },

@@ -300,7 +300,7 @@ describe(implementService.name, () => {
                     {
                         webSockets: {
                             '/test': {
-                                onClose: 'hi',
+                                close: 'hi',
                             },
                         },
                     },

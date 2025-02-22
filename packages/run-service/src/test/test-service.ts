@@ -435,10 +435,7 @@ export async function testExistingServer<
                     webSocket.dispatchEvent = (event: Event) => {
                         return (webSocket as any as WsSocket).emit(event.type, event);
                     };
-                    /**
-                     * `injectWS` does not fire the `'open'` event so we have to do it manually
-                     * here.
-                     */
+                    /** `injectWS` fires the `'open'` event before we have a chance to listen to it. */
                     webSocket.dispatchEvent(new Event('open'));
                 }
 

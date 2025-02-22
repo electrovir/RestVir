@@ -1,25 +1,94 @@
 import {assert, waitUntil} from '@augment-vir/assert';
+import {stringify} from '@augment-vir/common';
 import {describe, it} from '@augment-vir/test';
+import {AnyOrigin, defineService} from '@rest-vir/define-service';
+import {implementService} from '@rest-vir/implement-service';
 import {mockServiceImplementation} from '@rest-vir/implement-service/src/implementation/implement-service.mock.js';
 import {testWebSocket, withWebSocketTest} from './test-web-socket.js';
 
 describe(testWebSocket.name, () => {
-    it('fires open listener', async () => {
-        let opened = false;
+    it('fires listeners', async () => {
+        const listeners = {
+            closedOnClient: false,
+            closedOnServer: false,
+            openedOnClient: false,
+            openedOnServer: false,
+            messageOnClient: false,
+            messageOnServer: false,
+        };
         const webSocket = await testWebSocket(
-            mockServiceImplementation.webSockets['/no-client-data'],
+            implementService(
+                {
+                    service: defineService({
+                        requiredClientOrigin: AnyOrigin,
+                        serviceName: 'test',
+                        serviceOrigin: 'http://localhost:3000',
+                        webSockets: {
+                            '/socket': {
+                                messageFromClientShape: undefined,
+                                messageFromHostShape: undefined,
+                            },
+                        },
+                    }),
+                },
+                {
+                    webSockets: {
+                        '/socket': {
+                            open() {
+                                listeners.openedOnServer = true;
+                            },
+                            close() {
+                                listeners.closedOnServer = true;
+                            },
+                            message({webSocket}) {
+                                listeners.messageOnServer = true;
+                                webSocket.send();
+                            },
+                        },
+                    },
+                },
+            ).webSockets['/socket'],
             {
                 listeners: {
                     open() {
-                        opened = true;
+                        listeners.openedOnClient = true;
+                    },
+                    close() {
+                        listeners.closedOnClient = true;
+                    },
+                    message() {
+                        listeners.messageOnClient = true;
                     },
                 },
             },
         );
 
-        await waitUntil.isTrue(() => opened);
+        await waitUntil.isTrue(
+            () => listeners.openedOnClient && listeners.openedOnServer,
+            undefined,
+            `never opened: ${stringify(listeners)}`,
+        );
+
+        webSocket.send();
+
+        await waitUntil.isTrue(
+            () => listeners.messageOnClient && listeners.messageOnServer,
+            undefined,
+            `never got message: ${stringify(listeners)}`,
+        );
 
         webSocket.close();
+
+        await waitUntil.isTrue(
+            () => listeners.closedOnClient && listeners.closedOnServer,
+            {
+                timeout: {
+                    /** For some reason closing a WebSocket takes _forever_! */
+                    minutes: 5,
+                },
+            },
+            `never closed: ${stringify(listeners)}`,
+        );
     });
 });
 

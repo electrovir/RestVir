@@ -23,7 +23,7 @@ export const myServiceImplementation = implementService(
         },
         webSockets: {
             '/my-web-socket': {
-                onMessage({webSocket}) {
+                message({webSocket}) {
                     webSocket.send('hi!');
                 },
             },

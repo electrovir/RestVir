@@ -35,7 +35,7 @@ export const mockServiceImplementation = implementService(
     {
         webSockets: {
             '/with-search-params': {
-                onConnection({searchParams}) {
+                open({searchParams}) {
                     assert.tsType(searchParams).equals<
                         Readonly<{
                             param1: [string];
@@ -43,37 +43,37 @@ export const mockServiceImplementation = implementService(
                         }>
                     >();
                 },
-                onMessage({searchParams, webSocket}) {
+                message({searchParams, webSocket}) {
                     webSocket.send(searchParams);
                 },
             },
             '/required-protocols': {
-                onConnection({protocols}) {
+                open({protocols}) {
                     assert.tsType(protocols).equals<[string, string, 'hi']>();
                 },
-                onMessage({webSocket}) {
+                message({webSocket}) {
                     webSocket.send('ok');
                 },
             },
             '/no-server-data': {},
             '/with-all-listeners': {
-                onClose() {
+                close() {
                     log.faint('close called');
                 },
-                onConnection() {
+                open() {
                     log.faint('connection called');
                 },
-                onMessage() {
+                message() {
                     log.faint('message called');
                 },
             },
             '/sends-protocol': {
-                onMessage({protocols, webSocket}) {
+                message({protocols, webSocket}) {
                     webSocket.send(protocols);
                 },
             },
             '/custom-props-web-socket': {
-                onMessage(params) {
+                message(params) {
                     assert.tsType(params.webSocketDefinition.customProps).equals<{
                         hello: string;
                     }>();
@@ -81,7 +81,7 @@ export const mockServiceImplementation = implementService(
                 },
             },
             '/no-client-data': {
-                onMessage(params) {
+                message(params) {
                     assert.tsType(params.context).equals<MockServiceContext>();
                     assert.tsType(params.message).equals<undefined>();
                     assert.isUndefined(params.message);
@@ -89,17 +89,17 @@ export const mockServiceImplementation = implementService(
                     assert.tsType(params.webSocketDefinition.customProps).equals<undefined>();
                     params.webSocket.send('ok');
                 },
-                onClose(params) {
+                close(params) {
                     assert.tsType(params.context).equals<MockServiceContext>();
                     assert.tsType<'message'>().notMatches<keyof typeof params>();
                 },
-                onConnection(params) {
+                open(params) {
                     assert.tsType(params.context).equals<MockServiceContext>();
                     assert.tsType<'message'>().notMatches<keyof typeof params>();
                 },
             },
             '/no-origin': {
-                onMessage(params) {
+                message(params) {
                     assert.tsType(params.context).equals<MockServiceContext>();
                     assert.tsType(params.message).equals<
                         Readonly<{
@@ -110,17 +110,17 @@ export const mockServiceImplementation = implementService(
                     assert.tsType<'message'>().matches<keyof typeof params>();
                     params.webSocket.send('ok');
                 },
-                onClose(params) {
+                close(params) {
                     assert.tsType(params.context).equals<MockServiceContext>();
                     assert.tsType<'message'>().notMatches<keyof typeof params>();
                 },
-                onConnection(params) {
+                open(params) {
                     assert.tsType(params.context).equals<MockServiceContext>();
                     assert.tsType<'message'>().notMatches<keyof typeof params>();
                 },
             },
             '/origin-locked': {
-                onMessage(params) {
+                message(params) {
                     assert.tsType(params.context).equals<MockServiceContext>();
                     assert.tsType(params.message).equals<
                         Readonly<{
@@ -131,11 +131,11 @@ export const mockServiceImplementation = implementService(
                     assert.tsType<'message'>().matches<keyof typeof params>();
                     params.webSocket.send('ok');
                 },
-                onClose(params) {
+                close(params) {
                     assert.tsType(params.context).equals<MockServiceContext>();
                     assert.tsType<'message'>().notMatches<keyof typeof params>();
                 },
-                onConnection(params) {
+                open(params) {
                     assert.tsType(params.context).equals<MockServiceContext>();
                     assert.tsType<'message'>().notMatches<keyof typeof params>();
                 },
