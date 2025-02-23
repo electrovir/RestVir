@@ -6,6 +6,7 @@ import {
     getAllowedEndpointMethods,
     isAnyOrigin,
     OriginRequirement,
+    restVirServiceNameHeader,
     type WebSocketDefinition,
 } from '@rest-vir/define-service';
 import {HttpStatus, RestVirHandlerError} from '@rest-vir/implement-service';
@@ -128,6 +129,7 @@ function buildOptionsRequestCorsHeaders(
             'Authorization',
             'Content-Type',
         ].join(','),
+        'Access-Control-Expose-Headers': [restVirServiceNameHeader].join(','),
         'Access-Control-Max-Age': accessControlMaxAgeValue,
 
         ...contentLengthHeaders,
